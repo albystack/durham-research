@@ -1,0 +1,177 @@
+Dear Alberto,
+
+Thanks for the message and good to hear about that are interested in continuing the project.  Hope that the exams all went smoothly.  
+
+The plan that you mentioned sounds good.  You are welcome to choose any distribution for the random walk jumps that you would like, e.g. choosing exponential or gamma will get rid of having negative probabilities.  
+
+For the probabilities themselves, I think what I wrote below wasn’t quite correct.  It’s probably easiest to have edge weights and then get the probabilities there. So if we label the edges from each site N, E, S, W (for the usual compass directions), we could select the N and E edges to have weight 1, while the S and W edges have weight u and v, where u and v are selected from some distribution with mean 1.  Then, the probabilities would be 1/(2+u+v), 1/(2+u+v), u/(2+u+v) and v/(2+u+v) for transitioning N, E, S and W.  
+
+With regards to implementation, what you wrote sounds good. It might be simplest to just focus on drawing the loop erased path from the origin as opposed to drawing the whole tree (to reduce simulation time).  Finally, if the random variables u and v do not have mean zero (so the random walk has a drift), then you should get that the variance of the winding of the loop-erased path starting from the origin should be finite.  
+
+Best wishes
+
+Sunil
+
+
+
+
+From: RESCIGNO, ALBERTO (Student) <alberto.rescigno@durham.ac.uk>
+Date: Saturday, 6 June 2026 at 22:16
+To: CHHITA, SUNIL <sunil.chhita@durham.ac.uk>
+Subject: Re: Uniform Spanning Tree Project Outcomes and Results
+
+Dear Prof. Chhita,
+
+Thank you again for the suggested extensions. Now that exams are over, I have been thinking about the random transition probability case, and I would be very interested in focusing on Extension 3.
+
+My plan would be to implement the fixed site-dependent transition probabilities first, where the probabilities around each site are sampled once and then kept fixed throughout the simulation. I would then extract the branch from the centre of the wired spanning tree to the root and compute its winding as the number of left turns minus the number of right turns. After that, I could run simulations across different box sizes (L) and values of the standard deviation parameter (s), and compare the estimated variance against (C\log L) and (C(\log L)^2).
+
+One point I wanted to ask about is the sampling of the local parameters. If u and v are sampled directly from a normal distribution, there is a possibility that some transition probabilities become negative. Would you prefer me to handle this by resampling or perhaps truncating values outside the correct range, or would it be reasonable to use a bounded transformation such as
+
+u = \frac{1}{2}\tanh(sZ),  v = \frac{1}{2}\tanh(sW),
+
+where Z and W are standard normal samples? 
+
+Best wishes,
+Alberto
+
+
+Sent from Outlook for Mac
+From: RESCIGNO, ALBERTO (Student) <alberto.rescigno@durham.ac.uk>
+Date: Thursday, 16 April 2026 at 20:52
+To: CHHITA, SUNIL <sunil.chhita@durham.ac.uk>
+Subject: Re: Uniform Spanning Tree Project Outcomes and Results
+
+Dear Prof. Chhita,
+
+Thank you very much for the detailed suggestions, these extensions sound very interesting, particularly the connection to Temperley’s bijection and the winding variance question.
+
+Apologies for the delayed reply. I was in London this week attending the JPMorgan Spring Week, so I was not able to respond sooner.
+
+I will aim to explore this progressively alongside exam preparation and will keep you updated on any results.
+
+Many thanks again for the guidance.
+
+Best wishes,
+Alberto
+
+
+Sent from Outlook for Mac
+
+From: CHHITA, SUNIL <sunil.chhita@durham.ac.uk>
+Date: Monday, 13 April 2026 at 11:28
+To: RESCIGNO, ALBERTO (Student) <alberto.rescigno@durham.ac.uk>
+Subject: Re: Uniform Spanning Tree Project Outcomes and Results
+
+Dear Alberto,
+
+Thanks for the message. Apologies in the delay getting back to you. 
+
+The outputs that you sent before look great.  I have had a chance to think about possible extensions and have listed them below.  I should stress that you should prioritise your degree work and revision over this project, so there is no pressure from my side to make any progress.  
+
+Extension 1: Try to put implement spanning trees on the triangular lattice (https://en.wikipedia.org/wiki/Hexagonal_lattice).  The dual graph of the triangular lattice is the honeycomb graph.  The random walk step has 6 possible directions, so a simple symmetric random walk on the triangular lattice chooses each direction with probability 1/6. 
+
+For your original code and this extension, Temperley’s bijection applies which means that the configurations that you have drawn correspond to a random tiling.  The picture you sent previously then corresponds to a random domino tiling, whereas Extension 1 corresponds to a random lozenge tiling.
+
+Extension 2: Change the probabilities on the random walk behind the spanning trees so that they are no longer 1/4 (or 1/6 for the triangular lattice).  These will then correspond to simulations of drifted random walks. 
+
+Extension 3:  Change the probabilities of the random walk so that at each site, you have random probabilities.  There are a couple of cases here 
+The random walk steps are fixed in time (i.e. around each site, they always have the same probabilities)
+The random walk steps change at each time step.  
+I’m guessing that case 1 will be the most interesting so let’s stick with this setup.  You can select any distribution for the probabilities, but I’m thinking having a normal distribution would be sufficient.  For instance, let v and w be two samples from the normal distribution with mean 0 and standard deviation s.  Then the probability of going left, right, up or down is equal to (1/2+u)(1/2+v),(1/2-u)(1/2+v),(1/2+u)(1/2-v),(1/2-u)(1/2-v) respectively.  We would want to see what happens when s changes.
+
+I’m primarily interested in the winding of a single branch of the spanning tree, with the single branch started at the centre of the spanning tree.  Here, the windings of a branch are the number of left turns minus by the number of right turns that the branch makes until it hits the root.  For instance, a branch could wrap around itself twice counter clockwise, so the winding would be 8 (or 9 depending on how it hits the root).  
+
+I’m interested in the variance of (many samples) of the windings for large trees with different values of the standard deviation s. The mean should hopefully be zero. I’m primarily interested in large sample sizes.  For the case you simulated before (i.e. each random walk step has probability 1/4), the variance will be C log L, where L is the size of the box and C is some constant.  
+
+It is an open problem in the case outlined above - we believe it should be C (log L)^2  (where C is a constant) but there isn’t much computational evidence and there is certainly no mathematical proof.  In order to see anything of interest, it would be good to plot a range of large sizes.  
+
+Let me know how you get on.  Hopefully, extension 2 and perhaps part of extension 3 are implementable quite easily from the code that you already have.  
+
+Best wishes
+
+Sunil
+
+
+
+
+
+
+
+
+
+
+
+From: RESCIGNO, ALBERTO (Student) <alberto.rescigno@durham.ac.uk>
+Date: Sunday, 12 April 2026 at 21:59
+To: CHHITA, SUNIL <sunil.chhita@durham.ac.uk>
+Subject: Re: Uniform Spanning Tree Project Outcomes and Results
+
+Dear Prof. Chhita,
+
+I hope you had a good Easter break.
+
+I just wanted to follow up on your last message regarding possible next steps or extensions of the uniform spanning tree project. I would be very interested to continue developing the project further, particularly if there are directions that could strengthen the mathematical component or lead to a short note or report.
+
+I am currently revising for exams but can begin reading or implementing ideas in parallel, so any suggestions would be very helpful.
+
+Best wishes,
+Alberto
+
+Sent from Outlook for Mac
+
+From: CHHITA, SUNIL <sunil.chhita@durham.ac.uk>
+Date: Thursday, 2 April 2026 at 16:47
+To: RESCIGNO, ALBERTO (Student) <alberto.rescigno@durham.ac.uk>
+Subject: Re: Uniform Spanning Tree Project Outcomes and Results
+
+Dear Alberto,
+
+Thank you for the messages. 
+
+The implementation looks good - well done! 
+
+Let me think about next steps/extensions and get back to you after the Easter weekend. 
+
+Best wishes
+
+Sunil
+
+From: RESCIGNO, ALBERTO (Student) <alberto.rescigno@durham.ac.uk>
+Date: Thursday, 2 April 2026 at 14:56
+To: CHHITA, SUNIL <sunil.chhita@durham.ac.uk>
+Subject: Uniform Spanning Tree Project Outcomes and Results
+
+Dear Prof. Chhita,
+
+I wanted to share the outcomes of the project now that I’ve had the opportunity to sit down and spend lots of time on it.
+
+I built a Python implementation of uniform spanning tree generation on finite ‘nxn' grid graphs using simple random walks, loop-erased random walks, and Wilson's algorithm. In addition to the ordinary finite-grid model, I also implemented a wired boundary version in which all boundary vertices are collapsed into a single `WIRE` node. The project includes a command-line interface for seeded/fully random runs and validation logic to confirm that each output is indeed a spanning tree, and plotting images to visualise the generated trees.
+
+In practical terms, the project now does the following:
+
+- Generates uniform spanning trees on square grid graphs
+- Supports both ordinary and wired boundary conditions
+- Validates the output by checking edge legality, spanning coverage, connectivity, and the correct edge count for a tree
+- Produces visual plots of the generated spanning trees
+- Includes automated tests for the graph utilities, random walk logic, loop erasure, Wilson's algorithm, validation, and CLI behaviour
+
+The current results are:
+
+- Automated verification: 37/37 tests passing
+- Ordinary seeded example: 8x8 grid, seed 123, validated successfully as a spanning tree on 64 vertices with 63 edges
+- Wired seeded example: 8x8 grid, seed 123, validated successfully as a wired spanning tree on 37 quotient vertices with 36 edges
+
+I have attached two generated images that illustrate these outputs:
+
+- ust_ordinary_size8_seed123.png
+- ust_wired_size8_seed123.png
+
+These examples were generated with a fixed seed so that the results are reproducible. Overall, the project successfully produces valid uniform spanning trees in both the standard and wired settings, and the visual outputs make the difference between the two models clear. It was quite fun, and a shame I could not complete it sooner, and again I apologise for not responding sooner. 
+
+I am also wondering perhaps if there was any way to implement/research this further?
+
+Warm regards,
+Alberto 
+
+Sent from Outlook for Mac

@@ -1,0 +1,15 @@
+# Python cache and local runtime artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+
+# macOS metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor/temporary files
+*.swp
+*.swo
+*~
+
