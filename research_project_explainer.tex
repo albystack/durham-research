@@ -1,0 +1,827 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  urlcolor=blue!60!black,
+  citecolor=blue!60!black
+}
+
+\setlist[itemize]{leftmargin=1.4em}
+\setlist[enumerate]{leftmargin=1.6em}
+\renewcommand{\arraystretch}{1.15}
+
+\title{Uniform Spanning Tree / LERW Random Environment Project Explainer}
+\author{Alberto Rescigno}
+\date{June 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This note explains the whole current state of the numerical project on
+loop-erased random walk (LERW) winding in fixed random environments. It covers
+the mathematical motivation, the implemented models, the simulation pipeline,
+the diagnostics used to detect drift, the focused numerical results up to
+$L=256$, the supervisor feedback, and the next larger-run plan. The most
+important current conclusion is that the original two-random-weight model
+develops strong north-east drift after probability normalisation. The next
+scientific direction is therefore to use locally balanced random environments,
+where every lattice site receives its own independent sample and has no local
+directional drift, and then test larger sizes and alternative distributions.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Executive Summary}
+
+The project studies random walks on the square lattice box
+\[
+  B_L = [-L,L]^2 \cap \mathbb{Z}^2,
+\]
+started at the origin and stopped when the walk first hits the boundary. The
+chronological loop erasure of the walk gives a loop-erased random walk path.
+The main observable is the winding,
+\[
+  W_L = \#\{\text{left turns}\} - \#\{\text{right turns}\}.
+\]
+
+For the ordinary simple symmetric random walk, the expected qualitative
+behaviour is
+\[
+  \operatorname{Var}(W_L) \sim C \log L.
+\]
+The random-environment question is whether a fixed site-dependent environment
+can produce anomalous growth closer to
+\[
+  \operatorname{Var}(W_L) \sim C(\log L)^2.
+\]
+
+The initial implementation tested a two-random-weight edge model
+\[
+  w_N = 1,\qquad w_E = 1,\qquad w_S = u,\qquad w_W = v,
+\]
+with $u,v$ positive mean-one random variables. After normalisation into
+transition probabilities, this model produces a strong effective north-east
+drift for moderate and strong disorder. That drift makes the walk exit near the
+north-east corner and suppresses winding variance. It is therefore not a clean
+test of a centred random-environment winding question.
+
+The latest supervisor feedback confirms the next direction:
+\begin{itemize}
+  \item use a more locally balanced random environment;
+  \item ensure each site has a different random sample;
+  \item run larger simulations;
+  \item if the balanced Gamma model does not show clear $(\log L)^2$ behaviour
+        at larger sizes, test other distribution choices.
+\end{itemize}
+
+The code now supports this plan through exact opposite-pair locally balanced
+models: \texttt{gamma\_balanced}, \texttt{lognormal\_balanced},
+\texttt{pareto\_balanced}, and \texttt{uniform\_balanced}. The older
+four-independent-weight models \texttt{gamma4}, \texttt{lognormal4},
+\texttt{pareto4}, and \texttt{uniform4} remain available as comparison models.
+
+\section{Mathematical Background}
+
+\subsection{Uniform Spanning Tree and LERW}
+
+Wilson's algorithm samples a uniform spanning tree (UST) by repeatedly running
+random walks and adding their loop erasures to the tree. Thus branches of the
+UST are described by loop-erased random walk. Studying the geometry of LERW is
+therefore a way of studying geometric properties of the UST.
+
+In this project the numerical experiment is not sampling full spanning trees.
+Instead, it focuses on one branch-like observable: run a random walk from the
+origin until it exits a square box, erase loops chronologically, and measure
+the winding of the resulting self-avoiding path.
+
+\subsection{Winding Observable}
+
+The square lattice directions are encoded cyclically as
+\[
+  E=0,\qquad N=1,\qquad W=2,\qquad S=3.
+\]
+For consecutive LERW steps, if the direction changes by $+1$ modulo $4$, this
+is counted as a left turn. If it changes by $-1$ modulo $4$, this is counted as
+a right turn. The winding is
+\[
+  W_L = L_L - R_L,
+\]
+where $L_L$ is the number of left turns and $R_L$ is the number of right turns
+along the loop-erased path.
+
+Immediate U-turns should not occur in a loop-erased nearest-neighbour path. The
+code raises an error if one is encountered, because it would indicate a bug or
+an invalid path.
+
+\subsection{Scaling Question}
+
+The core numerical question is whether the winding variance grows like
+\[
+  C \log L
+\]
+or whether a fixed random environment can produce a stronger law
+\[
+  C(\log L)^2.
+\]
+All numerical fits in this project are descriptive. They are not proofs of
+asymptotic behaviour. With only finitely many sizes, especially sizes only up
+to $L=256$, both $\log L$ and $(\log L)^2$ curves can sometimes look plausible.
+The diagnostics must therefore be interpreted conservatively.
+
+\section{Simulation Setup}
+
+\subsection{Domain and Stopping Rule}
+
+For each box size $L$, the walk starts at
+\[
+  X_0=(0,0)
+\]
+and evolves until the first time
+\[
+  \tau_L = \inf\{t \geq 0 : X_t \in \partial B_L\},
+\]
+where the boundary condition is implemented as
+\[
+  |x|=L \quad \text{or} \quad |y|=L.
+\]
+The raw path is
+\[
+  (X_0,X_1,\ldots,X_{\tau_L}).
+\]
+The code then chronologically erases loops to obtain the LERW path
+\[
+  \operatorname{LE}(X_0,\ldots,X_{\tau_L}).
+\]
+
+\subsection{Recorded Trial Data}
+
+Each simulated trial records:
+\begin{itemize}
+  \item box size $L$;
+  \item model name;
+  \item distribution parameter, stored in the CSV column \texttt{k};
+  \item sample index;
+  \item random seed;
+  \item raw walk length;
+  \item LERW length;
+  \item winding;
+  \item boundary hit coordinates;
+  \item number of random-environment sites sampled.
+\end{itemize}
+
+The main CSV schema is:
+\begin{verbatim}
+L,model,k,sample_index,seed,raw_steps,lerw_steps,winding,
+hit_x,hit_y,environment_sites
+\end{verbatim}
+
+\subsection{Lazy Fixed Environments}
+
+The random environment is sampled lazily. When the walk first visits a site,
+the code samples that site's random weights and stores them in a dictionary.
+Future visits to the same site reuse the same weights.
+
+This is statistically equivalent to pre-sampling the entire box because the
+site environments are independent. Laziness only avoids wasting time sampling
+sites that the walk never visits.
+
+This implementation directly addresses the supervisor's clarification that
+each site should have a different sample.
+
+\section{Implemented Models}
+
+\subsection{Symmetric Baseline}
+
+The calibration model is the ordinary simple symmetric random walk:
+\[
+  p_N=p_E=p_S=p_W=\frac14.
+\]
+This case is expected to show winding variance consistent with $C\log L$.
+
+\subsection{Original Two-Random-Weight Gamma Model}
+
+The original two-random-weight model uses
+\[
+  w_N=1,\qquad w_E=1,\qquad w_S=u,\qquad w_W=v,
+\]
+where
+\[
+  u,v \sim \Gamma(k,1/k).
+\]
+The scale $1/k$ makes the raw weights mean one:
+\[
+  \mathbb{E}[u]=\mathbb{E}[v]=1.
+\]
+Transition probabilities are obtained by normalising:
+\[
+  p_d(x)=\frac{w_d(x)}{w_N(x)+w_E(x)+w_S(x)+w_W(x)}.
+\]
+
+Although the raw random variables have mean one, this model is not locally
+balanced after normalisation. Since north and east are fixed at weight $1$,
+while south and west can be very small, the walk can acquire a strong effective
+north-east drift.
+
+\subsection{Exponential Two-Weight Model}
+
+The \texttt{exponential} model has the same two-weight structure as the Gamma
+model, but uses
+\[
+  u,v \sim \operatorname{Exp}(1).
+\]
+This is equivalent to the two-weight Gamma model at $k=1$, but it is kept as a
+separate named model for clarity.
+
+\subsection{Direction-Symmetric Gamma Model: \texttt{gamma4}}
+
+The direction-symmetric Gamma model samples all four outgoing weights
+independently:
+\[
+  w_N,w_E,w_S,w_W \stackrel{\text{iid}}{\sim} \Gamma(k,1/k).
+\]
+The four raw weights are then normalised to probabilities at that site.
+Because all directions are treated symmetrically, this model is balanced in
+distribution. However, at a single site it usually has non-zero local drift
+because $w_N$ need not equal $w_S$ and $w_E$ need not equal $w_W$.
+
+\subsection{Exact Locally Balanced Gamma Model: \texttt{gamma\_balanced}}
+
+The main supervisor-directed model samples one vertical and one horizontal
+weight at each site:
+\[
+  w_V,w_H \stackrel{\text{iid}}{\sim} \Gamma(k,1/k),
+\]
+then assigns
+\[
+  w_N=w_S=w_V,\qquad w_E=w_W=w_H.
+\]
+After normalisation, this gives
+\[
+  p_N=p_S,\qquad p_E=p_W,
+\]
+so every sampled site has zero local drift. Different sites still receive
+different independent samples.
+
+\subsection{Balanced Lognormal Models: \texttt{lognormal4} and
+\texttt{lognormal\_balanced}}
+
+The balanced lognormal model samples
+\[
+  w_N,w_E,w_S,w_W \stackrel{\text{iid}}{\sim}
+  \operatorname{LogNormal}\left(-\frac{\sigma^2}{2},\sigma\right).
+\]
+The choice of mean parameter $-\sigma^2/2$ ensures
+\[
+  \mathbb{E}[w_d]=1.
+\]
+The model parameter is $\sigma$.
+The exact local-balance version \texttt{lognormal\_balanced} uses the same law,
+but samples only a vertical and a horizontal weight at each site and applies
+them symmetrically to opposite directions.
+
+\subsection{Balanced Pareto Models: \texttt{pareto4} and
+\texttt{pareto\_balanced}}
+
+The balanced Pareto model samples
+\[
+  w_d = \frac{\alpha-1}{\alpha}Y_d,
+  \qquad
+  Y_d \sim \operatorname{Pareto}(\alpha),
+\]
+independently for $d\in\{N,E,S,W\}$. The parameter must satisfy
+\[
+  \alpha>1
+\]
+so that the mean is finite. The prefactor makes the raw weights mean one.
+This model gives a heavier-tailed alternative to Gamma and lognormal weights.
+The exact local-balance version \texttt{pareto\_balanced} applies the same
+opposite-pair construction as \texttt{gamma\_balanced}.
+
+\subsection{Balanced Uniform Models: \texttt{uniform4} and
+\texttt{uniform\_balanced}}
+
+The balanced uniform model samples
+\[
+  w_N,w_E,w_S,w_W \stackrel{\text{iid}}{\sim} \operatorname{Uniform}(1-a,1+a),
+\]
+with
+\[
+  0<a<1.
+\]
+This gives a bounded-disorder comparison case. The exact local-balance version
+\path{uniform_balanced} again uses opposite-pair vertical and horizontal
+weights.
+
+\section{Code Structure}
+
+The current project folder contains the following main files.
+
+\begin{description}[leftmargin=2.8cm,style=nextline]
+  \item[\path{lerw_random_environment.py}]
+  Core simulator. Defines the random environment, runs random walks to the
+  boundary, performs loop erasure, computes winding, and writes trial CSVs.
+
+  \item[\path{run_research_batch.py}]
+  Batch runner. Runs many model/size/parameter configurations and supports
+  per-configuration checkpoint files. It now supports exact local-balance
+  configs through the \texttt{--configs} option.
+
+  \item[\path{analyse_winding_results.py}]
+  Command-line summary script. Reads one or more CSVs, groups by model,
+  parameter, and size, then prints group means, variances, and simple scaling
+  fits.
+
+  \item[\path{make_figures.py}]
+  Generates SVG figures, CSV tables, and a Markdown analysis dossier using
+  only the Python standard library.
+
+  \item[\path{test_lerw_random_environment.py}]
+  Unit tests for loop erasure, winding, probability normalisation,
+  fixed-in-time environments, and distinct site samples.
+
+  \item[\path{README.md}]
+  Practical project guide and current command reference.
+\end{description}
+
+\section{Existing Data and Outputs}
+
+\subsection{Main Result CSVs}
+
+Important result files include:
+\begin{itemize}
+  \item \path{results/research_batch_main.csv}: broad exploratory sweep.
+  \item \path{results/research_batch_focused.csv}: focused run used for the
+        main analysis below.
+  \item \path{results/research_batch_focused_*.csv}: per-configuration
+        checkpoints from the focused run.
+  \item \path{results/smoke_balanced_distributions.csv}: small smoke test for
+        the new balanced distributions.
+\end{itemize}
+
+\subsection{Analysis Output Folders}
+
+\begin{itemize}
+  \item \path{analysis_focused/}: focused figures, tables, and interpretation.
+  \item \path{analysis_output/}: broader exploratory analysis.
+  \item \path{analysis_smoke_balanced/}: smoke-test output for the new balanced
+        distributions.
+\end{itemize}
+
+\section{Focused Numerical Run}
+
+The focused run used:
+\[
+  L \in \{16,32,64,128,256\},
+\]
+with $700$ samples per model/size/parameter cell. The models were:
+\begin{itemize}
+  \item \texttt{symmetric};
+  \item two-weight \texttt{gamma};
+  \item balanced \texttt{gamma4}.
+\end{itemize}
+For \texttt{gamma} and \texttt{gamma4}, the tested parameters were
+\[
+  k \in \{20,1,0.5\}.
+\]
+The focused run contains $24{,}500$ trials.
+
+\section{Focused Results: Symmetric Baseline}
+
+The symmetric walk behaves as expected and calibrates the simulation.
+
+\begin{center}
+\begin{tabular}{rrrr}
+\toprule
+$L$ & $\operatorname{Var}(W)$ & mean raw steps & mean LERW steps \\
+\midrule
+16  & 1.894 & 296.9   & 40.3 \\
+32  & 2.353 & 1239.1  & 96.2 \\
+64  & 3.148 & 4861.2  & 231.8 \\
+128 & 3.572 & 20045.7 & 559.1 \\
+256 & 4.300 & 77271.2 & 1329.5 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The descriptive fit against $\log L$ is
+\[
+  \operatorname{Var}(W) = 0.870 \log L - 0.565,
+  \qquad R^2=0.992.
+\]
+The descriptive fit against $(\log L)^2$ is
+\[
+  \operatorname{Var}(W) = 0.104(\log L)^2 + 1.158,
+  \qquad R^2=0.987.
+\]
+The log fit is slightly better, as expected for the baseline.
+
+\section{Focused Results: Two-Weight Gamma Model}
+
+\subsection{Drift Diagnostic}
+
+At $L=256$, the mean boundary hit locations for the two-weight Gamma model are:
+
+\begin{center}
+\begin{tabular}{rrrr}
+\toprule
+$k$ & mean hit $x/L$ & mean hit $y/L$ & mean raw steps \\
+\midrule
+20  & 0.589 & 0.591 & 48969.1 \\
+1   & 0.894 & 0.889 & 4731.9 \\
+0.5 & 0.916 & 0.918 & 2891.9 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+This is the central modelling issue. For $k=1$ and $k=0.5$, the walk exits
+very near the north-east corner. The drift is not a small numerical fluctuation.
+It is large enough to change the qualitative behaviour of the raw walk.
+
+\subsection{Winding Variance}
+
+\begin{center}
+\begin{tabular}{rrrrr}
+\toprule
+$k$ & $\operatorname{Var}(W)$ at $L=16$ &
+$\operatorname{Var}(W)$ at $L=256$ &
+$R^2$ for $\log L$ &
+$R^2$ for $(\log L)^2$ \\
+\midrule
+20  & 1.973 & 3.735 & 0.952 & 0.908 \\
+1   & 1.755 & 2.099 & 0.524 & 0.587 \\
+0.5 & 1.358 & 1.548 & 0.950 & 0.916 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The moderate and strong disorder cases have suppressed winding variance. This
+is consistent with a drifted-walk regime: the walk exits quickly and does not
+sample large-scale winding in a centred way.
+
+\section{Focused Results: Balanced Gamma Model}
+
+\subsection{Drift Diagnostic}
+
+At $L=256$, the balanced \texttt{gamma4} model remains centred:
+
+\begin{center}
+\begin{tabular}{rrrr}
+\toprule
+$k$ & mean hit $x/L$ & mean hit $y/L$ & mean raw steps \\
+\midrule
+20  & 0.017 & -0.027 & 79695.7 \\
+1   & 0.028 & 0.026  & 96802.5 \\
+0.5 & 0.017 & -0.003 & 149512.6 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+This supports the interpretation that the four-weight model is a more suitable
+candidate for a no-drift random-environment test.
+
+\subsection{Winding Variance}
+
+\begin{center}
+\begin{tabular}{rrrrr}
+\toprule
+$k$ & $\operatorname{Var}(W)$ at $L=16$ &
+$\operatorname{Var}(W)$ at $L=256$ &
+$R^2$ for $\log L$ &
+$R^2$ for $(\log L)^2$ \\
+\midrule
+20  & 2.034 & 4.104 & 0.963 & 0.938 \\
+1   & 1.987 & 4.001 & 0.978 & 0.943 \\
+0.5 & 1.965 & 4.184 & 0.976 & 0.946 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Over $L\leq 256$, the balanced Gamma model still looks closer to logarithmic
+growth than to clear $(\log L)^2$ growth. This does not disprove the conjectured
+behaviour. It only says the currently tested size range is not enough to show
+it convincingly.
+
+\section{Interpretation of the Drift Problem}
+
+The two-weight model uses mean-one raw weights, but mean-one raw weights do not
+guarantee zero effective drift after normalisation. The key issue is structural:
+north and east are fixed at weight $1$, while south and west are random. When
+south and west weights are often small, north and east become relatively more
+likely. This creates a systematic north-east preference.
+
+The boundary-hit diagnostic is therefore essential. If the mean boundary hit
+location is close to $(0,0)$ after scaling by $L$, the walk is plausibly
+centred. If the mean hit is close to $(L,L)$, the walk is drifted and winding
+variance should not be interpreted as evidence for the centred random
+environment problem.
+
+\section{Supervisor Feedback and Current Direction}
+
+The latest feedback from Prof. Chhita confirms that the project should now use
+a more locally balanced random environment. The important points are:
+\begin{itemize}
+  \item each site should have a different sample;
+  \item larger simulations should be run;
+  \item other distributions should be tested if the Gamma distribution does not
+        show $(\log L)^2$ behaviour at larger sizes;
+  \item the conjectured $(\log L)^2$ behaviour is of community interest, so
+        identifying the right distributional setting is valuable.
+\end{itemize}
+
+The code changes made after this feedback implement exactly this workflow:
+\begin{itemize}
+  \item \texttt{gamma\_balanced} is the exact locally balanced Gamma model;
+  \item \texttt{lognormal\_balanced}, \texttt{pareto\_balanced}, and
+        \texttt{uniform\_balanced} are additional exact locally balanced
+        distribution families;
+  \item \texttt{gamma4}, \texttt{lognormal4}, \texttt{pareto4}, and
+        \texttt{uniform4} remain available as four-independent-weight
+        comparison models;
+  \item the tests verify that probabilities are positive and normalised;
+  \item the tests verify that different sites receive different random samples.
+\end{itemize}
+
+\section{Recommended Larger Simulation}
+
+The recommended next large run is:
+
+\begin{verbatim}
+python3 run_research_batch.py \
+  --sizes 16 32 64 128 256 512 \
+  --samples 1000 \
+  --seed 20260615 \
+  --configs symmetric gamma_balanced:20 gamma_balanced:1 gamma_balanced:0.5 \
+            lognormal_balanced:0.5 lognormal_balanced:1 \
+            pareto_balanced:3 pareto_balanced:2 uniform_balanced:0.5 \
+  --checkpoint-per-config \
+  --output results/research_batch_balanced_large.csv
+\end{verbatim}
+
+The \texttt{--checkpoint-per-config} option is important. It writes a separate
+CSV after each model/parameter configuration finishes, so partial results are
+not lost if a long run is interrupted.
+
+For a quick smoke test before the long run:
+
+\begin{verbatim}
+python3 run_research_batch.py \
+  --sizes 16 32 \
+  --samples 5 \
+  --seed 20260615 \
+  --configs symmetric gamma_balanced:1 lognormal_balanced:0.5 \
+            pareto_balanced:2 uniform_balanced:0.5 \
+  --output results/smoke_balanced_distributions.csv
+\end{verbatim}
+
+\section{How to Regenerate Figures and Tables}
+
+For the focused old analysis:
+\begin{verbatim}
+python3 make_figures.py \
+  results/research_batch_focused.csv \
+  --output-dir analysis_focused
+\end{verbatim}
+
+For the new balanced large run, after it finishes:
+\begin{verbatim}
+python3 make_figures.py \
+  results/research_batch_balanced_large.csv \
+  --output-dir analysis_balanced_large
+\end{verbatim}
+
+The script writes:
+\begin{itemize}
+  \item \path{analysis_*/figures/*.svg};
+  \item \path{analysis_*/tables/group_stats.csv};
+  \item \path{analysis_*/tables/scaling_fits.csv};
+  \item \path{analysis_*/analysis_dossier.md}.
+\end{itemize}
+
+\section{Figure Guide}
+
+The most important generated figures are:
+\begin{description}[leftmargin=3.8cm,style=nextline]
+  \item[\path{variance_vs_logL_selected.svg}]
+  Winding variance against $\log L$ for selected models.
+
+  \item[\path{variance_vs_logL2_selected.svg}]
+  Same data plotted against $(\log L)^2$.
+
+  \item[\path{mean_hit_x_over_L.svg}]
+  Drift diagnostic for the horizontal boundary hit coordinate.
+
+  \item[\path{mean_hit_y_over_L.svg}]
+  Drift diagnostic for the vertical boundary hit coordinate.
+
+  \item[\path{boundary_hits_L128.svg}]
+  Scatter plot of boundary hit locations at $L=128$ in the focused analysis.
+
+  \item[\path{raw_walk_length.svg}]
+  Mean raw walk length. Drifted models exit much faster.
+
+  \item[\path{lerw_path_length.svg}]
+  Mean loop-erased path length.
+
+  \item[\path{environment_vector_fields.svg}]
+  Local mean-step vector field visualisation.
+\end{description}
+
+\section{Testing and Verification}
+
+The unit test command is:
+\begin{verbatim}
+python3 -m unittest -v
+\end{verbatim}
+
+The current test suite checks:
+\begin{itemize}
+  \item chronological loop erasure;
+  \item winding sign convention;
+  \item symmetric transition probabilities;
+  \item positive and normalised probabilities for Gamma models;
+  \item positive and normalised probabilities for lognormal, Pareto, and
+        uniform balanced models;
+  \item fixed-in-time environments at a site;
+  \item different samples at different sites;
+  \item small boundary-hitting trials.
+\end{itemize}
+
+At the time this explainer was written, the test suite passed:
+\[
+  12/12 \text{ tests passing.}
+\]
+
+\section{What Can Be Claimed Safely}
+
+The following claims are currently defensible:
+\begin{itemize}
+  \item The symmetric baseline reproduces the expected qualitative logarithmic
+        growth.
+  \item The original two-weight Gamma model develops strong effective
+        north-east drift after normalisation.
+  \item Strong drift correlates with shorter raw walks and suppressed winding
+        variance.
+  \item The balanced four-weight Gamma model stays centred in the tested size
+        range.
+  \item Up to $L=256$, the balanced Gamma model does not show convincing
+        $(\log L)^2$ growth.
+  \item Larger sizes and alternative balanced distributions are the correct
+        next numerical step.
+\end{itemize}
+
+The following claims should be avoided:
+\begin{itemize}
+  \item Do not claim the conjectured $(\log L)^2$ behaviour is false.
+  \item Do not claim the random-environment problem is solved.
+  \item Do not call the two-weight model drift-free just because the raw
+        weights have mean one.
+  \item Do not treat one balanced distribution as decisive without checking
+        larger sizes and other distribution families.
+\end{itemize}
+
+\section{Potential Paper Structure}
+
+A future write-up could be structured as follows:
+\begin{enumerate}
+  \item Introduction: UST, LERW, winding, and motivation for random
+        environments.
+  \item Model definitions: symmetric walk, two-weight model, balanced
+        four-weight models.
+  \item Numerical method: box, stopping rule, loop erasure, winding convention,
+        seeding, sample sizes.
+  \item Baseline validation: symmetric $C\log L$ behaviour.
+  \item Drift diagnostic: two-weight Gamma model and north-east exit bias.
+  \item Balanced environments: Gamma and alternative distributions.
+  \item Scaling diagnostics: fits to $\log L$ and $(\log L)^2$.
+  \item Discussion: finite-size limitations, drift versus disorder, and future
+        larger runs.
+  \item Conclusion: what is established and what remains open.
+\end{enumerate}
+
+\section{Open Questions}
+
+The main open scientific questions are:
+\begin{itemize}
+  \item Does any locally balanced fixed random environment show convincing
+        $(\log L)^2$ winding variance at larger $L$?
+  \item If Gamma weights do not show the effect, do heavier-tailed exact
+        local-balance models such as \texttt{pareto\_balanced} produce it?
+  \item How large must $L$ be before the asymptotic regime becomes visible?
+  \item How many samples are needed for stable variance estimates at $L=512$
+        or larger?
+  \item Should future diagnostics include bootstrap confidence intervals or
+        error bars for the variance estimates?
+\end{itemize}
+
+\section{Immediate Next Steps}
+
+\begin{enumerate}
+  \item Run the documented smoke test if needed.
+  \item Launch the larger balanced batch with checkpointing.
+  \item Regenerate figures and tables for the new large CSV.
+  \item Check boundary-hit diagnostics first. Any model with strong drift
+        should be treated as a drifted model, not a centred random environment.
+  \item Compare variance fits against $\log L$ and $(\log L)^2$.
+  \item Prioritise models that are both centred and show possible upward
+        curvature relative to $\log L$.
+  \item Add error bars before making stronger claims.
+\end{enumerate}
+
+\appendix
+
+\section{Command Reference}
+
+\subsection{Run Tests}
+\begin{verbatim}
+python3 -m unittest -v
+\end{verbatim}
+
+\subsection{Single-Model Debug Run}
+\begin{verbatim}
+python3 lerw_random_environment.py \
+  --sizes 16 32 64 \
+  --samples 50 \
+  --model gamma_balanced \
+  --k 1 \
+  --output results/debug_gamma_balanced_k1.csv
+\end{verbatim}
+
+\subsection{Previous Focused Batch}
+\begin{verbatim}
+python3 run_research_batch.py \
+  --sizes 16 32 64 128 256 \
+  --samples 700 \
+  --seed 20260613 \
+  --models symmetric gamma gamma4 \
+  --k-values 20 1 0.5 \
+  --checkpoint-per-config \
+  --output results/research_batch_focused.csv
+\end{verbatim}
+
+\subsection{New Balanced Batch}
+\begin{verbatim}
+python3 run_research_batch.py \
+  --sizes 16 32 64 128 256 512 \
+  --samples 1000 \
+  --seed 20260615 \
+  --configs symmetric gamma_balanced:20 gamma_balanced:1 gamma_balanced:0.5 \
+            lognormal_balanced:0.5 lognormal_balanced:1 \
+            pareto_balanced:3 pareto_balanced:2 uniform_balanced:0.5 \
+  --checkpoint-per-config \
+  --output results/research_batch_balanced_large.csv
+\end{verbatim}
+
+\subsection{Analyse a CSV in the Terminal}
+\begin{verbatim}
+python3 analyse_winding_results.py results/research_batch_focused.csv
+\end{verbatim}
+
+\subsection{Generate Figures}
+\begin{verbatim}
+python3 make_figures.py \
+  results/research_batch_focused.csv \
+  --output-dir analysis_focused
+\end{verbatim}
+
+\section{Glossary}
+
+\begin{description}[leftmargin=3.0cm,style=nextline]
+  \item[LERW]
+  Loop-erased random walk. It is obtained from a random walk by erasing loops in
+  chronological order.
+
+  \item[UST]
+  Uniform spanning tree. Wilson's algorithm constructs it using LERW.
+
+  \item[Fixed environment]
+  Random transition probabilities are sampled once per site and then kept fixed
+  throughout the walk.
+
+  \item[Locally balanced]
+  All four outgoing directions at a site are sampled symmetrically from the
+  same distribution, so there is no built-in preferred direction in law.
+
+  \item[Drift diagnostic]
+  A check based on the mean boundary hit location. Values of mean hit $x/L$ and
+  $y/L$ close to zero indicate a centred walk. Values close to one indicate
+  north-east drift.
+
+  \item[Disorder strength]
+  Informal term for how variable the random weights are. Smaller Gamma $k$,
+  larger lognormal $\sigma$, and smaller Pareto $\alpha$ generally correspond
+  to stronger disorder.
+\end{description}
+
+\end{document}

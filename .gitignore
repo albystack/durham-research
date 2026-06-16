@@ -13,3 +13,6 @@ __pycache__/
 *.swo
 *~
 
+# Generated project outputs
+results/
+analysis_*/
