@@ -1,0 +1,263 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\usepackage{hyperref}
+
+\title{Computational Test for Super-Rough Random Dimer Heights}
+\author{Alberto Rescigno}
+\date{June 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This note documents the current computational probability project.  The code
+uses loop-erased random-walk winding as a tree-side proxy for a dimer height
+function under Temperley's bijection.  The numerical target is to distinguish
+ordinary rough behaviour,
+\[
+  \operatorname{Var}(h(0)) \approx C\log L,
+\]
+from the physics prediction of a super-rough random dimer phase,
+\[
+  \operatorname{Var}(h(0)) \approx C(\log L)^2 .
+\]
+The repository now implements quenched random edge-weight environments, all-edge
+randomisation, bootstrap scaling diagnostics, and error-bar plots for the main
+finite-size probe.
+\end{abstract}
+
+\section{Mathematical Setup}
+
+For each box size \(L\), simulations take place in
+\[
+  B_L=[-L,L]^2\cap \mathbb{Z}^2 .
+\]
+Every nearest-neighbour edge exposed by the walk receives a positive random
+weight.  This is a quenched environment: the edge weight is sampled once and
+then kept fixed for the rest of that trial.  The random walk starts at the
+origin and chooses neighbouring vertices with probability proportional to the
+four incident edge weights.  It stops at the first boundary hit of \(B_L\).
+
+The raw walk is chronologically loop-erased.  The resulting path is interpreted
+as the spanning-tree branch corresponding to the origin.  The recorded
+observable is the quarter-turn winding
+\[
+  W_L=\#\{\text{left turns}\}-\#\{\text{right turns}\}.
+\]
+In the present code,
+\[
+  h_{\mathrm{proxy}}(0)=W_L .
+\]
+A final dimer-height convention may multiply this by a fixed
+orientation-dependent constant.  Such a normalization changes fitted constants
+but not the comparison between \(\log L\) and \((\log L)^2\) growth.
+
+\section{Connection to Dimers}
+
+Temperley's bijection relates dimer coverings on appropriate planar lattice
+graphs to spanning trees.  In the Temperleyan setting, dimer height information
+can be read through the topology and winding of the associated tree branches.
+This is the computational bridge used here: instead of sampling full dimer
+coverings directly, the code samples the random-walk side and measures the
+winding of the loop-erased branch.
+
+For homogeneous critical dimer models, height fluctuations are expected to be
+Gaussian free field type, so the variance at a point grows logarithmically in
+the box size.  The research question is whether quenched random weights can
+push the same height observable into a super-rough regime with squared-log
+growth.
+
+\section{Implemented Random Environments}
+
+The old two-random-weight model
+\[
+  (w_N,w_E,w_S,w_W)=(1,1,u,v)
+\]
+has been removed.  It fixed two directions and randomised only two, which was
+not the clean random dimer-weight experiment now needed.
+
+The current code randomises all nearest-neighbour edge weights.  Implemented
+families include Gamma, Exponential, Lognormal, Pareto, Uniform, Beta, Weibull,
+inverse-Gamma, Bernoulli two-point, and triangular distributions.  The simple
+symmetric random walk remains as the baseline calibration model.
+
+\section{Statistical Outputs}
+
+Each run writes:
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{raw\_trials.csv}, with one row per walk;
+  \item \texttt{summary.csv}, with sample means, variances, and variance
+        standard errors for each model and \(L\);
+  \item \texttt{fits.csv}, comparing \(C\log L\) and \(C(\log L)^2\), including
+        SSE, \(R^2\), AIC, BIC, and bootstrap confidence intervals;
+  \item \texttt{run\_report.md}, which records the symmetric baseline, any
+        possible super-rough candidates, and the interpretation caveat;
+  \item PNG figures with error bars when the plotting libraries are installed.
+\end{itemize}
+
+The finite-size model comparison is descriptive.  A BIC preference for
+\(C(\log L)^2\) is treated as a numerical signal for further investigation, not
+as proof of an asymptotic exponent.
+
+\section{Annealed and Quenched Convention}
+
+The present experiments use one random environment and one walk per trial.
+Therefore the reported variance is annealed over both sources of randomness:
+the environment and the walk conditional on the environment.  This is the right
+first diagnostic for the physics question, but it should be stated explicitly
+in any manuscript.
+
+A strictly quenched study would fix one environment and run several independent
+walks in that same environment, then compare the conditional variance with the
+environment-to-environment variation.  The current code and report separate the
+interpretation clearly so this extension can be added without changing the
+meaning of the existing results.
+
+\section{Main Probe}
+
+The large preset is:
+\begin{verbatim}
+python3 main.py run super_rough_probe --workers 8
+\end{verbatim}
+The preset uses
+\[
+  L\in\{16,32,64,128,256,512\},
+\]
+with 1500 samples per model-size pair and a broad set of random edge-weight
+distributions.  The output folder is
+\[
+  \texttt{results/super\_rough\_probe/}.
+\]
+
+For the completed publication check on this machine, the same model/size grid
+was run with 200 samples per model-size pair:
+\begin{verbatim}
+python3 main.py run super_rough_probe \
+  --output-name super_rough_probe_200 --samples 200 --workers 8
+\end{verbatim}
+This produced 18,000 walks in 2394.77 seconds.  The output folder is
+\[
+  \texttt{results/super\_rough\_probe\_200/}.
+\]
+
+The symmetric model is the calibration point: it should favour \(C\log L\)
+within finite-size error.  A random edge-weight model is interesting if it is
+centred, stable across \(L\), and robustly favours \(C(\log L)^2\) by the fit
+diagnostics and bootstrap intervals.
+
+\section{Completed Probe Result}
+
+The 200-sample full-grid probe gave the expected baseline behaviour.  For the
+symmetric model,
+\[
+  C_{\log L}=0.773727,
+\]
+with bootstrap 95\% interval \([0.704848,0.844425]\), and BIC preferred
+\(C\log L\).
+
+No non-baseline random edge-weight model preferred \(C(\log L)^2\) by BIC.
+The closest finite-size competitors were:
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{lognormal\_edges:0.5}, with
+        \(\Delta\mathrm{BIC}=\mathrm{BIC}_{\log^2}-\mathrm{BIC}_{\log}=0.598\);
+  \item \texttt{gamma\_edges:1}, with
+        \(\Delta\mathrm{BIC}=3.015\);
+  \item \texttt{bernoulli\_edges:0.8}, with
+        \(\Delta\mathrm{BIC}=4.421\).
+\end{itemize}
+All of these still favoured \(C\log L\), since positive \(\Delta\mathrm{BIC}\)
+means the logarithmic fit had the smaller BIC.
+
+At \(L=512\), the largest observed variance was the symmetric baseline,
+\[
+  \operatorname{Var}(W_{512})=5.9919 \quad \text{with SE }0.6007.
+\]
+The largest non-baseline value was \texttt{lognormal\_edges:0.5},
+\[
+  \operatorname{Var}(W_{512})=5.3216 \quad \text{with SE }0.5335.
+\]
+Thus, in this completed finite-size run, random edge disorder did not produce
+numerical evidence for squared-log height/winding variance.  This is a useful
+negative result, not a proof that super-roughness cannot occur in another
+normalization, geometry, disorder class, or larger asymptotic range.
+
+\section{Related Work}
+
+Kenyon's work on dimer height fluctuations is the standard reference point for
+Gaussian free field behaviour in homogeneous dimer models.  Temperleyan
+connections between dimers, spanning trees, and height observables underlie the
+winding proxy used here.  Berestycki, Laslier, and Ray give a modern
+winding/GFF perspective for dimer height fluctuations through UST branches.
+
+Recent random-environment dimer work motivates the numerical experiments:
+\begin{itemize}[leftmargin=1.5em]
+  \item Moulard and Toninelli study square-grid dimers with layered quenched
+        disorder and show that disorder can strongly change correlations.
+  \item Bufetov, Petrov, and Zografos study Aztec-diamond tilings with random
+        one-periodic weights, separating GFF-type fluctuations from larger
+        environment-driven fluctuations.
+  \item Duits and Van Peski introduce Gamma-disordered Aztec-diamond weights and
+        connect the model to super-rough random dimer predictions.
+  \item Zografos distinguishes quenched and annealed CLTs for one-periodic
+        Aztec diamonds in random environment, which is directly relevant to
+        how the present simulations should be interpreted.
+\end{itemize}
+
+\section{Publication Checklist Status}
+
+\begin{enumerate}[leftmargin=1.6em]
+  \item Height convention: implemented as quarter-turn LERW winding, with the
+        fixed dimer-height normalization left explicit.
+  \item Symmetric calibration: automatically reported in each run's
+        \texttt{run\_report.md}.
+  \item Super-rough probe: configured as \texttt{super\_rough\_probe} and run
+        from the command line.
+  \item Error bars and bootstrap intervals: written to \path{summary.csv},
+        \path{fits.csv}, plots, and \path{run_report.md}.
+  \item Annealed versus quenched interpretation: stated in the generated report
+        and in this note.
+  \item Literature comparison: included above for the current manuscript draft.
+  \item Publication caveat: all fits are finite-size numerical evidence, not
+        proofs of asymptotic scaling.
+\end{enumerate}
+
+\begin{thebibliography}{9}
+
+\bibitem{kenyon2000}
+R. Kenyon.
+\newblock Conformal invariance of domino tiling.
+\newblock \emph{Annals of Probability}, 28(2), 2000.
+
+\bibitem{berestycki-laslier-ray}
+N. Berestycki, B. Laslier, and G. Ray.
+\newblock Dimers and imaginary geometry.
+\newblock arXiv:1603.09740.
+
+\bibitem{moulard-toninelli}
+Q. Moulard and F. Toninelli.
+\newblock Dimers with layered disorder.
+\newblock arXiv:2507.11964.
+
+\bibitem{bufetov-petrov-zografos}
+A. Bufetov, L. Petrov, and P. Zografos.
+\newblock Domino Tilings of the Aztec Diamond in Random Environment and Schur
+Generating Functions.
+\newblock arXiv:2507.08560.
+
+\bibitem{duits-vanpeski}
+M. Duits and R. Van Peski.
+\newblock The Gamma-disordered Aztec diamond.
+\newblock arXiv:2512.03033.
+
+\bibitem{zografos}
+P. Zografos.
+\newblock Quenched and Annealed CLTs for the one-periodic Aztec diamond in
+random environment.
+\newblock arXiv:2510.11846.
+
+\end{thebibliography}
+
+\end{document}

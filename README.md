@@ -1,163 +1,88 @@
-# LERW Random Environment Research
+# Random Dimer Height Proxy Experiments
 
-This is a simplified numerical research repository for loop-erased random walks
-(LERW), winding variance, and fixed random environments.
+This project simulates loop-erased random walks in fixed random edge-weight
+environments.  The winding of the loop-erased path from the origin to the
+boundary of `[-L,L]^2` is used as a tree-side proxy for the dimer height
+fluctuation suggested by Temperley's bijection.
 
-The main question is whether a fixed site-dependent random environment changes
-the winding variance from the symmetric baseline
+The numerical question is whether the variance grows more like
+`C log L` or like the conjectural super-rough law `C (log L)^2`.
 
-```text
-Var(W_L) ~ C log L
-```
+## Setup
 
-toward a larger finite-size behaviour such as
-
-```text
-Var(W_L) ~ C (log L)^2
-```
-
-The project explainer is kept here:
-
-```text
-research_project_explainer.tex
-research_project_explainer.pdf
-```
-
----
-
-## The Simple File Layout
-
-The code is intentionally small:
-
-- `main.py`
-  - Run this file for simulations and analysis.
-  - Contains the simulator, loop erasure, winding calculation, CSV analysis,
-    and simple SVG figure generation.
-
-- `experiments.py`
-  - Edit this file when you want to add or change an experiment.
-  - Contains named setups such as `smoke`, `focused_reproduction`, and
-    `balanced_large`.
-
-- `test_main.py`
-  - One test file for the project.
-  - Checks the main modelling assumptions and a small trial run.
-
-- `README.md`
-  - This guide.
-
-- `research_project_explainer.tex` / `research_project_explainer.pdf`
-  - The research write-up.
-
-Generated `results/` and `analysis_*` folders can be recreated by `main.py`.
-
----
-
-## What To Run
-
-List the available experiment setups:
+Create a local virtual environment and install the plotting stack:
 
 ```bash
-python3 main.py list
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
 ```
 
-Run a quick smoke test:
+## Run
+
+List presets and models:
 
 ```bash
-python3 main.py run smoke
+.venv/bin/python main.py list
 ```
 
-Run a smoke test and immediately analyse it:
+Run a tiny check:
 
 ```bash
-python3 main.py run smoke --analyse
+.venv/bin/python main.py smoke
 ```
 
-Analyse an existing CSV:
+Run a pilot or the main probe:
 
 ```bash
-python3 main.py analyse results/research_batch_focused.csv --output-dir analysis_focused
+.venv/bin/python main.py run pilot --workers 4
+.venv/bin/python main.py run super_rough_probe --workers 8
 ```
 
-Run the test suite:
+Run the long 512/1024-only continuation:
 
 ```bash
-python3 -m unittest -v
+.venv/bin/python main.py run super_rough_large --workers 8
 ```
 
----
-
-## How To Add Or Change A Run
-
-Open `experiments.py` and edit the `EXPERIMENTS` dictionary.
-
-Each experiment has:
-
-- `description`: a short label printed by `python3 main.py list`
-- `sizes`: the box half-widths `L`
-- `samples`: trials per model and size
-- `seed`: the base random seed
-- `model_configs`: strings like `symmetric` or `gamma_balanced:1`
-- `output`: combined CSV path
-- `checkpoint_per_config`: whether to write one CSV per model config
-- `max_steps`: optional walk cutoff; normally leave as `None`
-
-Then run:
+Override sizes, samples, or models:
 
 ```bash
-python3 main.py run your_experiment_name --analyse
+.venv/bin/python main.py run pilot --sizes 16 32 64 --samples 100 \
+  --models symmetric gamma_edges:1.0 lognormal_edges:0.7
 ```
 
----
-
-## Model Summary
-
-Walks run on
+## Files
 
 ```text
-B_L = [-L, L]^2 intersect Z^2
+config.py       models, distributions, and experiment presets
+simulation.py   random edge environment, random walk, loop erasure, winding
+analysis.py     summaries, scaling fits, bootstrap intervals, plots
+main.py         command-line runner
 ```
 
-starting at the origin and stopping at the first boundary hit. The raw path is
-chronologically loop-erased. The winding is
+Each run writes to `results/<run_name>/`:
 
 ```text
-number of left turns - number of right turns
+raw_trials.csv
+summary.csv                         includes variance standard errors
+fits.csv                            includes bootstrap slope intervals
+run_report.md
+variance_scaling_all_models.png     includes error bars
+variance_fit_*.png                  includes error bars and fitted curves
 ```
 
-The key model families are:
+## Models
 
-- `symmetric`
-  - Baseline simple random walk with equal probabilities.
+All random models assign a positive quenched weight to every undirected
+nearest-neighbour edge used by the walk.  The old two-random-edge setup with
+fixed north/east weights has been removed.
 
-- `gamma` and `exponential`
-  - Original two-weight drift-diagnostic model.
-  - Useful because it shows how normalisation can create effective drift.
+Available random families include Gamma, Exponential, Lognormal, Pareto,
+Uniform, Beta, Weibull, inverse-Gamma, Bernoulli two-point, and triangular
+weights.  See `config.py` to edit or add models.
 
-- `gamma4`, `lognormal4`, `pareto4`, `uniform4`
-  - Four independent direction weights at each site.
-  - Balanced in distribution, but not necessarily drift-free at a given site.
+## Notes
 
-- `gamma_balanced`, `lognormal_balanced`, `pareto_balanced`, `uniform_balanced`
-  - Main locally balanced models.
-  - At each site, sample a vertical weight and a horizontal weight:
-
-```text
-w_N = w_S = vertical_weight
-w_E = w_W = horizontal_weight
-```
-
-These exact opposite-pair models are the main next step for the research.
-
----
-
-## Current Interpretation
-
-The earlier focused results found that the original two-weight Gamma model can
-develop strong north-east drift after normalisation. That suppresses winding
-variance and means those runs should be treated as drift diagnostics, not as the
-main centred random-environment test.
-
-The next useful simulations should focus on exact locally balanced models and
-larger sizes. Avoid claiming that the asymptotic scaling question is settled by
-the current finite-size data.
+The output fits are finite-size diagnostics.  A model looking closer to
+`C (log L)^2` in `fits.csv` is evidence to investigate further, not a proof of
+the conjecture.

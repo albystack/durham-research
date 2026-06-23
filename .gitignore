@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.venv/
 
 # macOS metadata
 .DS_Store
@@ -13,6 +14,18 @@ __pycache__/
 *.swo
 *~
 
+# LaTeX build artifacts
+build/
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
 # Generated project outputs
 results/
+results_hpc*/
+logs/
 analysis_*/
