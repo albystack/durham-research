@@ -86,9 +86,10 @@ CONFIG=configs/hpc_large.csv OUTPUT_DIR=results_hpc_large \
   sbatch --array=0,20,40 slurm/run_lerw_array.slurm
 ```
 
-Use `sacct` to set realistic `--time` and `--mem` values. The environment cache
-is retained across the five walks in an environment, so peak memory grows with
-the number of distinct sites exposed.
+Use `sacct` to set realistic `--time` and `--mem` values. The disordered
+environment cache is bounded at roughly 320 MiB per concurrently active
+environment, plus the loop-erased path map. Multiple Julia threads therefore
+need proportionally more memory; baseline runs do not allocate this cache.
 
 Once those checks pass:
 

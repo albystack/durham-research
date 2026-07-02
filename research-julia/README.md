@@ -11,8 +11,8 @@ experiment described in the [repository README](../README.md).
 - bounds the site cache and regenerates evicted weights exactly, avoiding
   unbounded memory growth at large `L`;
 - maintains chronological loop erasure online;
-- records winding, path lengths, exit location, runtime, and reproducibility
-  metadata;
+- records winding, path lengths, exit location, runtime, resident site-cache
+  occupancy, and reproducibility metadata;
 - writes restart-safe, atomic batch CSVs;
 - validates task completeness before analysis;
 - computes annealed and quenched variance summaries;
@@ -91,7 +91,33 @@ julia --project=. scripts/generate_config.jl \
 ```
 
 Time one representative task at every size before launching a full grid.
-Memory use grows with the number of distinct sites exposed in an environment.
+For disordered models, each concurrently active environment can use up to
+about 320 MiB for the bounded site cache, plus its loop-erased path map. Choose
+the Julia thread count and job memory together. Baseline runs do not allocate
+the site cache.
+
+The completed targeted `L=8192` configuration is
+`configs/hpc_targeted_8192.csv`: ten 50-observation batches each for baseline
+and `gamma:1.0`.
+
+The complete `L=16` configuration is
+`configs/hpc_all_distributions_L16.csv`: 5,000 observations and 500 independent
+environments for each of the fifteen specifications.
+
+## Figures
+
+After producing an analysis directory, generate the overview and detailed
+scaling figures with Python 3 plus Matplotlib, pandas, and NumPy:
+
+```bash
+python scripts/plot_scaling_results.py \
+  --analysis-dir analysis_combined_L16_8192_bootstrap \
+  --output-dir ../reports/figures
+```
+
+The plots show clustered uncertainty bars and separately fitted additive
+`a+b log L` and `a+b(log L)^2` curves. They also include exponent confidence
+intervals and BIC model comparisons.
 
 ## Batch semantics
 

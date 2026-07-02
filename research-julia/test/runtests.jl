@@ -97,3 +97,16 @@ end
         @test isfile(joinpath(analysis, "scaling_model_comparison.csv"))
     end
 end
+
+@testset "heterogeneous table schemas" begin
+    mktempdir() do directory
+        path = joinpath(directory, "mixed.csv")
+        rows = NamedTuple[(common=1, python_version="3.14"),
+                          (common=2, julia_version="1.12")]
+        LERWResearch.write_table(path, rows)
+        text = read(path, String)
+        @test occursin("python_version", text)
+        @test occursin("julia_version", text)
+        @test length(collect(LERWResearch.CSV.File(path))) == 2
+    end
+end

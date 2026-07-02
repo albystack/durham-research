@@ -33,6 +33,7 @@ build/
 # Generated project outputs
 results/
 results_hpc*/
+results_julia*/
 logs/
 analysis_*/
 

@@ -269,7 +269,21 @@ function write_table(path::AbstractString, rows)
     if isempty(rows)
         open(path, "w") do _ end
     else
-        CSV.write(path, rows; transform=(_column, value) -> something(value, missing))
+        columns = Symbol[]
+        seen = Set{Symbol}()
+        for row in rows, column in keys(row)
+            if column ∉ seen
+                push!(columns, column)
+                push!(seen, column)
+            end
+        end
+        names = Tuple(columns)
+        normalized = [NamedTuple{names}(ntuple(index -> begin
+                          column = names[index]
+                          hasproperty(row, column) ? getproperty(row, column) : missing
+                      end, length(names))) for row in rows]
+        CSV.write(path, normalized;
+                  transform=(_column, value) -> something(value, missing))
     end
 end
 

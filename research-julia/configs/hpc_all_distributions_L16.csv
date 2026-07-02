@@ -1,0 +1,16 @@
+task_id,environment_model,distribution,distribution_params,L,batch_id,num_environments,walks_per_environment,base_seed
+0,site_iid,baseline,{},16,0,500,10,8729737838969727125
+1,site_iid,gamma,"{""shape"":0.5}",16,0,500,10,14349579342919156896
+2,site_iid,gamma,"{""shape"":1.0}",16,0,500,10,14539058139485688704
+3,site_iid,gamma,"{""shape"":2.0}",16,0,500,10,6310477770226083014
+4,site_iid,exponential,{},16,0,500,10,10291552621292633121
+5,site_iid,lognormal,"{""sigma"":0.5}",16,0,500,10,13332410078782957276
+6,site_iid,lognormal,"{""sigma"":1.0}",16,0,500,10,398223423695815015
+7,site_iid,pareto,"{""alpha"":2.0}",16,0,500,10,5020816611556718898
+8,site_iid,pareto,"{""alpha"":3.0}",16,0,500,10,4691162682677949760
+9,site_iid,uniform,"{""a"":0.7}",16,0,500,10,3669108853273755607
+10,site_iid,beta,"{""a"":0.5}",16,0,500,10,15628461073617887773
+11,site_iid,weibull,"{""shape"":0.7}",16,0,500,10,10727230358912069550
+12,site_iid,inverse_gamma,"{""alpha"":2.2}",16,0,500,10,9505587238841606871
+13,site_iid,bernoulli,"{""a"":0.8}",16,0,500,10,15343391430405126986
+14,site_iid,triangular,"{""a"":0.8}",16,0,500,10,8063187461077799887
