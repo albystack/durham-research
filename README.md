@@ -1,88 +1,92 @@
-# Random Dimer Height Proxy Experiments
+# Quenched LERW winding in random environments
 
-This project simulates loop-erased random walks in fixed random edge-weight
-environments.  The winding of the loop-erased path from the origin to the
-boundary of `[-L,L]^2` is used as a tree-side proxy for the dimer height
-fluctuation suggested by Temperley's bijection.
+Monte Carlo research on loop-erased random walks (LERW), winding fluctuations,
+and random dimer height functions. The numerical question is whether quenched
+disorder changes winding variance from ordinary logarithmic growth,
 
-The numerical question is whether the variance grows more like
-`C log L` or like the conjectural super-rough law `C (log L)^2`.
+$$
+\operatorname{Var}(W_L) \asymp C\log L,
+$$
 
-## Setup
+to a super-rough regime,
 
-Create a local virtual environment and install the plotting stack:
+$$
+\operatorname{Var}(W_L) \asymp C(\log L)^2.
+$$
 
-```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
-```
+This repository contains a restart-safe Julia simulation and analysis pipeline,
+plus the archived Python implementation used for the smaller-size runs.
 
-## Run
+## Main result
 
-List presets and models:
+The combined study contains **303,000 simulated walks**, **15 weight
+distributions**, and **8 lattice sizes** from `L=32` to `L=4096`.
 
-```bash
-.venv/bin/python main.py list
-```
+- The simple-random-walk baseline gives a fitted power `p = 1.009` in
+  `Var(W_L) = C(log L)^p`.
+- Fourteen of fifteen disorder specifications prefer the additive
+  `a + b log L` model to `a + b(log L)^2` by BIC.
+- The sole additive-fit exception, `Gamma(shape=1)`, still has fitted power
+  close to one and a largest-scale local exponent of `0.979`.
+- The experiments therefore show no robust evidence for squared-log growth in
+  the tested regime.
 
-Run a tiny check:
+These are finite-size numerical results, not a proof of asymptotic scaling.
+Compact aggregate outputs are stored in [`reports/`](reports/).
 
-```bash
-.venv/bin/python main.py smoke
-```
+## Model
 
-Run a pilot or the main probe:
+The walk starts at the origin in `[-L,L]^2`. Each lattice site receives four
+independent positive outgoing weights in north, east, south, and west order.
+Weights are sampled when a site is first exposed and then reused by every walk
+in that quenched environment. Steps are selected proportionally to those
+weights, the walk stops on first hitting the square boundary, and chronological
+loop erasure is maintained online. The observable is left quarter-turns minus
+right quarter-turns along the loop-erased path.
 
-```bash
-.venv/bin/python main.py run pilot --workers 4
-.venv/bin/python main.py run super_rough_probe --workers 8
-```
-
-Run the long 512/1024-only continuation:
-
-```bash
-.venv/bin/python main.py run super_rough_large --workers 8
-```
-
-Override sizes, samples, or models:
-
-```bash
-.venv/bin/python main.py run pilot --sizes 16 32 64 --samples 100 \
-  --models symmetric gamma_edges:1.0 lognormal_edges:0.7
-```
-
-## Files
+## Repository layout
 
 ```text
-config.py       models, distributions, and experiment presets
-simulation.py   random edge environment, random walk, loop erasure, winding
-analysis.py     summaries, scaling fits, bootstrap intervals, plots
-main.py         command-line runner
+research-julia/   Active Julia package, tests, configs, and Slurm scripts
+research-python/  Archived Python implementation and earlier experiment code
+reports/          Small aggregate tables from the final combined analysis
 ```
 
-Each run writes to `results/<run_name>/`:
+Generated raw walks, analysis directories, logs, and local environments are
+excluded from version control.
 
-```text
-raw_trials.csv
-summary.csv                         includes variance standard errors
-fits.csv                            includes bootstrap slope intervals
-run_report.md
-variance_scaling_all_models.png     includes error bars
-variance_fit_*.png                  includes error bars and fitted curves
+## Quick start
+
+Julia 1.10 or newer is required.
+
+```bash
+cd research-julia
+julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
+
+julia --project=. scripts/run_batch.jl \
+  --task-id 0 \
+  --config configs/hpc_smoke.csv \
+  --output-dir results_hpc_smoke
+
+julia --project=. scripts/analyze_results.jl \
+  --config configs/hpc_smoke.csv \
+  --results-dir results_hpc_smoke \
+  --output-dir analysis_hpc_smoke \
+  --allow-incomplete
 ```
 
-## Models
+See [`research-julia/README.md`](research-julia/README.md) for the complete
+workflow and [`research-julia/HPC_README.md`](research-julia/HPC_README.md) for
+Slurm execution.
 
-All random models assign a positive quenched weight to every undirected
-nearest-neighbour edge used by the walk.  The old two-random-edge setup with
-fixed north/east weights has been removed.
+## Reproducibility
 
-Available random families include Gamma, Exponential, Lognormal, Pareto,
-Uniform, Beta, Weibull, inverse-Gamma, Bernoulli two-point, and triangular
-weights.  See `config.py` to edit or add models.
+- Seeds are derived with SHA-256 and are stable across platforms.
+- Result files record code, Julia, task, environment, and walk metadata.
+- Batch CSVs are written atomically and completed tasks are not overwritten.
+- Annealed uncertainty resamples whole environments rather than treating walks
+  from one environment as independent.
 
-## Notes
-
-The output fits are finite-size diagnostics.  A model looking closer to
-`C (log L)^2` in `fits.csv` is evidence to investigate further, not a proof of
-the conjecture.
+The full raw dataset is intentionally not stored in Git because of its size. A
+versioned data release can be attached separately when the repository is made
+public.

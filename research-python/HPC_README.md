@@ -12,13 +12,13 @@ From your Mac, copy the current project:
 
 ```bash
 scp -r /local/project/path \
-  fvkl37@hamilton8.dur.ac.uk:~/lerw-project
+  <username>@hamilton8.dur.ac.uk:~/lerw-project
 ```
 
 Then log in:
 
 ```bash
-ssh fvkl37@hamilton8.dur.ac.uk
+ssh <username>@hamilton8.dur.ac.uk
 cd ~/lerw-project
 ```
 
@@ -218,6 +218,6 @@ From your Mac:
 
 ```bash
 scp -r \
-  fvkl37@hamilton8.dur.ac.uk:~/lerw-project/results_hpc \
+  <username>@hamilton8.dur.ac.uk:~/lerw-project/results_hpc \
   ./results_hpc
 ```

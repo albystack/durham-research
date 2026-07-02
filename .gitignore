@@ -4,6 +4,9 @@ __pycache__/
 *$py.class
 .venv/
 
+# Julia local runtime artifacts
+.julia/
+
 # macOS metadata
 .DS_Store
 .AppleDouble
@@ -13,6 +16,9 @@ __pycache__/
 *.swp
 *.swo
 *~
+tmp/
+.vscode/
+.idea/
 
 # LaTeX build artifacts
 build/
@@ -29,3 +35,6 @@ results/
 results_hpc*/
 logs/
 analysis_*/
+
+# Local archive of raw Python/HPC outputs
+research-python/hamilton_backup/

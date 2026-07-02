@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this software or its aggregate results, please cite it using this metadata."
+title: "Quenched LERW winding in random environments"
+type: software
+authors:
+  - family-names: Rescigno
+    given-names: Alberto
+version: 0.1.0
+repository-code: "https://github.com/albystack/lerw-random-environment-research"
+keywords:
+  - loop-erased random walk
+  - random environment
+  - Monte Carlo
+  - dimer model
+  - winding
+  - finite-size scaling
