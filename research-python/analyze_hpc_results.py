@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Combine and analyse Hamilton LERW batch outputs."""
+"""Combine and analyse Slurm LERW batch outputs."""
 
 from __future__ import annotations
 

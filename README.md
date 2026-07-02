@@ -2,6 +2,8 @@
 
 **A reproducible Julia study of winding fluctuations in quenched random environments.**
 
+[![CI](https://github.com/albystack/lerw-random-environment-research/actions/workflows/ci.yml/badge.svg)](https://github.com/albystack/lerw-random-environment-research/actions/workflows/ci.yml)
+
 This project combines probability, Monte Carlo simulation, statistical model
 comparison, performance engineering, and HPC workflows. The central question is
 whether local random disorder changes the winding variance of loop-erased random
@@ -31,7 +33,7 @@ Var(W_L) ~ C (log(L))^2
 | Random-weight specifications | **15** |
 | Lattice scales | **$L=16$ to $L=8192$** |
 | Validated batch files | **3,215 / 3,215** |
-| Automated tests | **49 passing** |
+| Automated tests | **63 passing (49 Julia, 14 Python)** |
 | Main implementation | **Julia** |
 
 The numerical evidence consistently supports ordinary logarithmic growth over
@@ -114,8 +116,8 @@ values favor ordinary logarithmic growth.
 
 Presentation-ready files:
 
-- [Four-page professor overview](output/pdf/professor_scaling_overview.pdf)
-- [Detailed 15-page distribution report](output/pdf/all_distributions_detailed.pdf)
+- [Four-page research overview](reports/figures/research_scaling_overview.pdf)
+- [Detailed 15-page distribution report](reports/figures/all_distributions_detailed.pdf)
 - [All aggregate result tables](reports/)
 
 ## The model in 30 seconds
@@ -179,7 +181,7 @@ notebook.
 ### 1. Install and test
 
 ```bash
-git clone <repository-url> research
+git clone https://github.com/albystack/lerw-random-environment-research.git research
 cd research/research-julia
 
 julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
@@ -231,7 +233,7 @@ python scripts/plot_scaling_results.py \
 ```
 
 For the complete workflow, see
-[research-julia/README.md](research-julia/README.md). For Hamilton/Slurm usage,
+[research-julia/README.md](research-julia/README.md). For Slurm usage,
 see [research-julia/HPC_README.md](research-julia/HPC_README.md).
 
 ## Configure a new experiment
@@ -279,7 +281,7 @@ research/
 │   └── slurm/               HPC array and analysis jobs
 ├── research-python/         archived first implementation
 ├── reports/                 compact aggregate tables and figures
-└── output/pdf/              presentation-ready PDFs
+└── reports/figures/         presentation-ready figures and PDFs
 ```
 
 ## Reproducibility and data

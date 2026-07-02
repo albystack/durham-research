@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate CSV task tables for Hamilton/Slurm LERW batches."""
+"""Generate CSV task tables for Slurm LERW batches."""
 
 from __future__ import annotations
 

@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 .venv/
+.plot-venv/
 
 # Julia local runtime artifacts
 .julia/
@@ -36,6 +37,8 @@ results_hpc*/
 results_julia*/
 logs/
 analysis_*/
+figures_*/
+output/
 
-# Local archive of raw Python/HPC outputs
-research-python/hamilton_backup/
+# Local archives of raw Python/HPC outputs
+research-python/*_backup/
