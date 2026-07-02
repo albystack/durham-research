@@ -1,59 +1,31 @@
-# Slurm/Hamilton workflow for the Julia implementation
+# Slurm workflow
 
-Run every command below from `research-julia/` on Hamilton.
+This guide runs the Julia simulation pipeline on a generic Slurm cluster. Run
+all commands from `research-julia/` and adapt module, partition, account, time,
+and memory settings to the target system.
 
-## 1. Copy the project
+## 1. Prepare the environment
 
-From a local checkout, replace `<username>` and the destination as needed:
-
-```bash
-scp -r research-julia \
-  <username>@hamilton8.dur.ac.uk:~/research-julia
-```
-
-Then connect:
-
-```bash
-ssh <username>@hamilton8.dur.ac.uk
-cd ~/research-julia
-```
-
-## 2. Load Julia
-
-First inspect Hamilton's installed modules:
+Load Julia 1.10 or newer using the cluster's module system, for example:
 
 ```bash
 module spider julia
-```
-
-Load the newest available Julia version that is at least 1.10. The exact module
-name is determined by the previous command, for example:
-
-```bash
 module load julia/1.11
 julia --version
 ```
 
-If Hamilton has no suitable Julia module, use the official instructions at
-<https://julialang.org/downloads/> or ask Durham ARC support which Julia module
-they support. Do not compile Julia from source on a login node.
-
-## 3. Install and precompile packages once
-
-This step downloads packages, so run it interactively on the login node rather
-than inside every array task:
+Install and precompile dependencies once from a login or development node:
 
 ```bash
 julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
 julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
-After the manifest is created on Hamilton, keep it with the copied project for
-reproducible subsequent runs.
+Do not compile Julia from source or run large simulations on a login node.
 
-## 4. Smoke test
+## 2. Run a smoke test
 
-Run one tiny task on the login node only:
+Run one small task interactively:
 
 ```bash
 julia --project=. scripts/run_batch.jl \
@@ -66,43 +38,44 @@ Then submit the four-task smoke array:
 
 ```bash
 mkdir -p logs
-sbatch slurm/run_lerw_array.slurm
+sbatch --array=0-3 slurm/run_lerw_array.slurm
 ```
 
-Monitor and inspect resource use:
+Monitor jobs and inspect resource use:
 
 ```bash
 squeue -u "$USER"
 sacct -j JOB_ID --format=JobID,State,Elapsed,MaxRSS,ExitCode
 ```
 
-## 5. Time the large sizes before full submission
+## 3. Benchmark large sizes
 
-Generate the proposed config as described in `README.md`. Submit one task for
-each size first. Find their task IDs in the CSV, then run a small array such as:
+Generate an experiment grid as described in `README.md`. Before launching the
+full array, submit one representative task at each lattice size:
 
 ```bash
 CONFIG=configs/hpc_large.csv OUTPUT_DIR=results_hpc_large \
   sbatch --array=0,20,40 slurm/run_lerw_array.slurm
 ```
 
-Use `sacct` to set realistic `--time` and `--mem` values. The disordered
-environment cache is bounded at roughly 320 MiB per concurrently active
-environment, plus the loop-erased path map. Multiple Julia threads therefore
-need proportionally more memory; baseline runs do not allocate this cache.
+Use the measured elapsed time and peak RSS to set realistic Slurm limits. Each
+active disordered environment can use roughly 320 MiB for its bounded site
+cache, plus the loop-erased path map. Memory therefore grows with Julia thread
+count. Baseline runs do not allocate the site cache.
 
-Once those checks pass:
+## 4. Submit the experiment
+
+After resource validation, submit the complete task range:
 
 ```bash
 CONFIG=configs/hpc_large.csv OUTPUT_DIR=results_hpc_large \
   sbatch --array=0-179 slurm/run_lerw_array.slurm
 ```
 
-The batch runner is restart-safe: completed batch files are detected and left
-unchanged. Failed or partial tasks can be intentionally rerun with the command
-line option `--rerun-failed`.
+The runner is restart-safe: complete files are skipped. To intentionally
+replace failed or partial output, pass `--rerun-failed` to the batch command.
 
-## 6. Analyse
+## 5. Analyse results
 
 ```bash
 CONFIG=configs/hpc_large.csv \
@@ -113,13 +86,19 @@ BOOTSTRAP_REPS=1000 \
 sbatch slurm/run_analysis.slurm
 ```
 
-## 7. Copy results back
+Analysis rejects missing, incomplete, failed, or duplicate tasks by default.
+Use `--allow-incomplete` only for explicitly provisional work.
 
-From the local machine:
+## Site-specific configuration
+
+The templates intentionally omit cluster-specific partition and account
+directives. Add them at submission time or copy the templates into a local,
+untracked configuration:
 
 ```bash
-scp -r <username>@hamilton8.dur.ac.uk:~/research-julia/results_hpc_large \
-  research-julia/
-scp -r <username>@hamilton8.dur.ac.uk:~/research-julia/analysis_hpc_large \
-  research-julia/
+sbatch --partition=PARTITION --account=ACCOUNT \
+  --array=0-179 slurm/run_lerw_array.slurm
 ```
+
+Keep credentials, allocation identifiers, and private filesystem paths out of
+version control.

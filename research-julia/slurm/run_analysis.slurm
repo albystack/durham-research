@@ -5,8 +5,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --output=logs/analysis_%j.out
 #SBATCH --error=logs/analysis_%j.err
-##SBATCH --partition=CHANGE_ME
-##SBATCH --account=CHANGE_ME
+## Add site-specific --partition and --account directives when required.
 
 set -euo pipefail
 

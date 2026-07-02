@@ -4,18 +4,18 @@
 
 This project combines probability, Monte Carlo simulation, statistical model
 comparison, performance engineering, and HPC workflows. The central question is
-whether random local disorder changes loop-erased random walk (LERW) winding
-variance from ordinary roughness,
+whether local random disorder changes the winding variance of loop-erased random
+walks (LERW) from ordinary logarithmic roughness,
 
-$$
-\operatorname{Var}(W_L) \asymp C\log L,
-$$
+```math
+Var(W_L) ~ C log(L)
+```
 
 to the conjectured super-rough regime,
 
-$$
-\operatorname{Var}(W_L) \asymp C(\log L)^2.
-$$
+```math
+Var(W_L) ~ C (log(L))^2
+```
 
 [Results](#results) · [Visual evidence](#visual-evidence) ·
 [Run locally](#run-locally) · [Method](#the-model-in-30-seconds) ·

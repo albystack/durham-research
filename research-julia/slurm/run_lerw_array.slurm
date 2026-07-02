@@ -6,8 +6,7 @@
 #SBATCH --array=0-3
 #SBATCH --output=logs/lerw_%A_%a.out
 #SBATCH --error=logs/lerw_%A_%a.err
-##SBATCH --partition=CHANGE_ME
-##SBATCH --account=CHANGE_ME
+## Add site-specific --partition and --account directives when required.
 
 set -euo pipefail
 

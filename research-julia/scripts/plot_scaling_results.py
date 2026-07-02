@@ -259,7 +259,7 @@ def main():
     for name, fig in figures.items():
         save_figure(fig, args.output_dir / name)
 
-    with PdfPages(args.output_dir / "professor_scaling_overview.pdf") as pdf:
+    with PdfPages(args.output_dir / "research_scaling_overview.pdf") as pdf:
         for fig in figures.values():
             pdf.savefig(fig, bbox_inches="tight", facecolor="white")
 

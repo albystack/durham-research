@@ -1,88 +1,54 @@
-# Random Dimer Height Proxy Experiments
+# Archived Python prototype
 
-This project simulates loop-erased random walks in fixed random edge-weight
-environments.  The winding of the loop-erased path from the origin to the
-boundary of `[-L,L]^2` is used as a tree-side proxy for the dimer height
-fluctuation suggested by Temperley's bijection.
+This directory preserves the original Python implementation used during early
+model development and for the `L=32` through `L=1024` simulations included in
+the aggregate report.
 
-The numerical question is whether the variance grows more like
-`C log L` or like the conjectural super-rough law `C (log L)^2`.
+The maintained implementation is the Julia package in
+[`../research-julia/`](../research-julia/). New experiments should use that
+package because it provides bounded memory, multithreading, restart-safe batch
+execution, and the current statistical pipeline.
 
-## Setup
+## Historical scope
 
-Create a local virtual environment and install the plotting stack:
+The Python code contains:
+
+- an undirected edge-weight prototype;
+- the four-direction site-IID environment used by the historical batch runner;
+- a directional drift model retained only for result reproducibility;
+- command-line simulation, batch, and analysis utilities;
+- unit tests for configuration, seeding, environments, and output validation.
+
+These models are separate and should not be mixed without checking the
+`environment_model` field in each result row.
+
+## Reproduce the Python tests
+
+Python 3.10 or newer is required.
 
 ```bash
+cd research-python
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m unittest discover -s tests -v
 ```
 
-## Run
-
-List presets and models:
+## Historical smoke run
 
 ```bash
-.venv/bin/python main.py list
+.venv/bin/python generate_hpc_config.py \
+  --output configs/hpc_test.csv \
+  --sizes 64 128 \
+  --distributions baseline gamma:1.0 \
+  --batches 1 \
+  --num-environments 2 \
+  --walks-per-environment 3
+
+.venv/bin/python run_hpc_batch.py \
+  --task-id 0 \
+  --config configs/hpc_test.csv \
+  --output-dir results_hpc_smoke
 ```
 
-Run a tiny check:
-
-```bash
-.venv/bin/python main.py smoke
-```
-
-Run a pilot or the main probe:
-
-```bash
-.venv/bin/python main.py run pilot --workers 4
-.venv/bin/python main.py run super_rough_probe --workers 8
-```
-
-Run the long 512/1024-only continuation:
-
-```bash
-.venv/bin/python main.py run super_rough_large --workers 8
-```
-
-Override sizes, samples, or models:
-
-```bash
-.venv/bin/python main.py run pilot --sizes 16 32 64 --samples 100 \
-  --models symmetric gamma_edges:1.0 lognormal_edges:0.7
-```
-
-## Files
-
-```text
-config.py       models, distributions, and experiment presets
-simulation.py   random edge environment, random walk, loop erasure, winding
-analysis.py     summaries, scaling fits, bootstrap intervals, plots
-main.py         command-line runner
-```
-
-Each run writes to `results/<run_name>/`:
-
-```text
-raw_trials.csv
-summary.csv                         includes variance standard errors
-fits.csv                            includes bootstrap slope intervals
-run_report.md
-variance_scaling_all_models.png     includes error bars
-variance_fit_*.png                  includes error bars and fitted curves
-```
-
-## Models
-
-All random models assign a positive quenched weight to every undirected
-nearest-neighbour edge used by the walk.  The old two-random-edge setup with
-fixed north/east weights has been removed.
-
-Available random families include Gamma, Exponential, Lognormal, Pareto,
-Uniform, Beta, Weibull, inverse-Gamma, Bernoulli two-point, and triangular
-weights.  See `config.py` to edit or add models.
-
-## Notes
-
-The output fits are finite-size diagnostics.  A model looking closer to
-`C (log L)^2` in `fits.csv` is evidence to investigate further, not a proof of
-the conjecture.
+Generated outputs are intentionally excluded from version control. Compact
+cross-language aggregate tables are published under [`../reports/`](../reports/).

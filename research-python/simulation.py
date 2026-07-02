@@ -91,8 +91,8 @@ class RandomEdgeEnvironment:
 class SiteDirectionalEnvironment:
     """Lazy fixed site environment with directional weights N=E=1, S=u, W=v.
 
-    This is the older drift-prone model from the June 8 email.  It is kept for
-    reproducibility, but the HPC runner defaults to `SiteIIDEnvironment`.
+    This historical drift-prone model is retained for reproducibility, but the
+    batch runner defaults to `SiteIIDEnvironment`.
 
     The value at each site is generated from a seed that depends only on the
     environment seed, model, parameter, and lattice coordinate.  This matters

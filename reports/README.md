@@ -21,7 +21,7 @@ replicates with annealed seed `20260702` and quenched seed `20268621`.
   `a + b(log L)^2` comparisons using SSE, R-squared, AIC, and BIC.
 - `local_effective_exponents.csv`: adjacent-size effective powers.
 - `pointwise_ratios.csv`: pointwise log-variance diagnostics.
-- `figures/professor_scaling_overview.pdf`: four-page overview of the scaling
+- `figures/research_scaling_overview.pdf`: four-page overview of the scaling
   curves, exponent intervals, and BIC comparisons.
 - `figures/all_distributions_detailed.pdf`: one detailed page per distribution.
 
