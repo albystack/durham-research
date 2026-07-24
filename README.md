@@ -82,12 +82,6 @@ $a+b(\log L)^2$.
   <img src="reports/figures/annealed_scaling_all_distributions.png" alt="Annealed winding variance for all distributions" width="100%">
 </p>
 
-### All distributions: quenched variance
-
-<p align="center">
-  <img src="reports/figures/quenched_scaling_all_distributions.png" alt="Quenched winding variance for all distributions" width="100%">
-</p>
-
 ### Exponent estimates
 
 The green reference line is $p=1$; the red dashed line is $p=2$. Confidence
@@ -110,14 +104,15 @@ values favor ordinary logarithmic growth.
 
 | Baseline | Gamma(shape=1) |
 |---|---|
-| ![Baseline scaling](reports/figures/by_distribution/baseline.png) | ![Gamma shape 1 scaling](reports/figures/by_distribution/gamma_shape_1.png) |
+| ![Baseline scaling](reports/figures/by_distribution/baseline.png) | ![Gamma shape 1 scaling](reports/figures/by_distribution/gamma_shape_1_0.png) |
 | Lognormal($\sigma=1$) | Inverse gamma($\alpha=2.2$) |
-| ![Lognormal scaling](reports/figures/by_distribution/lognormal_sigma_1.png) | ![Inverse gamma scaling](reports/figures/by_distribution/inverse_gamma_alpha_2p2.png) |
+| ![Lognormal scaling](reports/figures/by_distribution/lognormal_sigma_1_0.png) | ![Inverse gamma scaling](reports/figures/by_distribution/inverse_gamma_alpha_2_2.png) |
 
 Presentation-ready files:
 
-- [Four-page research overview](reports/figures/research_scaling_overview.pdf)
-- [Detailed 15-page distribution report](reports/figures/all_distributions_detailed.pdf)
+- [All-distribution scaling figure (PDF)](reports/figures/figures/annealed_scaling_all_distributions.pdf)
+- [Scaling-exponent forest plot (PDF)](reports/figures/figures/scaling_exponent_forest.pdf)
+- [BIC model-comparison figure (PDF)](reports/figures/figures/bic_model_comparison.pdf)
 - [All aggregate result tables](reports/)
 
 ## The model in 30 seconds
@@ -232,9 +227,10 @@ python scripts/plot_scaling_results.py \
   --output-dir figures_reproduced
 ```
 
-For the complete workflow, see
-[research-julia/README.md](research-julia/README.md). For Slurm usage,
-see [research-julia/HPC_README.md](research-julia/HPC_README.md).
+For the active Julia workflow, see
+[research-julia/README.md](research-julia/README.md). Historical datasets,
+logs, tests, and legacy code are documented in
+[OLD-RESEARCH/README.md](OLD-RESEARCH/README.md).
 
 ## Configure a new experiment
 
