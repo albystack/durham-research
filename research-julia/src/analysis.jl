@@ -46,6 +46,79 @@ function assert_no_duplicates(raw)
     end
 end
 
+function assert_strict_annealed_rows(raw)
+    all(row -> row.walk_id == "0", raw) ||
+        throw(ErrorException("strict annealed results must have walk_id=0 for every row"))
+    seeds = getproperty.(raw, :environment_seed)
+    length(seeds) == length(unique(seeds)) ||
+        throw(ErrorException("strict annealed results reuse at least one environment seed"))
+    return nothing
+end
+
+function double_dimer_key(row)
+    return (row.distribution, row.distribution_params, row.L, row.task_id,
+            row.batch_id, row.environment_id)
+end
+
+"Validate two conditionally independent walks and collapse each pair to W1-W2."
+function make_double_dimer_pairs(raw)
+    groups = Dict{NTuple{6,String},Vector{Any}}()
+    for row in raw
+        push!(get!(groups, double_dimer_key(row), Any[]), row)
+    end
+
+    environment_seeds = String[]
+    walk_seeds = String[]
+    pairs = NamedTuple[]
+    for (_, rows) in sort!(collect(groups); by=first)
+        length(rows) == 2 || throw(ErrorException(
+            "double-dimer environment must contain exactly two successful walks: " *
+            string(double_dimer_key(first(rows)))))
+        sort!(rows; by=row -> parse(Int, row.walk_id))
+        getproperty.(rows, :walk_id) == ["0", "1"] || throw(ErrorException(
+            "double-dimer walk IDs must be 0 and 1: " * string(double_dimer_key(first(rows)))))
+        rows[1].environment_seed == rows[2].environment_seed || throw(ErrorException(
+            "double-dimer pair does not share one environment seed"))
+        rows[1].walk_seed != rows[2].walk_seed || throw(ErrorException(
+            "double-dimer pair reuses a walk seed"))
+
+        first_row, second_row = rows
+        winding_1 = parse(Int, first_row.winding)
+        winding_2 = parse(Int, second_row.winding)
+        push!(environment_seeds, first_row.environment_seed)
+        append!(walk_seeds, (first_row.walk_seed, second_row.walk_seed))
+        push!(pairs, (
+            distribution=first_row.distribution,
+            distribution_params=first_row.distribution_params,
+            L=first_row.L,
+            task_id=first_row.task_id,
+            batch_id=first_row.batch_id,
+            environment_id=first_row.environment_id,
+            environment_seed=first_row.environment_seed,
+            walk_seed_1=first_row.walk_seed,
+            walk_seed_2=second_row.walk_seed,
+            winding_1=winding_1,
+            winding_2=winding_2,
+            winding_difference=winding_1 - winding_2,
+            # The generic fitting/bootstrap code treats this as its observable.
+            winding=string(winding_1 - winding_2),
+            loop_erased_path_length_1=parse(Int, first_row.loop_erased_path_length),
+            loop_erased_path_length_2=parse(Int, second_row.loop_erased_path_length),
+            raw_walk_length_1=parse(Int, first_row.raw_walk_length),
+            raw_walk_length_2=parse(Int, second_row.raw_walk_length),
+            exit_x_1=parse(Int, first_row.exit_x), exit_y_1=parse(Int, first_row.exit_y),
+            exit_x_2=parse(Int, second_row.exit_x), exit_y_2=parse(Int, second_row.exit_y),
+            runtime_1=parse(Float64, first_row.runtime),
+            runtime_2=parse(Float64, second_row.runtime),
+        ))
+    end
+    length(environment_seeds) == length(unique(environment_seeds)) ||
+        throw(ErrorException("double-dimer results reuse an environment across pairs"))
+    length(walk_seeds) == length(unique(walk_seeds)) ||
+        throw(ErrorException("double-dimer results reuse at least one walk seed"))
+    return pairs
+end
+
 function group_observations(raw)
     groups = Dict{Tuple{String,String,Int},Vector{Any}}()
     for row in raw
@@ -68,6 +141,21 @@ function cluster_variance_se(by_environment)::Float64
     items = collect(values(by_environment))
     count = length(items)
     count >= 2 || return NaN
+    if all(values -> length(values) == 1, items)
+        count >= 3 || return NaN
+        observations = first.(items)
+        total = sum(observations)
+        total_squares = sum(abs2, observations)
+        remaining = count - 1
+        estimates = [
+            ((total_squares - value^2) - (total - value)^2 / remaining) /
+            (remaining - 1)
+            for value in observations
+        ]
+        centre = mean(estimates)
+        return sqrt((count - 1) / count *
+                    sum((estimate - centre)^2 for estimate in estimates))
+    end
     estimates = Float64[]
     for omitted in eachindex(items)
         values = Float64[]
@@ -105,6 +193,56 @@ function make_summary(raw)
             annealed_variance_se=cluster_variance_se(by_environment),
             quenched_variance=quenched, quenched_variance_se=quenched_se,
             environment_mean_variance=sample_variance(env_means),
+            mean_exit_x_over_L=mean(exit_x), mean_exit_y_over_L=mean(exit_y),
+            mean_raw_walk_length=mean(raw_lengths),
+            mean_loop_erased_path_length=mean(path_lengths), mean_runtime=mean(runtimes),
+        ))
+    end
+    return summary
+end
+
+function make_double_dimer_summary(pairs)
+    summary = NamedTuple[]
+    for ((distribution, params, L), rows) in sort!(collect(group_observations(pairs)); by=first)
+        winding_1 = Float64.(getproperty.(rows, :winding_1))
+        winding_2 = Float64.(getproperty.(rows, :winding_2))
+        differences = Float64.(getproperty.(rows, :winding_difference))
+        variance_1 = sample_variance(winding_1)
+        variance_2 = sample_variance(winding_2)
+        covariance = length(rows) >= 2 ? cov(winding_1, winding_2; corrected=true) : NaN
+        difference_variance = sample_variance(differences)
+        by_environment = group_environments(rows)
+        pooled = vcat(winding_1, winding_2)
+        identity_rhs = variance_1 + variance_2 - 2covariance
+        exit_x = vcat(Float64.(getproperty.(rows, :exit_x_1)),
+                      Float64.(getproperty.(rows, :exit_x_2))) ./ L
+        exit_y = vcat(Float64.(getproperty.(rows, :exit_y_1)),
+                      Float64.(getproperty.(rows, :exit_y_2))) ./ L
+        raw_lengths = vcat(Float64.(getproperty.(rows, :raw_walk_length_1)),
+                           Float64.(getproperty.(rows, :raw_walk_length_2)))
+        path_lengths = vcat(Float64.(getproperty.(rows, :loop_erased_path_length_1)),
+                            Float64.(getproperty.(rows, :loop_erased_path_length_2)))
+        runtimes = vcat(Float64.(getproperty.(rows, :runtime_1)),
+                        Float64.(getproperty.(rows, :runtime_2)))
+        push!(summary, (
+            distribution=distribution, distribution_params=params, L=L,
+            log_L=log(L), log_log_L=log(log(L)), pairs=length(rows),
+            observations=length(rows), walks=2length(rows), environments=length(rows),
+            walks_per_environment_min=2, walks_per_environment_max=2,
+            mean_winding_1=mean(winding_1), mean_winding_2=mean(winding_2),
+            mean_winding_difference=mean(differences),
+            variance_winding_1=variance_1, variance_winding_2=variance_2,
+            covariance_winding_1_winding_2=covariance,
+            correlation_winding_1_winding_2=cor(winding_1, winding_2),
+            pooled_single_winding_variance=sample_variance(pooled),
+            double_dimer_variance=difference_variance,
+            double_dimer_variance_se=cluster_variance_se(by_environment),
+            variance_ratio_to_twice_pooled=difference_variance / (2sample_variance(pooled)),
+            variance_identity_rhs=identity_rhs,
+            variance_identity_residual=difference_variance - identity_rhs,
+            # Compatibility aliases used by the common scaling analysis.
+            mean_winding=mean(differences), annealed_variance=difference_variance,
+            annealed_variance_se=cluster_variance_se(by_environment),
             mean_exit_x_over_L=mean(exit_x), mean_exit_y_over_L=mean(exit_y),
             mean_raw_walk_length=mean(raw_lengths),
             mean_loop_erased_path_length=mean(path_lengths), mean_runtime=mean(runtimes),
@@ -166,8 +304,12 @@ end
 
 "Compare additive `a+b log L` and `a+b(log L)^2` finite-size models."
 function fit_scaling_models(summary)
+    return fit_scaling_models(summary, (:annealed, :quenched))
+end
+
+function fit_scaling_models(summary, variance_kinds)
     rows_out = NamedTuple[]
-    for variance_kind in (:annealed, :quenched)
+    for variance_kind in variance_kinds
         column = variance_kind === :annealed ? :annealed_variance : :quenched_variance
         for ((distribution, params), rows) in sort!(collect(grouped_summary(summary)); by=first)
             ordered = sort(rows; by=row -> row.L)
@@ -230,8 +372,12 @@ function bootstrap_intervals!(fits, raw, summary, variance_kind::Symbol, reps::I
 end
 
 function pointwise_rows(summary)
+    return pointwise_rows(summary, (:annealed, :quenched))
+end
+
+function pointwise_rows(summary, variance_kinds)
     output = NamedTuple[]
-    for row in summary, kind in (:annealed, :quenched)
+    for row in summary, kind in variance_kinds
         value = kind === :annealed ? row.annealed_variance : row.quenched_variance
         push!(output, (
             distribution=row.distribution, distribution_params=row.distribution_params,
@@ -244,8 +390,12 @@ function pointwise_rows(summary)
 end
 
 function local_exponent_rows(summary)
+    return local_exponent_rows(summary, (:annealed, :quenched))
+end
+
+function local_exponent_rows(summary, variance_kinds)
     output = NamedTuple[]
-    for kind in (:annealed, :quenched)
+    for kind in variance_kinds
         column = kind === :annealed ? :annealed_variance : :quenched_variance
         for ((distribution, params), rows) in sort!(collect(grouped_summary(summary)); by=first)
             ordered = sort(rows; by=row -> row.L)
@@ -290,40 +440,63 @@ end
 function analyze_results(config::AbstractString, results_dir::AbstractString,
                          output_dir::AbstractString; fit_min_L=nothing,
                          bootstrap_reps::Int=0, bootstrap_seed::Integer=20260623,
-                         allow_incomplete::Bool=false)
+                         allow_incomplete::Bool=false, strict_annealed::Bool=false,
+                         double_dimer::Bool=false)
     tasks = read_config(config)
+    strict_annealed && double_dimer && throw(ArgumentError(
+        "--strict-annealed and --double-dimer are mutually exclusive"))
+    strict_annealed && require_strict_annealed(tasks)
+    double_dimer && require_double_dimer(tasks)
     raw, validation = validate_and_collect(tasks, results_dir; allow_incomplete)
     assert_no_duplicates(raw)
-    summary = make_summary(raw)
+    strict_annealed && assert_strict_annealed_rows(raw)
+    pairs = double_dimer ? make_double_dimer_pairs(raw) : NamedTuple[]
+    analysis_rows = double_dimer ? pairs : raw
+    summary = double_dimer ? make_double_dimer_summary(pairs) : make_summary(raw)
     annealed = fit_exponents(summary, :annealed; min_L=fit_min_L)
-    quenched = fit_exponents(summary, :quenched; min_L=fit_min_L)
-    bootstrap_intervals!(annealed, raw, summary, :annealed, bootstrap_reps, UInt64(bootstrap_seed))
-    bootstrap_intervals!(quenched, raw, summary, :quenched, bootstrap_reps,
-                         UInt64(bootstrap_seed + 7919))
-    fits = vcat(annealed, quenched)
+    bootstrap_intervals!(annealed, analysis_rows, summary, :annealed,
+                         bootstrap_reps, UInt64(bootstrap_seed))
+    variance_kinds = (strict_annealed || double_dimer) ? (:annealed,) : (:annealed, :quenched)
+    fits = if strict_annealed || double_dimer
+        annealed
+    else
+        quenched = fit_exponents(summary, :quenched; min_L=fit_min_L)
+        bootstrap_intervals!(quenched, raw, summary, :quenched, bootstrap_reps,
+                             UInt64(bootstrap_seed + 7919))
+        vcat(annealed, quenched)
+    end
 
     write_table(joinpath(output_dir, "validation.csv"), validation)
     write_table(joinpath(output_dir, "combined_raw.csv"), raw)
+    double_dimer && write_table(joinpath(output_dir, "double_dimer_pairs.csv"), pairs)
     write_table(joinpath(output_dir, "summary.csv"), summary)
     write_table(joinpath(output_dir, "loglog_fits.csv"), fits)
-    write_table(joinpath(output_dir, "scaling_model_comparison.csv"), fit_scaling_models(summary))
-    write_table(joinpath(output_dir, "pointwise_ratios.csv"), pointwise_rows(summary))
-    write_table(joinpath(output_dir, "local_effective_exponents.csv"), local_exponent_rows(summary))
-    return (; observations=length(raw), tasks=length(tasks), summary_rows=length(summary), fits=length(fits))
+    write_table(joinpath(output_dir, "scaling_model_comparison.csv"),
+                fit_scaling_models(summary, variance_kinds))
+    write_table(joinpath(output_dir, "pointwise_ratios.csv"),
+                pointwise_rows(summary, variance_kinds))
+    write_table(joinpath(output_dir, "local_effective_exponents.csv"),
+                local_exponent_rows(summary, variance_kinds))
+    return (; observations=length(analysis_rows), raw_walks=length(raw), tasks=length(tasks),
+            summary_rows=length(summary), fits=length(fits))
 end
 
 function main_analyze(args=ARGS)::Int
     options = parse_cli(args)
     config = require_option(options, "config")
-    results_dir = get(options, "results-dir", "results_hpc")
-    output_dir = get(options, "output-dir", "analysis_hpc")
+    results_dir = get(options, "results-dir", "results")
+    output_dir = get(options, "output-dir", "analysis")
     fit_min_L = haskey(options, "fit-min-L") ? parse(Int, options["fit-min-L"]) : nothing
     report = analyze_results(config, results_dir, output_dir;
         fit_min_L=fit_min_L,
         bootstrap_reps=parse(Int, get(options, "bootstrap-reps", "0")),
         bootstrap_seed=parse(Int, get(options, "bootstrap-seed", "20260623")),
-        allow_incomplete=haskey(options, "allow-incomplete"))
-    println("Analysed $(report.observations) observations from $(report.tasks) tasks")
+        allow_incomplete=haskey(options, "allow-incomplete"),
+        strict_annealed=haskey(options, "strict-annealed"),
+        double_dimer=haskey(options, "double-dimer"))
+    unit = haskey(options, "double-dimer") ? "pairs" : "observations"
+    println("Analysed $(report.observations) $unit ($(report.raw_walks) raw walks) " *
+            "from $(report.tasks) tasks")
     println("Summary rows: $(report.summary_rows); fit rows: $(report.fits)")
     println("Output: $output_dir")
     return 0

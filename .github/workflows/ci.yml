@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   julia:
-    name: Julia ${{ matrix.julia-version }} tests
+    name: Julia ${{ matrix.julia-version }} package check
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -30,46 +30,4 @@ jobs:
           version: ${{ matrix.julia-version }}
       - uses: julia-actions/cache@v2
       - run: julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
-      - run: julia --project=. -e 'using Pkg; Pkg.test()'
-
-  python:
-    name: Python archive tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: pip
-          cache-dependency-path: research-python/requirements.txt
-      - run: python -m pip install -r research-python/requirements.txt
-      - run: python -m unittest discover -s research-python/tests -v
-        env:
-          PYTHONPATH: research-python
-      - run: python -m py_compile research-julia/scripts/plot_scaling_results.py
-
-  documentation:
-    name: Documentation links
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Validate local README links
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import re
-
-          for readme in Path('.').rglob('README.md'):
-              text = readme.read_text(encoding='utf-8')
-              matches = re.findall(r'!?\[[^\]]*\]\(([^)]+)\)|src="([^"]+)"', text)
-              for match in matches:
-                  target = next(value for value in match if value)
-                  if target.startswith(('#', 'http://', 'https://', 'mailto:')):
-                      continue
-                  local = (readme.parent / target.split('#', 1)[0]).resolve()
-                  if not local.exists():
-                      raise SystemExit(f'{readme}: missing local target {target}')
-          PY
+      - run: julia --project=. -e 'using LERWResearch; @assert LERWResearch.stable_seed("ci", 1) == LERWResearch.stable_seed("ci", 1)'

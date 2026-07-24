@@ -2,7 +2,6 @@
 
 **A reproducible Julia study of winding fluctuations in quenched random environments.**
 
-[![CI](https://github.com/albystack/lerw-random-environment-research/actions/workflows/ci.yml/badge.svg)](https://github.com/albystack/lerw-random-environment-research/actions/workflows/ci.yml)
 
 This project combines probability, Monte Carlo simulation, statistical model
 comparison, performance engineering, and HPC workflows. The central question is
@@ -10,13 +9,13 @@ whether local random disorder changes the winding variance of loop-erased random
 walks (LERW) from ordinary logarithmic roughness,
 
 ```math
-Var(W_L) ~ C log(L)
+\mathrm{Var}(W_L) \sim C\log L
 ```
 
 to the conjectured super-rough regime,
 
 ```math
-Var(W_L) ~ C (log(L))^2
+\mathrm{Var}(W_L) \sim C(\log L)^2
 ```
 
 [Results](#results) · [Visual evidence](#visual-evidence) ·
@@ -45,9 +44,10 @@ Gamma(shape=1) experiments extend to $L=8192$.
 
 The exponent is estimated from
 
-$$
-\log \operatorname{Var}(W_L) = \log C + p\log\log L.
-$$
+```math
+\log\!\left(\mathrm{Var}(W_L)\right)
+= \log C + p\log\log L
+```
 
 Thus $p=1$ corresponds to $C\log L$, while $p=2$ corresponds to
 $C(\log L)^2$.

@@ -1,9 +1,8 @@
-# Python cache and local runtime artifacts
+# Legacy Python cache and local runtime artifacts
 __pycache__/
 *.py[cod]
 *$py.class
 .venv/
-.plot-venv/
 
 # Julia local runtime artifacts
 .julia/
@@ -35,10 +34,19 @@ build/
 results/
 results_hpc*/
 results_julia*/
+results_strict_annealed/
 logs/
 analysis_*/
 figures_*/
 output/
 
-# Local archives of raw Python/HPC outputs
-research-python/*_backup/
+# Legacy output must not be reintroduced.
+old-python/results*/
+old-python/analysis*/
+old-python/*_backup/
+
+# Local archive created during the 24 July 2026 code-only cleanup.
+# Keep its index visible while preventing hundreds of megabytes of historical
+# data, reports, and generated artifacts from being staged accidentally.
+OLD-RESEARCH/*
+!OLD-RESEARCH/README.md

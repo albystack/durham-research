@@ -1,0 +1,1200 @@
+RESEARCH PROJECT HANDOFF FOR CLAUDE
+===================================
+
+Prepared from the actual workspace on 24 July 2026.
+Workspace root: /Users/alberto/Desktop/research
+Repository: https://github.com/albystack/lerw-random-environment-research
+Author: Alberto Rescigno
+Supervisor named in the technical report: Professor Sunil Chhita
+Institution named in the technical report: Durham University
+
+Workspace organization note: on 24 July 2026, all tests, generated results,
+analyses, reports, figures, logs, technical documents, temporary report tools,
+and legacy Python code were moved into OLD-RESEARCH/. The active
+research-julia/ directory now contains only Julia source, executable scripts,
+frozen configurations, dependency declarations, and its code README.
+
+
+0. HOW GPT SHOULD USE THIS FILE
+----------------------------------
+
+This is the orientation and continuity document for the whole project. Read it
+before changing code, rerunning analyses, interpreting results, or drafting a
+paper/email.
+
+Important operating rules:
+
+1. The current working tree is intentionally very dirty and contains substantial
+   work newer than the last Git commit. Do not run git reset, checkout files from
+   HEAD, clean untracked files, delete generated data, or otherwise discard local
+   changes. Treat every existing modification, deletion, and untracked file as
+   user-owned work.
+2. The active implementation is Julia in research-julia/. OLD-RESEARCH/legacy-code/old-python/ is an
+   archived first implementation and must not be reintroduced into the active
+   workflow unless Alberto explicitly asks for it.
+3. The current Julia source and the two archived production analysis
+   directories are the most authoritative sources. The 40-page technical PDF
+   is excellent for the strict-annealed design, but it predates the completed
+   double-dimer campaign.
+4. Do not rerun either 379,000-environment production campaign merely to inspect
+   or reproduce aggregate results. The raw batch outputs and validated combined
+   data already exist. A full double-dimer run took about 51,731 seconds
+   (14.4 hours) on the machine recorded in the log.
+5. Preserve the scientific interpretive boundary: these are finite-size Monte
+   Carlo results. They show no robust squared-log regime over the simulated
+   range; they do not mathematically disprove an asymptotic conjecture.
+6. Before connecting the results to a particular dimer/LERW conjecture, verify
+   that the conjecture concerns the exact directed site-i.i.d. model implemented
+   here. The simulator does not implement shared undirected edge conductances.
+7. “Double dimer” in this repository means a paired winding-difference
+   observable from two independent LERWs in one shared environment. The code
+   does not explicitly construct two dimer configurations or a dimer height
+   field. Any claimed mapping to a physical double-dimer observable must be
+   derived or cited separately.
+
+
+1. EXECUTIVE SUMMARY
+--------------------
+
+Scientific question
+~~~~~~~~~~~~~~~~~~~
+
+The project studies loop-erased random walks (LERWs) in random environments.
+Its primary question is whether random site disorder changes winding-variance
+growth from ordinary logarithmic roughness,
+
+    Var(W_L) approximately C log L,
+
+to a super-rough regime,
+
+    Var(W_L) approximately C (log L)^2.
+
+It estimates an effective exponent p using
+
+    Var(W_L) = C (log L)^p,
+    log Var(W_L) = log C + p log log L.
+
+Thus p=1 corresponds to ordinary logarithmic growth and p=2 to squared-log
+growth. It also directly compares the additive finite-size models
+
+    a + b log L
+    a + b (log L)^2.
+
+Two completed production experiments
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A. Strict-annealed single-walk experiment
+
+    - 3,790 completed atomic tasks.
+    - 379,000 LERWs.
+    - 379,000 independently seeded environments.
+    - Exactly one walk in every environment.
+    - 15 weight specifications.
+    - L=16,32,64,128,256,512,1024,2048,4096 for every specification.
+    - Baseline and Gamma(shape=1) also have L=8192.
+    - Zero failed rows and no reused environment seed.
+    - Effective p values: 1.011 to 1.160.
+    - All 95% bootstrap intervals are far below p=2.
+    - Ordinary log has lower BIC in 14/15 cases.
+    - Pareto(alpha=2) is an effective BIC tie, Delta BIC=-0.24.
+
+B. Paired “double-dimer” winding-difference experiment
+
+    - 3,790 completed atomic tasks.
+    - 379,000 independently seeded environments.
+    - Exactly two conditionally independent LERWs in each shared environment.
+    - 758,000 raw walks.
+    - 379,000 paired observables Delta W = W_1 - W_2.
+    - Same 15 specifications and size/replication design as experiment A.
+    - Zero failed rows and no incomplete tasks.
+    - Effective p values: 1.036 to 1.187 for Var(W_1-W_2).
+    - All 95% pair-bootstrap intervals are far below p=2.
+    - Ordinary log has lower BIC in 12/15 cases.
+    - Squared-log additive fits have lower BIC for Pareto(alpha=3) and
+      Lognormal(sigma=1); Lognormal(sigma=0.5) is effectively tied.
+    - Those three effective p estimates are still only 1.187, 1.166, and 1.070,
+      so the local BIC preferences are finite-size curvature, not robust p=2
+      evidence.
+
+Overall conclusion
+~~~~~~~~~~~~~~~~~~
+
+Both observables give the same broad answer: over the simulated sizes there is
+no robust (log L)^2 winding-variance regime. Effective exponents stay close to
+one and every bootstrap interval remains far below two. Some intervals exclude
+p=1 modestly on the high side, so “finite-size effective exponent” is the right
+language; the data are not proof of exactly p=1 asymptotics either.
+
+
+2. EXACT MATHEMATICAL MODEL
+---------------------------
+
+Domain and stopping rule
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+For integer L>=1, the walk starts at (0,0) inside
+
+    D_L = {(x,y) in Z^2 : |x|<L and |y|<L}
+
+and stops on the first hit of
+
+    boundary D_L = {(x,y) in Z^2 : |x|=L or |y|=L}.
+
+The walk is nearest-neighbour and therefore hits this boundary exactly.
+
+Random environment
+~~~~~~~~~~~~~~~~~~
+
+At each site x, the environment has four positive outgoing directional
+weights:
+
+    (w_x,N, w_x,E, w_x,S, w_x,W).
+
+The four weights at a site are independent draws from the selected weight
+family, and sites are independent in the deterministic pseudorandom
+construction. Conditional on the environment,
+
+    P(X_(n+1)=x+e_d | X_n=x, environment)
+      = w_x,d / sum_{d' in {N,E,S,W}} w_x,d'.
+
+Critical distinction: generally w_x,E is not equal to w_(x+E),W. This is a
+directed, generally nonreversible site environment, not an undirected
+random-conductance model. Historical parser aliases ending in “_edges” still
+map to this site-i.i.d. generator; they do not create shared edge weights.
+
+Loop erasure
+~~~~~~~~~~~~
+
+Chronological loop erasure is maintained online. The simulator stores a
+self-avoiding path plus a map from retained sites to path indices. A new site is
+appended. If a retained site is revisited, all path sites after its prior index
+are deleted and the path is truncated. The full raw random-walk trajectory is
+not stored.
+
+Winding convention
+~~~~~~~~~~~~~~~~~~
+
+LERW edge directions are encoded E=0, N=1, W=2, S=3 modulo 4. For each pair of
+consecutive path edges:
+
+    left quarter-turn  -> +1
+    right quarter-turn -> -1
+    straight           ->  0
+
+An immediate U-turn is rejected as inconsistent with a self-avoiding
+nearest-neighbour path. W_L is the number of left quarter-turns minus right
+quarter-turns. It is not stored in radians. Angular winding is
+
+    Theta_L = (pi/2) W_L,
+    Var(Theta_L) = (pi^2/4) Var(W_L).
+
+That conversion changes amplitudes but not exponent p.
+
+Sampling meanings
+~~~~~~~~~~~~~~~~~
+
+Annealed variance pools environment and walk randomness:
+
+    V_A(L) = Var_(environment,walk)(W_L).
+
+With repeated walks in an environment, the general code can also estimate
+
+    V_Q(L) = E_environment[Var_walk(W_L | environment)].
+
+The strict production experiment has one walk per environment, so quenched
+variance is not identifiable and is deliberately excluded from strict fits.
+
+The paired experiment samples one environment and then two independent walk RNG
+streams within it. Its observable is
+
+    Delta W = W_1 - W_2.
+
+The important variance identity is
+
+    Var(W_1-W_2)
+      = Var(W_1) + Var(W_2) - 2 Cov(W_1,W_2).
+
+Production data satisfy this identity numerically with maximum absolute
+residual about 1.51e-14.
+
+
+3. WEIGHT DISTRIBUTIONS
+-----------------------
+
+Every non-baseline site gets four independent draws, one per outgoing
+direction. The implemented production families are normalized to mean one
+where a mean exists:
+
+    baseline
+        w = 1 deterministically.
+
+    exponential
+        w ~ Exponential(mean=1).
+
+    gamma, shape k>0
+        w ~ Gamma(shape=k, scale=1/k).
+        Production k: 0.5, 1.0, 2.0.
+
+    lognormal, sigma>0
+        log w ~ Normal(-sigma^2/2, sigma^2).
+        Production sigma: 0.5, 1.0.
+
+    pareto, alpha>1
+        shape alpha, scale (alpha-1)/alpha.
+        Production alpha: 2.0, 3.0.
+
+    uniform, 0<a<1
+        w ~ Uniform(1-a, 1+a).
+        Production a: 0.7.
+
+    beta, a>0
+        w = 2B where B ~ Beta(a,a).
+        Production a: 0.5.
+
+    weibull, shape k>0
+        scale = 1/Gamma(1+1/k).
+        Production k: 0.7.
+
+    inverse_gamma, alpha>1
+        shape alpha, scale alpha-1.
+        Production alpha: 2.2.
+
+    bernoulli, 0<a<1
+        w is 1-a or 1+a with probability 1/2 each.
+        Production a: 0.8.
+
+    triangular, 0<a<1
+        symmetric triangular distribution on [1-a,1+a], mode 1.
+        Production a: 0.8.
+
+Accepted aliases include baseline/symmetric, exponential/exp/exp_edges, and
+parameterized names ending in “_edges”. Again, “_edges” does not change the
+underlying site-directed model.
+
+
+4. CAMPAIGN DESIGNS
+-------------------
+
+The two frozen production configurations both have 3,790 rows/tasks and use
+100 environments per atomic task.
+
+Strict config:
+
+    research-julia/configs/strict_annealed_reproduction.csv
+    walks_per_environment = 1
+    generator base seed = 20260713
+    SHA-256:
+    8a8deba4422603bc4315d193bb914db2a8a92dc2f86870379f810e30508d76d0
+
+Double config:
+
+    research-julia/configs/double_dimer_reproduction.csv
+    walks_per_environment = 2
+    generator base seed = 20260718
+    SHA-256:
+    ed8d79e9cd52a785200d3df188d16d0fc353ef85200555c7ff1a7b194a93a0b0
+
+Per-specification environment counts
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+“Middle” means EACH of L=32,64,128,256,512,1024.
+
+Specification          L=16   each middle   L=2048   L=4096   L=8192   total
+---------------------  -----   -----------   ------   ------   ------   -----
+Baseline                5000       5000         500      500      500   36500
+Gamma(0.5)              5000       5000         500      500        0   36000
+Gamma(1.0)              5000       2000         500      500      500   18500
+Gamma(2.0)              5000       2000         500      500        0   18000
+Exponential             5000       2000         500      500        0   18000
+Lognormal(0.5)          5000       2000         500      500        0   18000
+Lognormal(1.0)          5000       5000         500      500        0   36000
+Pareto(2.0)             5000       5000         500      500        0   36000
+Pareto(3.0)             5000       2000         500      500        0   18000
+Uniform(0.7)            5000       5000         500      500        0   36000
+Beta(0.5)               5000       2000         500      500        0   18000
+Weibull(0.7)            5000       5000         500      500        0   36000
+Inverse gamma(2.2)      5000       2000         500      500        0   18000
+Bernoulli(0.8)          5000       2000         500      500        0   18000
+Triangular(0.8)         5000       2000         500      500        0   18000
+
+Total environments: 379,000.
+Strict observations/raw walks: 379,000.
+Double paired observations: 379,000.
+Double raw walks: 758,000.
+
+Pilot config and its status
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    research-julia/configs/double_dimer_pilot.csv
+
+The checked-in pilot has 137 tasks, 50 environments/pairs per task, 6,850
+pairs, and 13,700 raw walks if fully run. This differs from the generator
+function's default and README prose, which say 100 environments per size.
+Only 55 pilot batch files currently exist in
+OLD-RESEARCH/datasets/double-dimer-pilot/batch-results-incomplete/, so this checked-in pilot is
+incomplete. It is superseded scientifically by the completed full production
+campaign and should not be mixed into production analysis.
+
+
+5. REPOSITORY MAP
+-----------------
+
+Top level
+~~~~~~~~~
+
+    README.md
+        Current short project overview and entry point for the split between
+        active code and archived research artifacts.
+
+    INFORMATION.txt
+        This handoff.
+
+    OLD-RESEARCH/
+        Organized archive containing tests, data, analyses, reports, figures,
+        logs, technical documentation, legacy code, and temporary tooling.
+        Its README.md is the authoritative archive index.
+
+    CITATION.cff
+        Software citation metadata. Title is “Quenched LERW winding in random
+        environments”, version 0.1.0, author Alberto Rescigno. The title reflects
+        older project language and is not perfectly aligned with the current
+        strict-annealed focus.
+
+    research-julia/
+        Clean active Julia source, scripts, frozen configs, dependencies, and
+        code README. It intentionally contains no tests or generated results.
+
+    OLD-RESEARCH/legacy-code/old-python/
+        Archived first Python implementation. Not active.
+
+    OLD-RESEARCH/reports/strict-annealed/
+        Strict-annealed aggregate tables, figures, short PDF, email draft, and
+        Professor Chhita handoff ZIP.
+
+    OLD-RESEARCH/reports/double-dimer/
+        Double-pair aggregate tables, figures, pair table, and email draft.
+
+Active Julia package
+~~~~~~~~~~~~~~~~~~~~
+
+    research-julia/Project.toml
+        Package name LERWResearch, version 0.1.0, Julia compatibility >=1.10.
+
+    research-julia/Manifest.toml
+        Exact dependency resolution produced with Julia 1.12.6.
+
+    research-julia/src/LERWResearch.jl
+        Package module, includes, and exported public API.
+
+    research-julia/src/config.jl
+        Canonical JSON, stable SHA-derived seeds, distribution parsing,
+        parameter validation, and weight sampling.
+
+    research-julia/src/simulation.jl
+        Packed coordinates, deterministic site environment, bounded direct-map
+        cache, transition selection, online loop erasure, and winding.
+
+    research-julia/src/batch.jl
+        Frozen designs, task/config parsing, source fingerprints, threaded
+        simulation, result schema, atomic writes, resumable campaign runner,
+        and CLI parsing.
+
+    research-julia/src/analysis.jl
+        Task validation, duplicate/seed audits, double-pair creation, summary
+        statistics, jackknife SEs, bootstrap intervals, fits, model comparison,
+        and CSV output.
+
+    research-julia/scripts/run_batch.jl
+        Thin CLI entry point for one task.
+
+    research-julia/scripts/run_campaign.jl
+        Thin CLI entry point for a restart-safe sequence of tasks.
+
+    research-julia/scripts/generate_config.jl
+        Thin CLI entry point for generic or frozen configs.
+
+    research-julia/scripts/analyze_results.jl
+        Thin CLI entry point for validation and analysis.
+
+    research-julia/scripts/plot_results.jl
+        Julia/Plots report generator for PNG, PDF, and copied aggregate tables.
+
+    OLD-RESEARCH/tests/julia/runtests.jl
+        Archived automated test suite. It remains runnable against the active
+        package and passed all 88 assertions before archival.
+
+    OLD-RESEARCH/documentation/julia-technical-report/JULIA_PROJECT_TECHNICAL_REPORT.tex
+    OLD-RESEARCH/documentation/julia-technical-report/JULIA_PROJECT_TECHNICAL_REPORT.pdf
+        40-page strict-campaign technical report with mathematics, architecture,
+        implementation discussion, complete source listings, results, and
+        limitations. Dated 15 July 2026; predates double-production completion.
+
+Data and analysis
+~~~~~~~~~~~~~~~~~
+
+    OLD-RESEARCH/datasets/strict-annealed/batch-results/
+        3,790 atomic strict result CSVs, about 103 MB.
+
+    OLD-RESEARCH/datasets/strict-annealed/analysis/
+        Validated combined strict data and all derived tables, about 95 MB.
+
+    OLD-RESEARCH/datasets/double-dimer/batch-results/
+        3,790 atomic paired-experiment result CSVs, about 197 MB.
+
+    OLD-RESEARCH/datasets/double-dimer/analysis/
+        Validated double raw data, all pair rows, and derived tables, about
+        257 MB.
+
+    OLD-RESEARCH/datasets/double-dimer-pilot/batch-results-incomplete/
+        Incomplete 55-task pilot, about 1.5 MB; do not use as production data.
+
+    OLD-RESEARCH/reports/strict-annealed/
+        About 2.7 MB, excluding any expansion of the included ZIP.
+
+    OLD-RESEARCH/reports/double-dimer/
+        About 69 MB because double_dimer_pairs.csv is copied into it.
+
+Logs
+~~~~
+
+    OLD-RESEARCH/logs/strict-campaign.log
+        Historical strict campaign attempts/resumption. It includes interrupted
+        processes and a temporary-file rename error that were later recovered.
+        The final validation table, not intermediate log errors, establishes
+        production completeness.
+
+    OLD-RESEARCH/logs/strict-final-pipeline.log
+        Strict campaign completion/analysis/plot pipeline output.
+
+    OLD-RESEARCH/logs/double-dimer-campaign.log
+        Full double production run; final line reports all 3,790 tasks and
+        758,000 raw observations complete.
+
+
+6. IMPLEMENTATION AND REPRODUCIBILITY DETAILS
+---------------------------------------------
+
+Coordinates and cache
+~~~~~~~~~~~~~~~~~~~~~
+
+Each Int32 (x,y) coordinate is packed into one UInt64 key. Disordered
+environments use a bounded, power-of-two, direct-mapped cache of four-tuples of
+weights. Cache capacity is approximately L^2/4, clamped from 2^10 to 2^23.
+Baseline uses capacity 1.
+
+Cache collisions/evictions are scientifically harmless because site weights are
+regenerated deterministically from the environment seed, canonical model,
+parameter, and packed coordinate. sampled_site_count in raw output is occupied
+cache slots, not the number of distinct sites ever visited.
+
+Seeds and RNGs
+~~~~~~~~~~~~~~
+
+stable_seed joins its arguments with colons, hashes the string with SHA-256, and
+interprets the first eight digest bytes as a platform-independent UInt64.
+Canonical parameter JSON has sorted keys. Task/environment/walk seeds include
+the base seed and relevant identifiers. Scientific results therefore do not
+depend on thread scheduling.
+
+Site weights use a coordinate-addressed Random.Xoshiro stream seeded through a
+SplitMix64 transform. Walk transition choices use StableRNGs.StableRNG with a
+separate deterministic walk seed.
+
+Source fingerprint
+~~~~~~~~~~~~~~~~~~
+
+Every raw row stores:
+
+    short Git commit + source.<12-hex SHA prefix>
+
+The hash covers all active Julia source files plus Project.toml and
+Manifest.toml. It captures dirty source content even though the Git short hash
+remains the last commit.
+
+Strict rows were produced by:
+
+    2f619b8+source.020484b0bc41
+
+Double rows and the current source state use:
+
+    2f619b8+source.e0a560f34bd4
+
+Both campaigns record Julia 1.12.6 and schema batch_v6_julia.
+
+Threading and task order
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+run_batch uses Threads.@threads across environments. Each environment has its
+own vector, and results are concatenated in environment order. Tasks are run
+sequentially by run_campaign while each task uses the available Julia threads.
+
+Walk cap
+~~~~~~~~
+
+Default maximum raw steps:
+
+    max(100_000, 2_000 * L^2).
+
+A CLI --max-steps override exists. A walk exceeding the cap becomes an explicit
+failed result row.
+
+Restart safety
+~~~~~~~~~~~~~~
+
+A batch is complete only if its CSV:
+
+    - exists,
+    - has exactly num_environments * walks_per_environment rows, and
+    - has status “ok” in every row.
+
+Complete files are skipped. An incomplete existing file stops the campaign
+unless --rerun-failed is supplied. Writes go to a hidden temporary CSV in the
+target directory and are then atomically moved to the final name. --force is
+available for the single-task runner.
+
+Result paths
+~~~~~~~~~~~~
+
+    <output>/site_iid/<safe-distribution>/L_dddd/batch_dddd.csv
+
+Decimal points become “p” in safe distribution directory names, for example:
+
+    gamma_shape_1
+    pareto_alpha_2
+    triangular_a_0p8
+
+Raw per-walk schema
+~~~~~~~~~~~~~~~~~~~
+
+Each row contains:
+
+    schema_version
+    code_version
+    julia_version
+    task_id
+    batch_id
+    distribution
+    distribution_params
+    environment_model
+    model
+    model_parameter
+    L
+    environment_id
+    walk_id
+    environment_seed
+    walk_seed
+    winding
+    loop_erased_path_length
+    raw_walk_length
+    exit_location
+    exit_x
+    exit_y
+    runtime
+    sampled_site_count
+    status
+    error_type
+    error_message
+    started_at_utc
+    finished_at_utc
+
+runtime comes from a monotonic clock. UTC timestamps are metadata only.
+
+
+7. VALIDATION AND STATISTICAL ANALYSIS
+--------------------------------------
+
+Common validation
+~~~~~~~~~~~~~~~~~
+
+For every task in the frozen config, the analyzer records path existence,
+expected rows, observed rows, successful rows, failed rows, and completeness.
+It rejects incomplete campaigns by default. --allow-incomplete exists but must
+not be used for final production claims.
+
+The analyzer rejects duplicate keys:
+
+    (distribution, parameters, L, batch_id, environment_id, walk_id).
+
+Strict-specific validation
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    - walks_per_environment must be 1 in the config.
+    - every raw row must have walk_id=0.
+    - every environment seed must be globally unique.
+
+Current result:
+
+    3,790/3,790 tasks complete
+    379,000/379,000 rows successful
+    0 failed
+    379,000 unique environment seeds
+
+Double-specific validation
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    - walks_per_environment must be 2 in the config.
+    - every environment group must contain exactly two successful rows.
+    - sorted walk IDs must be {0,1}.
+    - both walks must share one environment seed.
+    - the two walk seeds must differ.
+    - environment seeds must be unique across pairs.
+    - walk seeds must be globally unique.
+
+Current result:
+
+    3,790/3,790 tasks complete
+    758,000/758,000 raw walks successful
+    0 failed
+    379,000 validated pairs
+
+Cell summaries
+~~~~~~~~~~~~~~
+
+Rows are grouped by distribution, parameter JSON, and L. Variance uses the
+corrected sample variance. The summary also stores counts, mean winding, exit
+coordinates divided by L, mean raw length, mean LERW length, and mean runtime.
+
+For double data, summary.csv additionally contains W_1 and W_2 means/variances,
+their covariance/correlation, pooled single-winding variance, difference
+variance, variance ratio, and the variance-identity residual.
+
+Variance standard errors
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The annealed/difference variance SE is an environment leave-one-cluster-out
+jackknife. In strict data a cluster has one walk. In double data one pair is the
+analysis observation for one environment.
+
+Power fit
+~~~~~~~~~
+
+For each distribution specification, the code performs unweighted ordinary
+least squares across 9 sizes, or 10 for baseline and Gamma(1):
+
+    x_L = log log L
+    y_L = log estimated variance
+    y_L = intercept + p x_L + error.
+
+The table stores p, its OLS SE and normal interval, R^2, SSE, AIC, and BIC.
+
+Bootstrap interval
+~~~~~~~~~~~~~~~~~~
+
+Production analyses use 1,000 percentile bootstrap replicates. Environments are
+resampled with replacement inside every (distribution,L) cell. All walks in a
+sampled environment remain together. The slope is refit each replicate; the
+2.5% and 97.5% quantiles give the reported interval.
+
+Additive model comparison
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Unweighted OLS compares:
+
+    variance = a + b log L
+    variance = a + b (log L)^2.
+
+With n size points and two fitted parameters:
+
+    AIC = n log(SSE/n) + 4
+    BIC = n log(SSE/n) + 2 log n
+
+The reported difference is:
+
+    Delta BIC = BIC(log^2) - BIC(log).
+
+Positive Delta BIC favors ordinary log. Negative favors squared log. With only
+9 or 10 size-level residuals, values near zero are descriptive ties.
+
+Other diagnostics
+~~~~~~~~~~~~~~~~~
+
+    pointwise_ratios.csv
+        Variance, log variance, log log L, and log variance/log log L.
+
+    local_effective_exponents.csv
+        Adjacent-size slope
+        [log V(L_2)-log V(L_1)]/[log log L_2-log log L_1]
+        at geometric midpoint sqrt(L_1 L_2). These are noisy diagnostics.
+
+
+8. COMPLETE NUMERICAL RESULTS
+-----------------------------
+
+Notation:
+
+    p_s     strict single-walk effective exponent
+    CI_s    strict 95% environment-bootstrap interval
+    dBIC_s  BIC(log^2)-BIC(log) for strict data
+    p_d     paired difference effective exponent
+    CI_d    double 95% pair-bootstrap interval
+    dBIC_d  BIC(log^2)-BIC(log) for double data
+
+Positive dBIC favors ordinary log. Negative dBIC favors squared log.
+
+Specification          p_s     CI_s             dBIC_s    p_d     CI_d             dBIC_d
+---------------------  ------  ---------------  --------  ------  ---------------  --------
+Baseline               1.1442  [1.0701,1.2125]    1.5048  1.0825  [1.0057,1.1560]    4.9064
+Bernoulli(0.8)         1.0619  [0.9815,1.1433]   12.4561  1.0697  [0.9877,1.1456]    8.2020
+Beta(0.5)              1.0520  [0.9687,1.1244]   10.0726  1.1282  [1.0482,1.2026]    4.5492
+Exponential            1.1484  [1.0653,1.2300]   10.0174  1.0996  [1.0079,1.1836]   14.7357
+Gamma(0.5)             1.0985  [1.0244,1.1638]   12.3527  1.0861  [1.0116,1.1611]   13.4821
+Gamma(1.0)             1.1462  [1.0674,1.2161]    0.7351  1.0356  [0.9553,1.1046]    9.3001
+Gamma(2.0)             1.1599  [1.0784,1.2360]    5.5033  1.0897  [1.0049,1.1687]   14.7245
+Inverse gamma(2.2)     1.0303  [0.9489,1.1086]   12.5169  1.0528  [0.9676,1.1326]   15.1978
+Lognormal(0.5)         1.0787  [0.9975,1.1512]    9.1810  1.0699  [0.9754,1.1443]   -0.2600
+Lognormal(1.0)         1.1000  [1.0238,1.1759]   18.0977  1.1660  [1.0827,1.2415]   -6.0208
+Pareto(2.0)            1.0951  [1.0199,1.1639]   -0.2423  1.0840  [1.0035,1.1585]   15.1674
+Pareto(3.0)            1.0110  [0.9271,1.0931]   14.6253  1.1870  [1.1004,1.2598]   -7.2402
+Triangular(0.8)        1.0595  [0.9751,1.1394]    4.8914  1.0801  [0.9932,1.1571]   15.9998
+Uniform(0.7)           1.1098  [1.0297,1.1841]    6.8862  1.0697  [0.9943,1.1371]   23.9795
+Weibull(0.7)           1.0402  [0.9582,1.1130]   24.8251  1.0895  [1.0140,1.1604]   29.2503
+
+Strict extrema:
+
+    p range: 1.0110397894 to 1.1598671092
+    full bootstrap endpoint range: 0.9271386434 to 1.2359545513
+
+Double extrema:
+
+    p range: 1.0355589149 to 1.1870323136
+    full bootstrap endpoint range: 0.9552983604 to 1.2598479166
+
+Double covariance diagnostic:
+
+At L=4096, empirical Corr(W_1,W_2) ranges from -0.082 to 0.172 across the 15
+specifications. Var(W_1-W_2) divided by twice the pooled single-winding
+variance ranges from 0.828 to 1.083. Sharing an environment therefore creates
+modest case-dependent covariance, but no systematic shift toward p=2.
+
+Relative to strict single-walk p, seven double estimates increase and eight
+decrease. Largest increase: Pareto(3), 1.011 to 1.187. Largest decrease:
+Gamma(1), 1.146 to 1.036.
+
+
+9. IMPORTANT DATA FILES AND CHECKSUMS
+------------------------------------
+
+Strict authoritative files
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    OLD-RESEARCH/datasets/strict-annealed/analysis/validation.csv
+        3,790 task rows plus header.
+
+    OLD-RESEARCH/datasets/strict-annealed/analysis/combined_raw.csv
+        379,000 data rows plus header, about 94-95 MB.
+        SHA-256:
+        14ff496dc5bc3849b3006791440a2d278149a4e1e0a63038fff8573fadce425a
+
+    OLD-RESEARCH/datasets/strict-annealed/analysis/summary.csv
+        137 distribution-by-size rows plus header.
+
+    OLD-RESEARCH/datasets/strict-annealed/analysis/loglog_fits.csv
+        15 fit rows plus header.
+
+    OLD-RESEARCH/datasets/strict-annealed/analysis/scaling_model_comparison.csv
+        30 model rows plus header.
+
+Double authoritative files
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    OLD-RESEARCH/datasets/double-dimer/analysis/validation.csv
+        3,790 task rows plus header.
+
+    OLD-RESEARCH/datasets/double-dimer/analysis/combined_raw.csv
+        758,000 raw walk rows plus header, about 198 MB.
+        SHA-256:
+        aee0bdaafe08866b3c23ac1421fca0735217c44eefb50de6f690aada9a0da31b
+
+    OLD-RESEARCH/datasets/double-dimer/analysis/double_dimer_pairs.csv
+        379,000 paired rows plus header, about 71 MB.
+        SHA-256:
+        82a0c9b38d3149ac8c7e96f1041e2495badc164d857abd4fd648891c5e4d623d
+
+    OLD-RESEARCH/datasets/double-dimer/analysis/summary.csv
+        137 distribution-by-size rows plus header.
+
+    OLD-RESEARCH/datasets/double-dimer/analysis/loglog_fits.csv
+        15 fit rows plus header.
+
+    OLD-RESEARCH/datasets/double-dimer/analysis/scaling_model_comparison.csv
+        30 model rows plus header.
+
+Presentation/report files
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Strict:
+
+    OLD-RESEARCH/reports/strict-annealed/README.md
+        Concise scientific interpretation.
+
+    OLD-RESEARCH/reports/strict-annealed/strict_annealed_results_for_chhita.pdf
+        Five-page email-ready summary.
+
+    OLD-RESEARCH/reports/strict-annealed/professor_chhita_handoff.zip
+        28-file, about 1.8 MB compact handoff containing strict README/email,
+        frozen config, validation, aggregate tables, all PDF figures, and short
+        PDF. It intentionally excludes the approximately 94 MB raw CSV.
+
+    OLD-RESEARCH/reports/strict-annealed/figures/annealed_scaling_all_distributions.{png,pdf}
+    OLD-RESEARCH/reports/strict-annealed/figures/scaling_exponent_forest.{png,pdf}
+    OLD-RESEARCH/reports/strict-annealed/figures/bic_model_comparison.{png,pdf}
+    OLD-RESEARCH/reports/strict-annealed/figures/by_distribution/
+
+Double:
+
+    OLD-RESEARCH/reports/double-dimer/README.md
+        Current best prose summary of the paired result.
+
+    OLD-RESEARCH/reports/double-dimer/EMAIL_DRAFT.md
+        Draft update to Professor Chhita.
+
+    OLD-RESEARCH/reports/double-dimer/figures/annealed_scaling_all_distributions.png
+    OLD-RESEARCH/reports/double-dimer/figures/scaling_exponent_forest.png
+    OLD-RESEARCH/reports/double-dimer/figures/bic_model_comparison.png
+    OLD-RESEARCH/reports/double-dimer/figures/by_distribution/
+
+There is a strangely named file
+OLD-RESEARCH/reports/double-dimer/figures/annealed_scaling_all_distributions copy.pdf.
+Do not assume it is the canonical output without inspecting it.
+
+
+10. SETUP, TEST, RUN, ANALYZE, AND PLOT COMMANDS
+------------------------------------------------
+
+Run all commands in:
+
+    /Users/alberto/Desktop/research/research-julia
+
+Requirements:
+
+    - Julia 1.10 or newer.
+    - Exact existing manifest was produced with Julia 1.12.6.
+    - Roughly 4 GB free memory per the project README.
+    - LaTeX/latexmk only if rebuilding the technical report.
+
+Instantiate and run the archived tests
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
+    julia --project=. ../OLD-RESEARCH/tests/julia/runtests.jl
+
+Verified on 24 July 2026 with Julia 1.12.6:
+
+    - all test sets passed;
+    - 88 assertions passed in total.
+
+The test sets cover configuration, all weight families, deterministic cache
+regeneration, reproducible batches, loop erasure/winding, end-to-end analysis,
+strict campaign design/restart/validation, double pair construction and
+variance identity, and heterogeneous CSV schemas.
+
+Resume/check strict campaign
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    julia --threads=auto --project=. scripts/run_campaign.jl \
+      --config configs/strict_annealed_reproduction.csv \
+      --output-dir ../OLD-RESEARCH/datasets/strict-annealed/batch-results \
+      --strict-annealed
+
+Because all tasks are complete, this should only classify and skip them.
+
+Regenerate strict analysis
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    julia --project=. scripts/analyze_results.jl \
+      --config configs/strict_annealed_reproduction.csv \
+      --results-dir ../OLD-RESEARCH/datasets/strict-annealed/batch-results \
+      --output-dir ../OLD-RESEARCH/datasets/strict-annealed/analysis \
+      --bootstrap-reps 1000 \
+      --strict-annealed
+
+    julia --project=. scripts/plot_results.jl \
+      --analysis-dir ../OLD-RESEARCH/datasets/strict-annealed/analysis \
+      --output-dir ../OLD-RESEARCH/reports/strict-annealed
+
+Resume/check double campaign
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    julia --threads=auto --project=. scripts/run_campaign.jl \
+      --config configs/double_dimer_reproduction.csv \
+      --output-dir ../OLD-RESEARCH/datasets/double-dimer/batch-results \
+      --double-dimer
+
+Because all tasks are complete, this should only classify and skip them.
+
+Regenerate double analysis
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    julia --project=. scripts/analyze_results.jl \
+      --config configs/double_dimer_reproduction.csv \
+      --results-dir ../OLD-RESEARCH/datasets/double-dimer/batch-results \
+      --output-dir ../OLD-RESEARCH/datasets/double-dimer/analysis \
+      --bootstrap-reps 1000 \
+      --double-dimer
+
+    julia --project=. scripts/plot_results.jl \
+      --analysis-dir ../OLD-RESEARCH/datasets/double-dimer/analysis \
+      --output-dir ../OLD-RESEARCH/reports/double-dimer \
+      --double-dimer
+
+Generate frozen configs
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Only regenerate into a new comparison path unless Alberto explicitly wants the
+frozen file overwritten.
+
+    julia --project=. scripts/generate_config.jl \
+      --preset strict_annealed_reproduction \
+      --output configs/strict_annealed_reproduction.NEW.csv
+
+    julia --project=. scripts/generate_config.jl \
+      --preset double_dimer_reproduction \
+      --output configs/double_dimer_reproduction.NEW.csv
+
+Generic config options include:
+
+    --output
+    --distributions comma,separated,specs
+    --sizes comma,separated,Ls
+    --batches
+    --num-environments
+    --walks-per-environment
+    --base-seed
+
+Campaign options include:
+
+    --config
+    --output-dir
+    --strict-annealed
+    --double-dimer
+    --rerun-failed
+    --start-task
+    --end-task
+    --max-steps
+
+The single-task runner additionally accepts --task-id and --force.
+
+Analysis options include:
+
+    --config
+    --results-dir
+    --output-dir
+    --fit-min-L
+    --bootstrap-reps
+    --bootstrap-seed
+    --allow-incomplete
+    --strict-annealed
+    --double-dimer
+
+Rebuild technical PDF
+~~~~~~~~~~~~~~~~~~~~~
+
+From OLD-RESEARCH/documentation/julia-technical-report:
+
+    latexmk -pdf -interaction=nonstopmode -halt-on-error \
+      -outdir=build JULIA_PROJECT_TECHNICAL_REPORT.tex
+
+Before rebuilding, update the report for double-dimer support/results and the
+current 88-test count; otherwise the newly compiled PDF will remain
+scientifically/documentationally stale.
+
+
+11. CURRENT GIT AND WORKSPACE STATE
+-----------------------------------
+
+Branch and remote
+~~~~~~~~~~~~~~~~~
+
+    branch: main
+    upstream: origin/main
+    origin: https://github.com/albystack/lerw-random-environment-research.git
+    last commit: 2f619b8, dated 2 July 2026, commit message “commit”
+
+The current source fingerprint is newer than that commit:
+
+    2f619b8+source.e0a560f34bd4
+
+Dirty-tree summary
+~~~~~~~~~~~~~~~~~~
+
+The workspace contains a large uncommitted migration and research update:
+
+    - Modified root/project READMEs, .gitignore, CI, Julia Project/Manifest,
+      active Julia module, and batch/analysis code.
+    - Archived the Julia tests, generated reports, figures, analyses, raw
+      batches, logs, and technical documentation under OLD-RESEARCH/.
+    - Deleted the formerly tracked research-python/ tree, older Julia HPC/Slurm
+      files, older Python plotting script, and older report figures.
+    - Preserved the legacy Python implementation at
+      OLD-RESEARCH/legacy-code/old-python/.
+    - Preserved strict and double production artifacts in organized archive
+      subfolders instead of leaving them beside active code.
+
+This appears to be an in-progress transition from the original mixed
+Python/Julia HPC/quenched project to a Julia-only local strict-annealed and
+paired-observable project. It has not been committed. Do not assume a deletion
+is accidental, but also do not stage or commit this broad migration without
+reviewing scope with Alberto.
+
+Ignore behavior
+~~~~~~~~~~~~~~~
+
+Some generated-data names were historically ignored, while OLD-RESEARCH/ as a
+whole is currently a large untracked archive. Authoritative raw/analysis data
+may therefore be easy to overlook in ordinary Git review. Be especially
+careful with “git clean” or broad staging.
+
+
+12. DOCUMENTATION MISMATCHES AND KNOWN ROUGH EDGES
+--------------------------------------------------
+
+These are documentation/state mismatches, not evidence that production data are
+invalid:
+
+1. The technical report is dated 15 July, covers only strict production, says
+   63 test assertions, and its embedded source listings predate double support.
+   Current tests pass 88 assertions.
+2. The checked-in pilot config uses 50 environments per size, while the
+   generator default and README example say 100. The pilot is only 55/137 tasks
+   complete and should not be used.
+3. CITATION.cff calls the project “Quenched LERW winding”, although the primary
+   completed experiment is now strict annealed and cannot estimate quenched
+   variance.
+4. OLD-RESEARCH/reports/double-dimer contains the oddly named PDF
+   “annealed_scaling_all_distributions copy.pdf”.
+5. OLD-RESEARCH/reports/strict-annealed/professor_chhita_handoff.zip is
+   strict-only. There is no equivalent compact finalized ZIP for double
+   results.
+6. Historical campaign logs contain interruptions and an atomic-rename error.
+   Later completion and validation recovered from these. Use validation.csv and
+   raw checksums as the final truth.
+7. The old README/history referred to quenched results and shared multiple
+   walks per environment. Those are not the frozen strict results now reported.
+8. The phrase “double dimer” is operational shorthand. The actual implemented
+    object is two LERWs with independent walk seeds in a shared directed
+    site-i.i.d. environment, analyzed through their winding difference.
+
+
+13. SCIENTIFIC AND STATISTICAL LIMITATIONS
+------------------------------------------
+
+Model-identification limitations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    - Directed outgoing weights are not undirected conductances.
+    - “_edges” aliases do not implement shared edge disorder.
+    - The domain is a square with half-side/boundary coordinate L.
+    - Winding is a signed quarter-turn count, not radians.
+    - A formal mapping from this LERW observable to any dimer-height observable
+      is not in the repository.
+
+Finite-size/statistical limitations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    - Fits are unweighted across L even though cell uncertainty and replication
+      vary considerably, especially at L=2048,4096,8192.
+    - Both the power model and two additive models omit corrections to scaling.
+    - BIC uses only 9 or 10 size points and a common Gaussian residual model.
+    - Near-zero BIC differences are ties, not discoveries.
+    - Bootstrap intervals use 1,000 percentile replicates; endpoint Monte Carlo
+      error is not separately reported.
+    - Fifteen specifications are compared without formal multiple-testing
+      adjustment.
+    - Strict data have one walk per environment and cannot estimate quenched
+      within-environment variance.
+    - Double data have one pair per environment; covariance is estimated across
+      environments at each cell, not through repeated pairs within an
+      environment.
+    - Normal plot error bars use jackknife SEs, while forest-plot exponent
+      intervals use bootstrap quantiles. Label them distinctly.
+    - Local effective exponents are noisy and should remain secondary.
+
+Implementation/audit limitations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    - sampled_site_count is cache occupancy, not total unique visited sites.
+    - The source fingerprint includes a source hash but not a stored patch.
+    - 64-bit seeds are empirically unique in production, not collision-proof for
+      arbitrary future campaigns.
+    - Default step-cap arithmetic was designed for current sizes, not arbitrary
+      L near the Int32 coordinate limit.
+    - Tests establish internal consistency, not equivalence to an external
+      mathematical/physics model.
+
+
+14. HIGH-VALUE NEXT STEPS
+-------------------------
+
+Priority 1: scientific model alignment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Obtain and quote the precise conjecture/paper/request motivating the work.
+Verify its:
+
+    - random environment (directed site weights vs shared undirected edges),
+    - boundary conditions and domain definition,
+    - winding normalization,
+    - LERW/dimer-height mapping,
+    - exact meaning of “double dimer”, and
+    - finite-size/asymptotic prediction.
+
+This check has greater scientific value than simply adding more Monte Carlo
+samples to the current model.
+
+Priority 2: preserve and version the completed work
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    - Review the very large dirty diff.
+    - Decide what generated/raw data belongs in Git versus a release/archive.
+    - Commit the Julia-only migration and double support intentionally.
+    - Archive the exact patch/source, manifest, frozen configs, validation
+      tables, raw checksums, and production data.
+    - Never stage all 855 MB blindly.
+
+Priority 3: update documentation/handoff
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    - Extend the technical report with paired sampling, validation, covariance,
+      results, and current source listings.
+    - Change 63 tests to 88.
+    - Reconcile the 50-vs-100 pilot description.
+    - Reconsider CITATION.cff title.
+    - Create a compact double-results handoff ZIP that excludes huge raw/pair
+      tables but includes config, validation, summaries, figures, README, and
+      email draft.
+
+The root README, research-julia README, INFORMATION.txt paths, and
+OLD-RESEARCH archive index were updated during the 24 July cleanup.
+
+Priority 4: robustness analysis before a paper claim
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    - Fit-window sensitivity (vary minimum L).
+    - Weighted or likelihood-based fits using cell-level uncertainty.
+    - Explicit correction-to-scaling alternatives.
+    - Bootstrap stability and more replicates for final intervals.
+    - Examine the three double cases with negative/near-zero Delta BIC.
+    - Independent simulator or small-L exact checks.
+    - Only then consider targeted extra large-L runs for the most informative
+      cases rather than rerunning all 15 distributions.
+
+
+15. SAFE SHORT HANDOFF SUMMARY
+------------------------------
+
+If only one paragraph is needed:
+
+This is a Julia 1.12.6 Monte Carlo project for winding of loop-erased random
+walks in directed site-i.i.d. random transition environments. Two validated
+production campaigns are complete: (1) 379,000 strict-annealed single walks in
+379,000 unique environments, and (2) 758,000 raw walks arranged as 379,000
+two-walk shared-environment pairs, analyzed through Delta W=W_1-W_2. Across 15
+weight specifications and L up to 4096 (8192 for baseline and Gamma(1)), all
+effective exponents remain near one and every bootstrap interval is far below
+two. The data show no robust (log L)^2 regime over the simulated range, but do
+not prove an asymptotic theorem. The active code is research-julia/; OLD-RESEARCH/legacy-code/old-python/
+is archival. The working tree contains extensive uncommitted user work and must
+not be reset or cleaned.
+
+
+END OF HANDOFF
