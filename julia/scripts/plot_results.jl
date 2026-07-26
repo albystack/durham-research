@@ -9,8 +9,8 @@ function options(args)
     index = 1
     while index <= length(args)
         startswith(args[index], "--") || error("unexpected argument: $(args[index])")
-        if args[index] == "--double-dimer"
-            parsed["double-dimer"] = "true"
+        if args[index] in ("--paired", "--double-dimer")
+            parsed["paired"] = "true"
             index += 1
             continue
         end
@@ -23,24 +23,32 @@ end
 
 function model_label(distribution, params)
     parsed = JSON3.read(String(params))
-    isempty(parsed) && return String(distribution)
-    values = join(("$key=$(round(Float64(value); digits=3))" for (key, value) in pairs(parsed)), ", ")
-    return "$(replace(String(distribution), "_" => " ")) ($values)"
+    name = titlecase(replace(String(distribution), "_" => " "))
+    isempty(parsed) && return name
+    parameter_labels = Dict("alpha" => "α", "sigma" => "σ", "shape" => "k")
+    values = join(("$(get(parameter_labels, String(key), String(key)))=" *
+                   "$(round(Float64(value); digits=3))"
+                   for (key, value) in pairs(parsed)), ", ")
+    return "$name ($values)"
 end
 
 function safe_name(distribution, params)
-    label = lowercase(model_label(distribution, params))
+    parsed = JSON3.read(String(params))
+    pieces = String[String(distribution)]
+    append!(pieces, ("$(key)_$(round(Float64(value); digits=3))"
+                     for (key, value) in pairs(parsed)))
+    label = lowercase(join(pieces, "_"))
     return strip(replace(label, r"[^a-z0-9]+" => "_"), '_')
 end
 
-function scaling_panel(summary_rows, model_rows, title; double_dimer=false)
+function scaling_panel(summary_rows, model_rows, title; paired=false)
     ordered = sort(summary_rows; by=row -> row.L)
     xs = Float64.(getproperty.(ordered, :log_L))
     ys = Float64.(getproperty.(ordered, :annealed_variance))
     errors = 1.96 .* Float64.(getproperty.(ordered, :annealed_variance_se))
     panel = scatter(xs, ys; yerror=errors, markercolor=:black, markerstrokewidth=0,
                     markersize=3.5, label="simulation", title, xlabel="log L",
-                    ylabel=double_dimer ? "Var(W₁ - W₂)" : "Var(W_L)",
+                    ylabel=paired ? "Var(ΔWₗ)" : "Var(Wₗ)",
                     legend=:topleft, legendfontsize=7,
                     titlefontsize=9, guidefontsize=8, tickfontsize=7)
     grid = range(minimum(xs), maximum(xs); length=200)
@@ -51,7 +59,7 @@ function scaling_panel(summary_rows, model_rows, title; double_dimer=false)
         elseif row.model == "a_plus_b_log_L_squared"
             plot!(panel, grid, row.intercept .+ row.coefficient .* grid .^ 2;
                   color=:darkorange, linewidth=2, linestyle=:dash,
-                  label="a + b (log L)^2")
+                  label="a + b (log L)²")
         end
     end
     return panel
@@ -61,7 +69,7 @@ function main(args=ARGS)
     parsed = options(args)
     analysis_dir = get(parsed, "analysis-dir", "analysis_strict_annealed")
     output_dir = get(parsed, "output-dir", "../reports")
-    double_dimer = haskey(parsed, "double-dimer")
+    paired = haskey(parsed, "paired")
     figures_dir = joinpath(output_dir, "figures")
     details_dir = joinpath(figures_dir, "by_distribution")
     mkpath(details_dir)
@@ -81,14 +89,14 @@ function main(args=ARGS)
                          String(row.distribution_params) == key[2] &&
                          row.variance_kind == "annealed"]
         title = model_label(key...)
-        panel = scaling_panel(summary_rows, model_rows, title; double_dimer)
+        panel = scaling_panel(summary_rows, model_rows, title; paired)
         push!(panels, panel)
-        detail = scaling_panel(summary_rows, model_rows, title; double_dimer)
+        detail = scaling_panel(summary_rows, model_rows, title; paired)
         savefig(detail, joinpath(details_dir, safe_name(key...) * ".png"))
         savefig(detail, joinpath(details_dir, safe_name(key...) * ".pdf"))
     end
-    overview_title = double_dimer ? "Double-dimer winding-difference variance" :
-                                   "Strict-annealed winding variance"
+    overview_title = paired ? "Paired LERW winding-difference variance" :
+                              "Single-walk LERW winding variance"
     overview = plot(panels...; layout=(4, 4), size=(1600, 1400),
                     plot_title=overview_title)
     savefig(overview, joinpath(figures_dir, "annealed_scaling_all_distributions.png"))
@@ -103,8 +111,8 @@ function main(args=ARGS)
     forest = scatter(ps, eachindex(ps); xerror=(ps .- lows, highs .- ps),
                      yticks=(eachindex(ps), labels), markercolor=:black,
                      markerstrokewidth=0, label="95% bootstrap CI", xlabel="p",
-                     title=double_dimer ? "Var(W₁ - W₂) = C (log L)^p" :
-                                          "Var(W_L) = C (log L)^p",
+                     title=paired ? "Paired LERWs: Var(ΔWₗ) = C(log L)ᵖ" :
+                                    "Var(Wₗ) = C(log L)ᵖ",
                      size=(1000, 800),
                      left_margin=8Plots.mm, legend=:bottomright)
     vline!(forest, [1.0]; color=:seagreen, linewidth=2, label="p = 1")
@@ -126,9 +134,10 @@ function main(args=ARGS)
     bic = bar(deltas[ordering], orientation=:h,
               yticks=(eachindex(ordering), bic_labels[ordering]),
               color=[value >= 0 ? :seagreen : :firebrick for value in deltas[ordering]],
-              label="", xlabel="BIC(log^2) - BIC(log)",
-              title="Positive values favor ordinary logarithmic growth",
-              size=(1000, 800), left_margin=8Plots.mm)
+              label="", xlabel="ΔBIC = BIC(log²) − BIC(log)",
+              title="Additive scaling model comparison",
+              size=(1000, 800), left_margin=8Plots.mm,
+              right_margin=5Plots.mm, bottom_margin=5Plots.mm)
     vline!(bic, [0.0]; color=:black, linewidth=1, label="")
     savefig(bic, joinpath(figures_dir, "bic_model_comparison.png"))
     savefig(bic, joinpath(figures_dir, "bic_model_comparison.pdf"))

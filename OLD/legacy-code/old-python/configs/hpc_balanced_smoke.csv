@@ -1,5 +1,0 @@
-task_id,environment_model,distribution,distribution_params,L,batch_id,num_environments,walks_per_environment,base_seed
-0,site_iid,baseline,{},64,0,2,3,2502797842639448889
-1,site_iid,baseline,{},128,0,2,3,16795378440973441357
-2,site_iid,gamma,"{""shape"":1.0}",64,0,2,3,10952330105118054220
-3,site_iid,gamma,"{""shape"":1.0}",128,0,2,3,5238651549802707107
