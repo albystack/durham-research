@@ -22,7 +22,7 @@ jobs:
         julia-version: ['1.10', '1']
     defaults:
       run:
-        working-directory: research-julia
+        working-directory: julia
     steps:
       - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v2
