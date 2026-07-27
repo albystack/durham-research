@@ -5,13 +5,13 @@ environments. The central question is whether local disorder changes the
 winding variance from logarithmic growth,
 
 ```math
-\operatorname{Var}(W_L) \sim C\log L,
+\mathrm{Var}(W_L) \sim C\log L,
 ```
 
 to a squared-logarithmic regime,
 
 ```math
-\operatorname{Var}(W_L) \sim C(\log L)^2.
+\mathrm{Var}(W_L) \sim C(\log L)^2.
 ```
 
 ## Model
@@ -45,9 +45,9 @@ diamonds.
 The effective exponent is fitted through
 
 ```math
-\operatorname{Var}(W_L)=C(\log L)^p,
+\mathrm{Var}(W_L)=C(\log L)^p,
 \qquad
-\log\operatorname{Var}(W_L)=\log C+p\log\log L.
+\log\mathrm{Var}(W_L)=\log C+p\log\log L.
 ```
 
 Thus \(p=1\) represents logarithmic growth and \(p=2\) squared-logarithmic
