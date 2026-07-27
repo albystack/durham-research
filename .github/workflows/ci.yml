@@ -29,5 +29,9 @@ jobs:
         with:
           version: ${{ matrix.julia-version }}
       - uses: julia-actions/cache@v2
-      - run: julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
+      - name: Instantiate and precompile
+        run: |
+          # Resolve dependencies for each Julia version in the compatibility matrix.
+          rm -f Manifest.toml
+          julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
       - run: julia --project=. -e 'using LERWResearch; @assert LERWResearch.stable_seed("ci", 1) == LERWResearch.stable_seed("ci", 1)'
