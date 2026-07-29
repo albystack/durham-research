@@ -1,5 +1,9 @@
-const SCHEMA_VERSION = "batch_v6_julia"
+const SCHEMA_VERSION = "batch_v7_julia"
 const ENVIRONMENT_MODEL = "site_iid"
+const ENVIRONMENT_MODELS = Set(["site_iid", "temporal_iid"])
+const TEMPORAL_PILOT_DISTRIBUTIONS = [
+    "baseline", "gamma:0.5", "lognormal:1.0", "pareto:2.0",
+]
 const FULL_DISTRIBUTIONS = [
     "baseline", "gamma:0.5", "gamma:1.0", "gamma:2.0", "exponential",
     "lognormal:0.5", "lognormal:1.0", "pareto:2.0", "pareto:3.0",
@@ -44,13 +48,19 @@ end
 
 params_json(task::BatchConfig) = canonical_json(task.distribution_params)
 
+function validate_environment_model(environment_model::AbstractString)::String
+    model = String(environment_model)
+    model in ENVIRONMENT_MODELS ||
+        throw(ArgumentError("unknown environment model: $model"))
+    return model
+end
+
 function load_config_row(config_path::AbstractString, task_id::Integer)::BatchConfig
     for row in CSV.File(config_path; types=String)
         parse(Int, row.task_id) == task_id || continue
         raw_environment_model = hasproperty(row, :environment_model) ? row.environment_model : ""
         environment_model = isempty(raw_environment_model) ? ENVIRONMENT_MODEL : raw_environment_model
-        environment_model == ENVIRONMENT_MODEL ||
-            throw(ArgumentError("Julia runner supports only site_iid"))
+        validate_environment_model(environment_model)
         task = BatchConfig(
             parse(Int, row.task_id), row.distribution, parse_params(row.distribution_params),
             parse(Int, row.L), parse(Int, row.batch_id), parse(Int, row.num_environments),
@@ -60,6 +70,10 @@ function load_config_row(config_path::AbstractString, task_id::Integer)::BatchCo
         task.num_environments > 0 || throw(ArgumentError("num_environments must be positive"))
         task.walks_per_environment > 0 ||
             throw(ArgumentError("walks_per_environment must be positive"))
+        task.environment_model == "temporal_iid" && task.walks_per_environment != 1 &&
+            throw(ArgumentError(
+                "temporal_iid requires walks_per_environment=1: each walk is one " *
+                "independent temporal realisation"))
         distribution_spec(task.distribution, task.distribution_params)
         return task
     end
@@ -95,11 +109,28 @@ function require_strict_annealed(tasks)
     return nothing
 end
 
+"Require independent, one-walk temporal realisations and no quenched grouping."
+function require_temporal_iid(tasks)
+    wrong_model = [task.task_id for task in tasks
+                   if task.environment_model != "temporal_iid"]
+    isempty(wrong_model) || throw(ArgumentError(
+        "temporal campaign contains non-temporal task IDs: " *
+        join(wrong_model[1:min(end, 10)], ", ")))
+    invalid = [task.task_id for task in tasks if task.walks_per_environment != 1]
+    isempty(invalid) || throw(ArgumentError(
+        "temporal_iid requires walks_per_environment=1; invalid task IDs: " *
+        join(invalid[1:min(end, 10)], ", ")))
+    return nothing
+end
+
 "Require exactly one independent pair of walks in every sampled environment."
 function require_double_dimer(tasks)
-    invalid = [task.task_id for task in tasks if task.walks_per_environment != 2]
+    invalid = [task.task_id for task in tasks
+               if task.environment_model != "site_iid" ||
+                  task.walks_per_environment != 2]
     isempty(invalid) || throw(ArgumentError(
-        "double-dimer sampling requires walks_per_environment=2; invalid task IDs: " *
+        "double-dimer sampling requires site_iid and walks_per_environment=2; " *
+        "invalid task IDs: " *
         join(invalid[1:min(end, 10)], ", ")))
     return nothing
 end
@@ -108,6 +139,23 @@ function completed_result(path::AbstractString, expected_rows::Integer)::Bool
     isfile(path) || return false
     rows = collect(CSV.File(path; types=String))
     return length(rows) == expected_rows && all(row -> row.status == "ok", rows)
+end
+
+"Restart-safe completion check that also rejects output from a different task."
+function completed_result(path::AbstractString, task::BatchConfig)::Bool
+    isfile(path) || return false
+    rows = collect(CSV.File(path; types=String))
+    length(rows) == expected_observations(task) || return false
+    expected_params = params_json(task)
+    return all(rows) do row
+        row.status == "ok" &&
+        row.task_id == string(task.task_id) &&
+        row.batch_id == string(task.batch_id) &&
+        row.distribution == task.distribution &&
+        row.distribution_params == expected_params &&
+        row.environment_model == task.environment_model &&
+        row.L == string(task.L)
+    end
 end
 
 function task_seed(task::BatchConfig, parts...)::UInt64
@@ -135,8 +183,10 @@ end
 
 function result_row(task, code_version, model, parameter, environment_id, walk_id,
                     environment_seed, walk_seed, winding_value, path_length,
-                    raw_length, exit_x, exit_y, runtime, sampled_sites, status,
+                    raw_length, exit_x, exit_y, runtime, weight_seed, direction_seed,
+                    sampled_sites, sampled_weight_vectors, direction_counts, status,
                     error_type, error_message, started_at, finished_at)
+    north_steps, east_steps, south_steps, west_steps = direction_counts
     return (
         schema_version=SCHEMA_VERSION,
         code_version=code_version,
@@ -153,6 +203,8 @@ function result_row(task, code_version, model, parameter, environment_id, walk_i
         walk_id=walk_id,
         environment_seed=environment_seed,
         walk_seed=walk_seed,
+        weight_seed=weight_seed,
+        direction_seed=direction_seed,
         winding=winding_value,
         loop_erased_path_length=path_length,
         raw_walk_length=raw_length,
@@ -161,6 +213,11 @@ function result_row(task, code_version, model, parameter, environment_id, walk_i
         exit_y=exit_y,
         runtime=runtime,
         sampled_site_count=sampled_sites,
+        sampled_weight_vector_count=sampled_weight_vectors,
+        north_steps=north_steps,
+        east_steps=east_steps,
+        south_steps=south_steps,
+        west_steps=west_steps,
         status=status,
         error_type=error_type,
         error_message=error_message,
@@ -170,6 +227,11 @@ function result_row(task, code_version, model, parameter, environment_id, walk_i
 end
 
 function run_batch(task::BatchConfig; max_steps::Union{Nothing,Integer}=nothing)
+    validate_environment_model(task.environment_model)
+    task.environment_model == "temporal_iid" && task.walks_per_environment != 1 &&
+        throw(ArgumentError(
+            "temporal_iid requires walks_per_environment=1: each walk is one " *
+            "independent temporal realisation"))
     model, parameter = distribution_spec(task.distribution, task.distribution_params)
     version = git_version()
     rows_by_environment = Vector{Vector{NamedTuple}}(undef, task.num_environments)
@@ -177,30 +239,46 @@ function run_batch(task::BatchConfig; max_steps::Union{Nothing,Integer}=nothing)
     Threads.@threads for environment_offset in 0:(task.num_environments - 1)
         environment_id = task.batch_id * task.num_environments + environment_offset
         environment_seed = task_seed(task, "environment", environment_id)
-        cache_capacity = model === :baseline ? 1 : site_cache_capacity(task.L)
-        environment = SiteIIDEnvironment(environment_seed, model, parameter; cache_capacity)
+        environment = if task.environment_model == "site_iid"
+            cache_capacity = model === :baseline ? 1 : site_cache_capacity(task.L)
+            SiteIIDEnvironment(environment_seed, model, parameter; cache_capacity)
+        else
+            TemporalIIDEnvironment(environment_seed, model, parameter)
+        end
         environment_rows = NamedTuple[]
 
         for walk_id in 0:(task.walks_per_environment - 1)
             walk_seed = task_seed(task, "walk", environment_id, walk_id)
-            walk_rng = StableRNG(walk_seed)
+            direction_rng = StableRNG(walk_seed)
             started_at = string(now(UTC))
             start = monotonic_seconds()
             try
-                path, raw_steps = loop_erased_walk(task.L, environment, walk_rng;
-                                                   max_steps=max_steps)
+                path, raw_steps, direction_counts = loop_erased_walk_diagnostics(
+                    task.L, environment, direction_rng; max_steps)
                 elapsed = monotonic_seconds() - start
                 exit_x, exit_y = unpack_point(path[end])
+                sampled_sites = environment isa SiteIIDEnvironment ?
+                    length(environment.weights) : missing
+                sampled_weight_vectors = environment isa TemporalIIDEnvironment ?
+                    environment.sampled_weight_vectors : missing
                 row = result_row(task, version, model, parameter, environment_id, walk_id,
                                  environment_seed, walk_seed, winding(path), length(path) - 1,
-                                 raw_steps, exit_x, exit_y, elapsed, length(environment.weights),
+                                 raw_steps, exit_x, exit_y, elapsed, environment.weight_seed,
+                                 walk_seed, sampled_sites, sampled_weight_vectors,
+                                 direction_counts,
                                  "ok", missing, missing, started_at, string(now(UTC)))
                 push!(environment_rows, row)
             catch error
                 elapsed = monotonic_seconds() - start
+                sampled_sites = environment isa SiteIIDEnvironment ?
+                    length(environment.weights) : missing
+                sampled_weight_vectors = environment isa TemporalIIDEnvironment ?
+                    environment.sampled_weight_vectors : missing
                 row = result_row(task, version, model, parameter, environment_id, walk_id,
                                  environment_seed, walk_seed, missing, missing, missing,
-                                 missing, missing, elapsed, length(environment.weights),
+                                 missing, missing, elapsed, environment.weight_seed, walk_seed,
+                                 sampled_sites, sampled_weight_vectors,
+                                 (missing, missing, missing, missing),
                                  "failed", string(typeof(error)), sprint(showerror, error),
                                  started_at, string(now(UTC)))
                 push!(environment_rows, row)
@@ -222,6 +300,8 @@ function run_campaign(config_path::AbstractString, output_dir::AbstractString;
         "--strict-annealed and --double-dimer are mutually exclusive"))
     strict_annealed && require_strict_annealed(tasks)
     double_dimer && require_double_dimer(tasks)
+    any(task -> task.environment_model == "temporal_iid", tasks) &&
+        require_temporal_iid(tasks)
     selected = [task for task in tasks
                 if (start_task === nothing || task.task_id >= start_task) &&
                    (end_task === nothing || task.task_id <= end_task)]
@@ -231,7 +311,7 @@ function run_campaign(config_path::AbstractString, output_dir::AbstractString;
     complete = 0
     for task in selected
         path = result_path(output_dir, task)
-        if completed_result(path, expected_observations(task))
+        if completed_result(path, task)
             complete += 1
         elseif isfile(path) && !rerun_failed
             throw(ErrorException(
@@ -287,8 +367,12 @@ end
 function write_csv_atomic(path::AbstractString, rows)
     mkpath(dirname(path))
     temporary = joinpath(dirname(path), string(".", basename(path), ".tmp.", getpid()))
-    CSV.write(temporary, rows; transform=(_column, value) -> something(value, missing))
-    mv(temporary, path; force=true)
+    try
+        CSV.write(temporary, rows; transform=(_column, value) -> something(value, missing))
+        mv(temporary, path; force=true)
+    finally
+        isfile(temporary) && rm(temporary)
+    end
 end
 
 function parse_cli(args)::Dict{String,String}
@@ -331,7 +415,7 @@ function main_run_batch(args=ARGS)::Int
     rerun_failed = haskey(options, "rerun-failed")
 
     if isfile(path) && !force
-        if completed_result(path, expected)
+        if completed_result(path, task)
             println("Task $task_id already complete: $path")
             return 0
         elseif !rerun_failed
@@ -354,7 +438,11 @@ end
 function generate_config(output::AbstractString, distributions, sizes;
                          batches::Int=1, num_environments::Int=2,
                          walks_per_environment::Int=3,
-                         base_seed::Integer=20260623)
+                         base_seed::Integer=20260623,
+                         environment_model::AbstractString=ENVIRONMENT_MODEL)
+    environment_model = validate_environment_model(environment_model)
+    environment_model == "temporal_iid" && walks_per_environment != 1 &&
+        throw(ArgumentError("temporal_iid requires walks_per_environment=1"))
     rows = NamedTuple[]
     task_id = 0
     for spec in distributions
@@ -363,7 +451,7 @@ function generate_config(output::AbstractString, distributions, sizes;
         for L in sizes, batch_id in 0:(batches - 1)
             push!(rows, (
                 task_id=task_id,
-                environment_model=ENVIRONMENT_MODEL,
+                environment_model=environment_model,
                 distribution=distribution,
                 distribution_params=canonical_json(params),
                 L=L,
@@ -378,6 +466,124 @@ function generate_config(output::AbstractString, distributions, sizes;
     mkpath(dirname(output))
     CSV.write(output, rows)
     return rows
+end
+
+function generate_temporal_iid_pilot_config(output::AbstractString;
+                                            batch_walks::Int=100,
+                                            base_seed::Integer=20260726)
+    batch_walks > 0 || throw(ArgumentError("batch_walks must be positive"))
+    size_counts = Pair{Int,Int}[
+        16 => 2_000, 32 => 2_000, 64 => 2_000, 128 => 2_000, 256 => 2_000,
+        512 => 1_000, 1024 => 500,
+    ]
+    rows = NamedTuple[]
+    task_id = 0
+    for spec in TEMPORAL_PILOT_DISTRIBUTIONS
+        distribution, params = parse_distribution_argument(spec)
+        for (L, walks) in size_counts
+            walks % batch_walks == 0 || throw(ArgumentError(
+                "$walks walks at L=$L are not divisible by batch_walks=$batch_walks"))
+            for batch_id in 0:(walks ÷ batch_walks - 1)
+                push!(rows, (
+                    task_id=task_id,
+                    environment_model="temporal_iid",
+                    distribution=distribution,
+                    distribution_params=canonical_json(params),
+                    L=L,
+                    batch_id=batch_id,
+                    num_environments=batch_walks,
+                    walks_per_environment=1,
+                    base_seed=stable_seed(base_seed, "temporal_iid_pilot", task_id),
+                ))
+                task_id += 1
+            end
+        end
+    end
+    sum(row.num_environments for row in rows) == 46_000 ||
+        error("internal error: temporal pilot must contain exactly 46,000 walks")
+    mkpath(dirname(output))
+    CSV.write(output, rows)
+    return rows
+end
+
+"Reuse the Gamma arm of the temporal pilot and extend it beyond L=5000."
+function generate_temporal_iid_gamma_length_config(
+    output::AbstractString; extension_walks::Int=100,
+    base_seed::Integer=20260726,
+)
+    extension_walks > 1 || throw(ArgumentError(
+        "extension_walks must exceed one so uncertainty can be estimated"))
+    rows = NamedTuple[]
+    task_id = 0
+    size_counts = Pair{Int,Int}[
+        16 => 2_000, 32 => 2_000, 64 => 2_000, 128 => 2_000, 256 => 2_000,
+        512 => 1_000, 1024 => 500,
+    ]
+
+    # Preserve the task IDs and seeds from temporal_iid_pilot.csv, so the
+    # already-computed Gamma batches are restart-safe and directly reusable.
+    for spec in TEMPORAL_PILOT_DISTRIBUTIONS
+        distribution, params = parse_distribution_argument(spec)
+        for (L, walks) in size_counts
+            for batch_id in 0:(walks ÷ 100 - 1)
+                if spec == "gamma:0.5"
+                    push!(rows, (
+                        task_id=task_id,
+                        environment_model="temporal_iid",
+                        distribution=distribution,
+                        distribution_params=canonical_json(params),
+                        L=L,
+                        batch_id=batch_id,
+                        num_environments=100,
+                        walks_per_environment=1,
+                        base_seed=stable_seed(
+                            base_seed, "temporal_iid_pilot", task_id),
+                    ))
+                end
+                task_id += 1
+            end
+        end
+    end
+
+    distribution, params = parse_distribution_argument("gamma:0.5")
+    for L in (2048, 4096, 5000, 8192)
+        push!(rows, (
+            task_id=task_id,
+            environment_model="temporal_iid",
+            distribution=distribution,
+            distribution_params=canonical_json(params),
+            L=L,
+            batch_id=0,
+            num_environments=extension_walks,
+            walks_per_environment=1,
+            base_seed=stable_seed(
+                base_seed, "temporal_iid_gamma_length", task_id),
+        ))
+        task_id += 1
+    end
+    mkpath(dirname(output))
+    CSV.write(output, rows)
+    return rows
+end
+
+function generate_temporal_iid_smoke_config(output::AbstractString;
+                                            walks_per_task::Int=100,
+                                            base_seed::Integer=20260726)
+    walks_per_task > 1 || throw(ArgumentError("walks_per_task must exceed one"))
+    return generate_config(output, TEMPORAL_PILOT_DISTRIBUTIONS, (16, 32, 64);
+        batches=1, num_environments=walks_per_task, walks_per_environment=1,
+        base_seed=stable_seed(base_seed, "temporal_iid_smoke"),
+        environment_model="temporal_iid")
+end
+
+function generate_temporal_iid_benchmark_config(output::AbstractString;
+                                                walks_per_task::Int=100,
+                                                base_seed::Integer=20260726)
+    walks_per_task > 0 || throw(ArgumentError("walks_per_task must be positive"))
+    return generate_config(output, ("pareto:2.0",), (256, 512, 1024);
+        batches=1, num_environments=walks_per_task, walks_per_environment=1,
+        base_seed=stable_seed(base_seed, "temporal_iid_benchmark"),
+        environment_model="temporal_iid")
 end
 
 function generate_strict_annealed_reproduction_config(output::AbstractString;
@@ -517,6 +723,32 @@ function main_generate_config(args=ARGS)::Int
         println("Wrote $(length(rows)) double-dimer pilot tasks to $output")
         println("Slurm array range: 0-$(length(rows) - 1)")
         return 0
+    elseif preset == "temporal_iid_pilot"
+        rows = generate_temporal_iid_pilot_config(output;
+            batch_walks=parse(Int, get(options, "batch-walks", "100")),
+            base_seed=parse(Int, get(options, "base-seed", "20260726")))
+        println("Wrote $(length(rows)) temporal-i.i.d. pilot tasks and 46,000 walks to $output")
+        println("Each temporal realisation contains exactly one walk")
+        return 0
+    elseif preset == "temporal_iid_smoke"
+        rows = generate_temporal_iid_smoke_config(output;
+            walks_per_task=parse(Int, get(options, "walks-per-task", "100")),
+            base_seed=parse(Int, get(options, "base-seed", "20260726")))
+        println("Wrote $(length(rows)) temporal-i.i.d. smoke tasks to $output")
+        return 0
+    elseif preset == "temporal_iid_gamma_length"
+        rows = generate_temporal_iid_gamma_length_config(output;
+            extension_walks=parse(Int, get(options, "extension-walks", "100")),
+            base_seed=parse(Int, get(options, "base-seed", "20260726")))
+        println("Wrote $(length(rows)) temporal Gamma length-scaling tasks to $output")
+        println("The campaign extends through L=8192, including L=5000")
+        return 0
+    elseif preset == "temporal_iid_benchmark"
+        rows = generate_temporal_iid_benchmark_config(output;
+            walks_per_task=parse(Int, get(options, "walks-per-task", "100")),
+            base_seed=parse(Int, get(options, "base-seed", "20260726")))
+        println("Wrote $(length(rows)) temporal-i.i.d. benchmark tasks to $output")
+        return 0
     end
 
     distributions = if haskey(options, "distributions")
@@ -529,7 +761,8 @@ function main_generate_config(args=ARGS)::Int
         batches=parse(Int, get(options, "batches", "1")),
         num_environments=parse(Int, get(options, "num-environments", "2")),
         walks_per_environment=parse(Int, get(options, "walks-per-environment", "3")),
-        base_seed=parse(Int, get(options, "base-seed", "20260623")))
+        base_seed=parse(Int, get(options, "base-seed", "20260623")),
+        environment_model=get(options, "environment-model", ENVIRONMENT_MODEL))
     println("Wrote $(length(rows)) tasks to $output")
     println("Slurm array range: 0-$(length(rows) - 1)")
     return 0

@@ -1,6 +1,8 @@
 const PointKey = UInt64
 const MAX_SITE_CACHE_CAPACITY = 1 << 23
 
+abstract type AbstractLERWEnvironment end
+
 @inline function pack_point(x::Int32, y::Int32)::PointKey
     return (UInt64(reinterpret(UInt32, x)) << 32) | UInt64(reinterpret(UInt32, y))
 end
@@ -46,12 +48,36 @@ function site_cache_capacity(L::Integer)::Int
     return Int(nextpow(2, target))
 end
 
-mutable struct SiteIIDEnvironment
+mutable struct SiteIIDEnvironment <: AbstractLERWEnvironment
     environment_seed::UInt64
     model::Symbol
     parameter::Union{Nothing,Float64}
     weights::SiteWeightCache
     weight_seed::UInt64
+end
+
+"An annealed environment whose four directional weights are redrawn every step."
+mutable struct TemporalIIDEnvironment{R<:AbstractRNG} <: AbstractLERWEnvironment
+    environment_seed::UInt64
+    model::Symbol
+    parameter::Union{Nothing,Float64}
+    weight_seed::UInt64
+    weight_rng::R
+    sampled_weight_vectors::Int
+end
+
+function TemporalIIDEnvironment(seed::Integer, model::Symbol,
+                                parameter::Union{Nothing,Float64})
+    environment_seed = UInt64(seed)
+    weight_seed = stable_seed("temporal_iid_weights", environment_seed, model, parameter)
+    return TemporalIIDEnvironment(environment_seed, model, parameter, weight_seed,
+                                  StableRNG(weight_seed), 0)
+end
+
+function TemporalIIDEnvironment(seed::Integer, distribution::AbstractString,
+                                params::AbstractDict)
+    model, parameter = distribution_spec(distribution, params)
+    return TemporalIIDEnvironment(seed, model, parameter)
 end
 
 function SiteIIDEnvironment(seed::Integer, model::Symbol,
@@ -88,19 +114,55 @@ end
     return weights
 end
 
-@inline function next_point(current::PointKey, environment::SiteIIDEnvironment,
-                            walk_rng::AbstractRNG)::PointKey
-    weights = site_weights!(environment, current)
-    threshold = rand(walk_rng) * (weights[1] + weights[2] + weights[3] + weights[4])
-    direction = if threshold <= weights[1]
+"Draw a completely fresh N/E/S/W weight vector; no lattice-site cache is consulted."
+@inline function temporal_weights!(environment::TemporalIIDEnvironment)
+    environment.sampled_weight_vectors += 1
+    return ntuple(_ -> sample_weight(environment.weight_rng, environment.model,
+                                     environment.parameter), 4)
+end
+
+@inline transition_weights!(environment::SiteIIDEnvironment, current::PointKey) =
+    site_weights!(environment, current)
+@inline transition_weights!(environment::TemporalIIDEnvironment, ::PointKey) =
+    temporal_weights!(environment)
+
+@inline function choose_direction(weights::NTuple{4,Float64},
+                                  direction_rng::AbstractRNG)::Int
+    total = weights[1] + weights[2] + weights[3] + weights[4]
+    isfinite(total) && total > 0 ||
+        throw(ErrorException("directional weights must have a positive finite sum"))
+    # Dividing the cumulative weights by their sum makes the conversion to
+    # transition probabilities explicit without allocating a probability vector.
+    draw = rand(direction_rng)
+    direction = if draw <= weights[1] / total
         1 # north
-    elseif threshold <= weights[1] + weights[2]
+    elseif draw <= (weights[1] + weights[2]) / total
         2 # east
-    elseif threshold <= weights[1] + weights[2] + weights[3]
+    elseif draw <= (weights[1] + weights[2] + weights[3]) / total
         3 # south
     else
         4 # west
     end
+    return direction
+end
+
+"Historical site-i.i.d. selector; preserve its floating-point operation order."
+@inline function choose_site_direction(weights::NTuple{4,Float64},
+                                       direction_rng::AbstractRNG)::Int
+    threshold = rand(direction_rng) *
+        (weights[1] + weights[2] + weights[3] + weights[4])
+    return if threshold <= weights[1]
+        1
+    elseif threshold <= weights[1] + weights[2]
+        2
+    elseif threshold <= weights[1] + weights[2] + weights[3]
+        3
+    else
+        4
+    end
+end
+
+@inline function step_point(current::PointKey, direction::Integer)::PointKey
     x, y = unpack_point(current)
     direction == 1 && return pack_point(x, y + Int32(1))
     direction == 2 && return pack_point(x + Int32(1), y)
@@ -108,9 +170,33 @@ end
     return pack_point(x - Int32(1), y)
 end
 
+@inline function next_point_and_direction(current::PointKey,
+                                          environment::SiteIIDEnvironment,
+                                          direction_rng::AbstractRNG)
+    weights = site_weights!(environment, current)
+    direction = choose_site_direction(weights, direction_rng)
+    return step_point(current, direction), direction
+end
+
+@inline function next_point_and_direction(current::PointKey,
+                                          environment::TemporalIIDEnvironment,
+                                          direction_rng::AbstractRNG)
+    weights = temporal_weights!(environment)
+    direction = choose_direction(weights, direction_rng)
+    return step_point(current, direction), direction
+end
+
+@inline function next_point(current::PointKey, environment::AbstractLERWEnvironment,
+                            direction_rng::AbstractRNG)::PointKey
+    point, _ = next_point_and_direction(current, environment, direction_rng)
+    return point
+end
+
 "Run a random walk to the square boundary while maintaining loop erasure online."
-function loop_erased_walk(L::Integer, environment::SiteIIDEnvironment,
-                          walk_rng::AbstractRNG; max_steps::Union{Nothing,Integer}=nothing)
+function loop_erased_walk_diagnostics(
+    L::Integer, environment::AbstractLERWEnvironment,
+    direction_rng::AbstractRNG; max_steps::Union{Nothing,Integer}=nothing,
+)
     L >= 1 || throw(ArgumentError("L must be at least 1"))
     L <= typemax(Int32) || throw(ArgumentError("L exceeds Int32 coordinate range"))
     cap = max_steps === nothing ? max(100_000, 2_000 * Int(L)^2) : Int(max_steps)
@@ -119,13 +205,16 @@ function loop_erased_walk(L::Integer, environment::SiteIIDEnvironment,
     path = PointKey[origin]
     positions = Dict{PointKey,Int32}(origin => Int32(1))
     current = origin
+    direction_counts = zeros(Int, 4)
 
     for raw_steps in 0:cap
         x, y = unpack_point(current)
-        is_boundary(x, y, L) && return path, raw_steps
+        is_boundary(x, y, L) &&
+            return path, raw_steps, Tuple(direction_counts)
         raw_steps == cap && break
 
-        current = next_point(current, environment, walk_rng)
+        current, direction = next_point_and_direction(current, environment, direction_rng)
+        direction_counts[direction] += 1
         previous_index = get(positions, current, Int32(0))
         if previous_index != 0
             keep = Int(previous_index)
@@ -139,6 +228,35 @@ function loop_erased_walk(L::Integer, environment::SiteIIDEnvironment,
         end
     end
     throw(ErrorException("walk did not hit the boundary within $cap steps"))
+end
+
+"Compatibility wrapper returning the historical `(path, raw_steps)` pair."
+function loop_erased_walk(L::Integer, environment::AbstractLERWEnvironment,
+                          direction_rng::AbstractRNG;
+                          max_steps::Union{Nothing,Integer}=nothing)
+    path, raw_steps, _ = loop_erased_walk_diagnostics(
+        L, environment, direction_rng; max_steps)
+    return path, raw_steps
+end
+
+"Chronologically erase loops from an explicit nearest-neighbour raw path."
+function loop_erase(raw_path::AbstractVector{PointKey})
+    isempty(raw_path) && return PointKey[]
+    path = PointKey[]
+    positions = Dict{PointKey,Int}()
+    for point in raw_path
+        previous_index = get(positions, point, 0)
+        if previous_index == 0
+            push!(path, point)
+            positions[point] = length(path)
+        else
+            for index in (previous_index + 1):length(path)
+                delete!(positions, path[index])
+            end
+            resize!(path, previous_index)
+        end
+    end
+    return path
 end
 
 @inline function direction_code(a::PointKey, b::PointKey)::Int8

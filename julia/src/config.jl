@@ -36,8 +36,14 @@ function parse_params(text)::Dict{String,Float64}
 end
 
 function require_parameter(params::AbstractDict, aliases::Tuple, canonical::String)::Float64
+    supplied = [String(key) for key in keys(params)]
+    length(supplied) == 1 || throw(ArgumentError(
+        "distribution needs exactly one `$canonical` parameter"))
+    only(supplied) in aliases || throw(ArgumentError(
+        "unknown parameter `$(only(supplied))`; expected `$canonical`"))
     for name in aliases
         haskey(params, name) && return Float64(params[name])
+        haskey(params, Symbol(name)) && return Float64(params[Symbol(name)])
     end
     throw(ArgumentError("distribution needs parameter `$canonical`"))
 end

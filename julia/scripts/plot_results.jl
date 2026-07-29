@@ -1,5 +1,7 @@
 #!/usr/bin/env julia
 
+ENV["GKSwstype"] = get(ENV, "GKSwstype", "100")
+
 using CSV
 using JSON3
 using Plots
@@ -79,6 +81,8 @@ function main(args=ARGS)
     models = NamedTuple.(CSV.File(joinpath(analysis_dir, "scaling_model_comparison.csv")))
     keys = sort!(unique((String(row.distribution), String(row.distribution_params))
                         for row in summary))
+    temporal = !isempty(summary) && hasproperty(first(summary), :environment_model) &&
+               all(row -> row.environment_model == "temporal_iid", summary)
 
     panels = Any[]
     for key in keys
@@ -96,7 +100,8 @@ function main(args=ARGS)
         savefig(detail, joinpath(details_dir, safe_name(key...) * ".pdf"))
     end
     overview_title = paired ? "Paired LERW winding-difference variance" :
-                              "Single-walk LERW winding variance"
+                     temporal ? "Temporal-i.i.d. annealed LERW winding variance" :
+                                "Single-walk LERW winding variance"
     overview = plot(panels...; layout=(4, 4), size=(1600, 1400),
                     plot_title=overview_title)
     savefig(overview, joinpath(figures_dir, "annealed_scaling_all_distributions.png"))
@@ -112,7 +117,8 @@ function main(args=ARGS)
                      yticks=(eachindex(ps), labels), markercolor=:black,
                      markerstrokewidth=0, label="95% bootstrap CI", xlabel="p",
                      title=paired ? "Paired LERWs: Var(ΔWₗ) = C(log L)ᵖ" :
-                                    "Var(Wₗ) = C(log L)ᵖ",
+                           temporal ? "Temporal-i.i.d.: Var(Wₗ) = C(log L)ᵖ" :
+                                      "Var(Wₗ) = C(log L)ᵖ",
                      size=(1000, 800),
                      left_margin=8Plots.mm, legend=:bottomright)
     vline!(forest, [1.0]; color=:seagreen, linewidth=2, label="p = 1")
@@ -142,8 +148,72 @@ function main(args=ARGS)
     savefig(bic, joinpath(figures_dir, "bic_model_comparison.png"))
     savefig(bic, joinpath(figures_dir, "bic_model_comparison.pdf"))
 
+    if temporal
+        frequency_panels = Any[]
+        direction_columns = (
+            ("N", :north_step_frequency), ("E", :east_step_frequency),
+            ("S", :south_step_frequency), ("W", :west_step_frequency),
+        )
+        for key in keys
+            rows = sort([row for row in summary
+                         if String(row.distribution) == key[1] &&
+                            String(row.distribution_params) == key[2]]; by=row -> row.L)
+            panel = plot(; xscale=:log2, xlabel="L", ylabel="raw-step frequency",
+                         title=model_label(key...), legend=:best, ylim=(0.245, 0.255))
+            for (label, column) in direction_columns
+                plot!(panel, getproperty.(rows, :L), Float64.(getproperty.(rows, column));
+                      marker=:circle, markersize=3, label)
+            end
+            hline!(panel, [0.25]; color=:black, linestyle=:dash, label="1/4")
+            push!(frequency_panels, panel)
+        end
+        frequencies = plot(frequency_panels...; layout=(2, 2), size=(1200, 900),
+                           plot_title="Temporal-i.i.d. raw direction frequencies")
+        savefig(frequencies, joinpath(figures_dir, "temporal_direction_frequencies.png"))
+        savefig(frequencies, joinpath(figures_dir, "temporal_direction_frequencies.pdf"))
+
+        comparison_path = joinpath(analysis_dir, "temporal_baseline_comparisons.csv")
+        comparisons = NamedTuple.(CSV.File(comparison_path))
+        comparison_keys = sort!(unique((String(row.distribution),
+                                        String(row.distribution_params))
+                                       for row in comparisons))
+        ratio_plot = plot(; xscale=:log2, xlabel="L", ylabel="variance ratio",
+                          title="Temporal distributions / temporal baseline")
+        winding_plot = plot(; xscale=:log2, xlabel="L",
+                            ylabel="difference in mean winding",
+                            title="Temporal mean winding minus baseline")
+        for key in comparison_keys
+            rows = sort([row for row in comparisons
+                         if String(row.distribution) == key[1] &&
+                            String(row.distribution_params) == key[2]]; by=row -> row.L)
+            label = model_label(key...)
+            ratios = Float64.(getproperty.(rows, :variance_ratio))
+            ratio_low = Float64.(getproperty.(rows, :variance_ratio_ci_low))
+            ratio_high = Float64.(getproperty.(rows, :variance_ratio_ci_high))
+            plot!(ratio_plot, getproperty.(rows, :L), ratios;
+                  ribbon=(ratios .- ratio_low, ratio_high .- ratios),
+                  marker=:circle, label)
+            differences = Float64.(getproperty.(rows, :mean_winding_difference))
+            difference_low = Float64.(getproperty.(rows, :mean_winding_difference_ci_low))
+            difference_high = Float64.(getproperty.(rows, :mean_winding_difference_ci_high))
+            plot!(winding_plot, getproperty.(rows, :L), differences;
+                  ribbon=(differences .- difference_low,
+                          difference_high .- differences),
+                  marker=:circle, label)
+        end
+        hline!(ratio_plot, [1.0]; color=:black, linestyle=:dash, label="no difference")
+        hline!(winding_plot, [0.0]; color=:black, linestyle=:dash, label="no difference")
+        savefig(ratio_plot, joinpath(figures_dir, "temporal_variance_ratios.png"))
+        savefig(ratio_plot, joinpath(figures_dir, "temporal_variance_ratios.pdf"))
+        savefig(winding_plot, joinpath(figures_dir, "temporal_mean_winding_differences.png"))
+        savefig(winding_plot, joinpath(figures_dir, "temporal_mean_winding_differences.pdf"))
+    end
+
     for name in ("summary.csv", "loglog_fits.csv", "scaling_model_comparison.csv",
-                 "pointwise_ratios.csv", "local_effective_exponents.csv")
+                 "pointwise_ratios.csv", "local_effective_exponents.csv",
+                 "temporal_baseline_comparisons.csv",
+                 "temporal_direction_diagnostics.csv")
+        isfile(joinpath(analysis_dir, name)) || continue
         cp(joinpath(analysis_dir, name), joinpath(output_dir, name); force=true)
     end
     pair_path = joinpath(analysis_dir, "double_dimer_pairs.csv")
