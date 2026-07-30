@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  julia:
-    name: Julia ${{ matrix.julia-version }} package check
+  random-walk:
+    name: Random-walk tests (Julia ${{ matrix.julia-version }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -22,7 +22,7 @@ jobs:
         julia-version: ['1.10', '1']
     defaults:
       run:
-        working-directory: julia
+        working-directory: random_walk
     steps:
       - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v2
@@ -31,7 +31,17 @@ jobs:
       - uses: julia-actions/cache@v2
       - name: Instantiate and precompile
         run: |
-          # Resolve dependencies for each Julia version in the compatibility matrix.
           rm -f Manifest.toml
           julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
-      - run: julia --project=. -e 'using LERWResearch; @assert LERWResearch.stable_seed("ci", 1) == LERWResearch.stable_seed("ci", 1)'
+      - name: Run package tests
+        run: julia --project=. -e 'using Pkg; Pkg.test()'
+
+  aztec:
+    name: Aztec-diamond tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - run: julia --startup-file=no aztec/test/runtests.jl

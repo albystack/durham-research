@@ -1,0 +1,15 @@
+model=biased Gamma-disordered Aztec diamond
+observable=center face height
+one_sample=fresh random environment plus one conditional dimer cover
+height_convention=Sunil Chhita email 2026-07-29
+center_index=(L+1, floor(L/2)+1)
+alpha=0.2
+beta=0.25
+gamma_scale=1
+base_seed=20260729
+rng=Xoshiro with SplitMix64-derived per-sample seeds
+julia_version=1.12.6
+julia_threads=4
+config=/Users/alberto/Desktop/research/aztec/configs/gamma_height_pilot.csv
+orders=16,24,32,48,64,96,128,192,256,384,512,600
+planned_samples=26050

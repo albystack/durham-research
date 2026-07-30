@@ -1,0 +1,4 @@
+order,samples,batch_size
+4,40,10
+8,40,10
+12,40,10

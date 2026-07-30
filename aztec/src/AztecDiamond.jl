@@ -8,7 +8,12 @@ export random_uniform_weights,
        gamma_disordered_weights,
        creation_probabilities,
        gamma_disordered_probabilities,
+       gamma_disordered_creation_choices,
        sample_tiling,
+       sample_tiling_from_choices,
+       height_function,
+       center_face_index,
+       center_height,
        validate_tiling,
        orientation_counts,
        write_table,
@@ -186,14 +191,11 @@ function gamma_disordered_probabilities(
         throw(ArgumentError("Gamma weights must be strictly positive"))
 
     order = rows
-    a_levels = Vector{Matrix{Float64}}(undef, order)
-    b_levels = Vector{Matrix{Float64}}(undef, order)
-    a_levels[order] = Float64.(a)
-    b_levels[order] = Float64.(b)
-
+    probabilities = Vector{Matrix{Float64}}(undef, order)
+    current_a = Float64.(a)
+    current_b = Float64.(b)
+    probabilities[order] = current_b ./ (current_a + current_b)
     for level in order:-1:2
-        current_a = a_levels[level]
-        current_b = b_levels[level]
         reduced_a = Matrix{Float64}(undef, level - 1, level - 1)
         reduced_b = Matrix{Float64}(undef, level - 1, level - 1)
 
@@ -208,19 +210,86 @@ function gamma_disordered_probabilities(
         end
         all(isfinite, reduced_a) && all(isfinite, reduced_b) ||
             throw(ArgumentError("non-finite Gamma reduction at level $level"))
-        a_levels[level - 1] = reduced_a
-        b_levels[level - 1] = reduced_b
-    end
-
-    probabilities = Vector{Matrix{Float64}}(undef, order)
-    for level in 1:order
-        denominator = a_levels[level] + b_levels[level]
-        probability = b_levels[level] ./ denominator
+        probability = reduced_b ./ (reduced_a + reduced_b)
         all(p -> isfinite(p) && 0 <= p <= 1, probability) ||
-            throw(ArgumentError("invalid Gamma creation probability at level $level"))
-        probabilities[level] = probability
+            throw(ArgumentError("invalid Gamma creation probability at level $(level - 1)"))
+        probabilities[level - 1] = probability
+        current_a = reduced_a
+        current_b = reduced_b
     end
     return probabilities
+end
+
+function draw_creation_choices!(
+    rng::AbstractRNG,
+    choices::AbstractMatrix{Bool},
+    a::AbstractMatrix{<:Real},
+    b::AbstractMatrix{<:Real},
+)
+    for index in eachindex(choices, a, b)
+        choices[index] = rand(rng) < b[index] / (a[index] + b[index])
+    end
+    return choices
+end
+
+"""
+    gamma_disordered_creation_choices(rng, a, b)
+
+Reduce the Gamma weights while pre-drawing every independent creation coin.
+The result stores one bit per potential creation rather than a `Float64`
+probability. Coins at sites which are not holes during shuffling are ignored,
+so this is distributionally identical to drawing a coin only when needed.
+Peak storage is `O(L^2)` rather than `O(L^3)`.
+"""
+function gamma_disordered_creation_choices(
+    rng::AbstractRNG,
+    a::AbstractMatrix{<:Real},
+    b::AbstractMatrix{<:Real},
+)
+    size(a) == size(b) || throw(ArgumentError("a and b must have the same size"))
+    rows, cols = size(a)
+    rows == cols || throw(ArgumentError("a and b must be square"))
+    rows > 0 || throw(ArgumentError("weight tables cannot be empty"))
+    all(isfinite, a) && all(isfinite, b) ||
+        throw(ArgumentError("Gamma weights must be finite"))
+    all(>(0), a) && all(>(0), b) ||
+        throw(ArgumentError("Gamma weights must be strictly positive"))
+
+    order = rows
+    choices = Vector{BitMatrix}(undef, order)
+    current_a = Float64.(a)
+    current_b = Float64.(b)
+    choices[order] = draw_creation_choices!(
+        rng,
+        falses(order, order),
+        current_a,
+        current_b,
+    )
+
+    for level in order:-1:2
+        reduced_a = Matrix{Float64}(undef, level - 1, level - 1)
+        reduced_b = Matrix{Float64}(undef, level - 1, level - 1)
+        for i in 1:(level - 1), j in 1:(level - 1)
+            reduced_a[i, j] =
+                current_a[i, j] / (current_a[i, j] + current_b[i, j]) *
+                (current_a[i + 1, j] + current_b[i + 1, j])
+            reduced_b[i, j] =
+                current_b[i, j + 1] /
+                (current_a[i, j + 1] + current_b[i, j + 1]) *
+                (current_a[i + 1, j + 1] + current_b[i + 1, j + 1])
+        end
+        all(isfinite, reduced_a) && all(isfinite, reduced_b) ||
+            throw(ArgumentError("non-finite Gamma reduction at level $level"))
+        choices[level - 1] = draw_creation_choices!(
+            rng,
+            falses(level - 1, level - 1),
+            reduced_a,
+            reduced_b,
+        )
+        current_a = reduced_a
+        current_b = reduced_b
+    end
+    return choices
 end
 
 function delete_and_slide(tiling::AbstractMatrix{Bool})
@@ -303,6 +372,49 @@ function create_dominoes!(
     return tiling
 end
 
+function create_dominoes_from_choices!(
+    tiling::AbstractMatrix{Bool},
+    choices::AbstractMatrix{Bool},
+)
+    order = size(tiling, 1) ÷ 2
+    size(choices) == (order, order) ||
+        throw(ArgumentError("creation-choice matrix has the wrong size"))
+
+    for i0 in 0:(order - 1), j0 in 0:(order - 1)
+        block_empty =
+            !tiling[2 * i0 + 1, 2 * j0 + 1] &&
+            !tiling[2 * i0 + 2, 2 * j0 + 1] &&
+            !tiling[2 * i0 + 1, 2 * j0 + 2] &&
+            !tiling[2 * i0 + 2, 2 * j0 + 2]
+        block_empty || continue
+
+        left_empty =
+            j0 == 0 ||
+            (!tiling[2 * i0 + 1, 2 * j0] && !tiling[2 * i0 + 2, 2 * j0])
+        right_empty =
+            j0 == order - 1 ||
+            (!tiling[2 * i0 + 1, 2 * j0 + 3] &&
+             !tiling[2 * i0 + 2, 2 * j0 + 3])
+        top_empty =
+            i0 == 0 ||
+            (!tiling[2 * i0, 2 * j0 + 1] && !tiling[2 * i0, 2 * j0 + 2])
+        bottom_empty =
+            i0 == order - 1 ||
+            (!tiling[2 * i0 + 3, 2 * j0 + 1] &&
+             !tiling[2 * i0 + 3, 2 * j0 + 2])
+        left_empty && right_empty && top_empty && bottom_empty || continue
+
+        if choices[i0 + 1, j0 + 1]
+            tiling[2 * i0 + 1, 2 * j0 + 1] = true
+            tiling[2 * i0 + 2, 2 * j0 + 2] = true
+        else
+            tiling[2 * i0 + 2, 2 * j0 + 1] = true
+            tiling[2 * i0 + 1, 2 * j0 + 2] = true
+        end
+    end
+    return tiling
+end
+
 """
     sample_tiling(rng, probabilities)
 
@@ -328,6 +440,86 @@ function sample_tiling(
         create_dominoes!(rng, tiling, probabilities[level])
     end
     return tiling
+end
+
+"""
+    sample_tiling_from_choices(choices)
+
+Run domino shuffling using independent creation choices which were drawn in
+advance by `gamma_disordered_creation_choices`.
+"""
+function sample_tiling_from_choices(
+    choices::AbstractVector{<:AbstractMatrix{Bool}},
+)
+    order = length(choices)
+    order > 0 || throw(ArgumentError("at least one choice matrix is required"))
+    tiling = if choices[1][1, 1]
+        Bool[1 0; 0 1]
+    else
+        Bool[0 1; 1 0]
+    end
+    for level in 2:order
+        tiling = delete_and_slide(tiling)
+        create_dominoes_from_choices!(tiling, choices[level])
+    end
+    return tiling
+end
+
+"""
+    height_function(tiling)
+
+Compute Sunil Chhita's face height table verbatim. For an order-`L` tiling,
+the result has size `(2L + 1) × (L + 1)`. Even and odd rows represent
+staggered face locations. Crossing an occupied dimer edge changes the height
+by `+3`; crossing an unoccupied edge changes it by `-1`.
+"""
+function height_function(tiling::AbstractMatrix{Bool})
+    side1, side2 = size(tiling)
+    side1 == side2 || throw(ArgumentError("tiling matrix must be square"))
+    iseven(side1) || throw(ArgumentError("tiling matrix side length must be even"))
+    order = side1 ÷ 2
+    heights = zeros(Int, side1 + 1, order + 1)
+
+    for column in 1:(order + 1)
+        heights[1, column] = 2 * column - 2
+    end
+    for row in 2:(side1 + 1), column in 1:order
+        heights[row, column] =
+            heights[row - 1, column] +
+            (tiling[row - 1, 2 * column - 1] ? 3 : -1)
+    end
+    return heights
+end
+
+"""
+    center_face_index(order)
+
+Return the row and column of the face closest to the geometric center in
+Sunil's staggered height table.
+"""
+function center_face_index(order::Integer)
+    order > 0 || throw(ArgumentError("order must be positive"))
+    return (row=order + 1, column=fld(order, 2) + 1)
+end
+
+"""
+    center_height(tiling)
+
+Compute only the central face height, without allocating the full height
+table. This is exactly `height_function(tiling)[center_face_index(order)...]`.
+"""
+function center_height(tiling::AbstractMatrix{Bool})
+    side1, side2 = size(tiling)
+    side1 == side2 || throw(ArgumentError("tiling matrix must be square"))
+    iseven(side1) || throw(ArgumentError("tiling matrix side length must be even"))
+    order = side1 ÷ 2
+    center = center_face_index(order)
+    height = 2 * center.column - 2
+    edge_column = 2 * center.column - 1
+    for row in 1:order
+        height += tiling[row, edge_column] ? 3 : -1
+    end
+    return height
 end
 
 function covered_cells(tiling::AbstractMatrix{Bool})

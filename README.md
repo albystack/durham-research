@@ -1,199 +1,82 @@
-# Winding fluctuations of loop-erased random walks
+# Random walks and dimers in random environments
 
-A computational study of loop-erased random walks (LERWs) in random
-environments. The central question is whether local disorder changes the
-winding variance from logarithmic growth,
+This repository contains two computational probability projects supervised by
+Prof. Sunil Chhita at Durham University:
 
-```math
-\mathrm{Var}(W_L) \sim C\log L,
+1. **Loop-erased random walks (LERWs):** does spatial disorder change winding
+   fluctuations from \(C\log L\) to \(C(\log L)^2\)?
+2. **Random-weight Aztec diamonds:** how does the height at the central face
+   fluctuate under Gamma-disordered domino weights?
+
+Both studies use reproducible Julia simulations, deterministic seeds,
+bootstrap inference and direct model comparison. The numerical conclusions
+are finite-size evidence, not asymptotic proofs.
+
+## Main results
+
+| Study | Scale | Main numerical result |
+|---|---:|---|
+| LERW, one walk per fixed environment | 379,000 walks; 15 weight laws; \(L\le8192\) | Fitted winding exponents \(p=1.01\)--\(1.16\); logarithmic model preferred by BIC for 14/15 specifications |
+| LERW, two walks sharing each environment | 758,000 walks in 379,000 pairs | Fitted exponents \(p=1.04\)--\(1.19\); logarithmic model preferred for 12/15 specifications |
+| Temporally refreshed Gamma LERW | \(L\le8192\) | Recovered the length law \(E[|\mathrm{LERW}_L|]\propto L^{1.2518}\), with 95% bootstrap interval \(1.2456\)--\(1.2573\) |
+| Gamma-disordered Aztec diamond | 26,050 tilings; \(L\le600\) | The affine \((\log L)^2\) height-variance fit beats the affine \(\log L\) fit by 5.260 BIC units and wins 94.2% of bootstrap resamples |
+
+The Aztec result is promising but not decisive: the 95% bootstrap interval for
+the BIC difference is \([-1.273,6.691]\), and the two fitted curves remain
+close over the simulated range.
+
+## Repository layout
+
+```text
+.
+├── random_walk/   LERW package, experiment configs and compact results
+├── aztec/         weighted domino sampler, datasets and results
+└── .github/       CI for both Julia test suites
 ```
 
-to a squared-logarithmic regime,
+Each study is self-contained:
 
-```math
-\mathrm{Var}(W_L) \sim C(\log L)^2.
-```
+- [`random_walk/README.md`](random_walk/README.md) explains the LERW models,
+  retained results and campaign commands.
+- [`aztec/README.md`](aztec/README.md) explains the domino sampler, height
+  convention, retained datasets and reproduction commands.
 
-## Model
+## Quick start
 
-A walk starts at the origin and stops when it reaches the boundary of
-the square \([-L,L]^2\). At each lattice site \(x\), four independent positive
-weights \(w_{x,d}\) determine the next step:
+Julia 1.10 or newer is recommended.
 
-```math
-\mathbb P(X_{n+1}=x+e_d\mid X_n=x,\omega)
-=\frac{w_{x,d}}{\sum_{d'}w_{x,d'}}.
-```
-
-Loops are erased chronologically. Along the resulting self-avoiding path,
-\(W_L\) is the number of left quarter-turns minus right quarter-turns; the
-angular winding is \(\Theta_L=(\pi/2)W_L\).
-
-The simulations cover 15 bounded, light-tailed, and heavy-tailed weight
-specifications. Two observables are studied:
-
-- one LERW in each independent environment;
-- a pair of conditionally independent LERWs in the same environment, with
-  \(\Delta W_L=W_L^{(1)}-W_L^{(2)}\).
-
-Two directed environment modes are implemented:
-
-- `site_iid` is the original model. Four weights are fixed at each site and
-  reused on every revisit.
-- `temporal_iid` redraws four independent weights at every raw walk step.
-  Every temporal realisation contains exactly one walk and is analysed only as
-  an independent annealed observation.
-
-The original LERW study remains under `julia/`. The follow-up weighted
-Aztec-diamond sampler is isolated under `aztec/`.
-
-## Results
-
-The effective exponent is fitted through
-
-```math
-\mathrm{Var}(W_L)=C(\log L)^p,
-\qquad
-\log\mathrm{Var}(W_L)=\log C+p\log\log L.
-```
-
-Thus \(p=1\) represents logarithmic growth and \(p=2\) squared-logarithmic
-growth.
-
-| Experiment | Sample | Fitted \(p\) across 15 specifications | Log model preferred by BIC |
-|---|---:|---:|---:|
-| Single walk | 379,000 environments and walks | 1.011–1.160 | 14/15 |
-| Paired walks | 379,000 environments, 758,000 walks | 1.036–1.187 | 12/15 |
-
-Every bootstrap confidence interval remains far below \(p=2\). Over the
-simulated range \(L=16,\ldots,8192\), both experiments therefore show no robust
-evidence for squared-logarithmic growth. These are finite-size Monte Carlo
-results, not an asymptotic proof.
-
-The tables and figures in [`reports/`](reports/) show the completed paired-walk
-experiment. Raw batch files and the earlier single-walk results are preserved
-in [`legacy/`](legacy/).
-
-### Paired winding variance
-
-Points are variance estimates with 95% error bars. The blue and orange curves
-fit \(a+b\log L\) and \(a+b(\log L)^2\), respectively.
-
-<p align="center">
-  <img src="reports/figures/annealed_scaling_all_distributions.png" alt="Paired LERW winding-difference variance across all weight distributions" width="100%">
-</p>
-
-### Effective exponents
-
-The green line marks \(p=1\); the dashed red line marks \(p=2\).
-
-<p align="center">
-  <img src="reports/figures/scaling_exponent_forest.png" alt="Effective exponent estimates for paired LERW winding differences" width="82%">
-</p>
-
-### Direct model comparison
-
-Positive \(\Delta\mathrm{BIC}=\mathrm{BIC}(\log^2)-\mathrm{BIC}(\log)\)
-favors ordinary logarithmic growth.
-
-<p align="center">
-  <img src="reports/figures/bic_model_comparison.png" alt="BIC comparison of logarithmic and squared-logarithmic fits" width="82%">
-</p>
-
-## Setup
-
-Julia 1.10 or newer is required.
+### Random-walk tests
 
 ```bash
-git clone https://github.com/albystack/lerw-random-environment-research.git
-cd lerw-random-environment-research/julia
-
-julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
+cd random_walk
+julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
 ```
 
-The simulation, analysis, and plotting entry points are in [`julia/scripts/`](julia/scripts/).
+### Aztec-diamond tests and saved-data analysis
 
-## Random-weight Aztec-diamond follow-up
-
-The self-contained [`aztec/`](aztec/) workflow reproduces Sunil Chhita's
-supplied 2022 domino-shuffling code for an order-200 diamond with a saved
-`400 × 400` table of i.i.d. `Uniform(0,1)` weights. It uses a fixed seed,
-validates exact coverage of all 80,400 cells, and exports both the old
-Mathematica-compatible binary matrix and a directly viewable SVG:
+From the repository root:
 
 ```bash
 julia --startup-file=no aztec/test/runtests.jl
-julia --startup-file=no aztec/scripts/run_random_weights.jl
-julia --startup-file=no aztec/scripts/run_gamma_disordered.jl
+julia --startup-file=no aztec/scripts/analyze_height_campaign.jl
+julia --startup-file=no aztec/scripts/plot_height_campaign.jl
 ```
 
-See [`aztec/README.md`](aztec/README.md) for the precise matrix convention,
-the i.i.d.-Uniform run, the Duits–Van Peski Gamma-disordered run, output
-files, and the optional Mathematica renderer.
+Generated batches and scratch analyses are written below `output/` and are
+ignored by Git. The repository tracks source code, tests, frozen
+configurations, compact datasets and the result files needed to inspect the
+reported conclusions.
 
-## Temporal-i.i.d. pilot
+## Selected figures
 
-The frozen 46,000-walk pilot is
-[`julia/configs/temporal_iid_pilot.csv`](julia/configs/temporal_iid_pilot.csv).
-From `julia/`, reproduce its validation and outputs with:
+### Paired LERW winding variance
 
-```bash
-julia --project=. -e 'using Pkg; Pkg.test()'
-JULIA_NUM_THREADS=auto julia --project=. scripts/run_campaign.jl \
-  --config configs/temporal_iid_smoke.csv \
-  --output-dir results_julia_temporal_smoke
+<p align="center">
+  <img src="random_walk/results/site_iid_paired/figures/annealed_scaling_all_distributions.png" alt="Paired LERW winding-difference variance across random environments" width="92%">
+</p>
 
-/usr/bin/time -l env JULIA_NUM_THREADS=auto julia --project=. \
-  scripts/run_batch.jl --config configs/temporal_iid_benchmark.csv \
-  --task-id 0 --output-dir results_julia_temporal_benchmark
-/usr/bin/time -l env JULIA_NUM_THREADS=auto julia --project=. \
-  scripts/run_batch.jl --config configs/temporal_iid_benchmark.csv \
-  --task-id 1 --output-dir results_julia_temporal_benchmark
-/usr/bin/time -l env JULIA_NUM_THREADS=auto julia --project=. \
-  scripts/run_batch.jl --config configs/temporal_iid_benchmark.csv \
-  --task-id 2 --output-dir results_julia_temporal_benchmark
+### Gamma-disordered Aztec center-height variance
 
-JULIA_NUM_THREADS=auto julia --project=. scripts/run_campaign.jl \
-  --config configs/temporal_iid_pilot.csv \
-  --output-dir results_julia_temporal_pilot
-JULIA_NUM_THREADS=auto julia --project=. scripts/analyze_results.jl \
-  --config configs/temporal_iid_pilot.csv \
-  --results-dir results_julia_temporal_pilot \
-  --output-dir analysis_temporal_pilot \
-  --bootstrap-reps 1000 --bootstrap-seed 20260726
-julia --project=. scripts/plot_results.jl \
-  --analysis-dir analysis_temporal_pilot \
-  --output-dir figures_temporal_pilot
-```
-
-Generated raw results, analysis tables, and figures are ignored runtime
-artifacts; the frozen configurations and source code are tracked.
-
-## Temporal Gamma LERW-length extension
-
-The length observable is the number of edges in the online loop-erased path.
-Its scaling exponent is fitted from
-
-```math
-\log E[|\mathrm{LERW}_L|] = \log C + d\log L.
-```
-
-The dedicated Gamma(shape \(0.5\)) campaign reuses the existing pilot through
-\(L=1024\), adds 100 independent walks at each of
-\(L=2048,4096,5000,8192\), and writes pointwise ratios, local exponents, and a
-bootstrap confidence interval for \(d\):
-
-```bash
-julia --project=. scripts/generate_config.jl \
-  --preset temporal_iid_gamma_length \
-  --output configs/temporal_iid_gamma_length.csv \
-  --extension-walks 100
-JULIA_NUM_THREADS=auto julia --project=. scripts/run_campaign.jl \
-  --config configs/temporal_iid_gamma_length.csv \
-  --output-dir results_julia_temporal_pilot
-JULIA_NUM_THREADS=auto julia --project=. scripts/analyze_results.jl \
-  --config configs/temporal_iid_gamma_length.csv \
-  --results-dir results_julia_temporal_pilot \
-  --output-dir analysis_temporal_gamma_length \
-  --bootstrap-reps 2000 --bootstrap-seed 20260727
-```
+<p align="center">
+  <img src="aztec/results/height/center_height_variance.png" alt="Central-height variance for Gamma-disordered Aztec diamonds" width="82%">
+</p>

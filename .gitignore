@@ -31,7 +31,6 @@ build/
 *.synctex.gz
 
 # Generated project outputs
-results/
 results_hpc*/
 results_julia*/
 results_strict_annealed/
@@ -39,14 +38,3 @@ logs/
 analysis_*/
 figures_*/
 output/
-
-# Legacy output must not be reintroduced.
-old-python/results*/
-old-python/analysis*/
-old-python/*_backup/
-
-# Large generated legacy analysis datasets
-legacy/datasets/double-dimer/analysis/combined_raw.csv
-legacy/datasets/double-dimer/analysis/double_dimer_pairs.csv
-legacy/datasets/strict-annealed/analysis/combined_raw.csv
-reports/double_dimer_pairs.csv

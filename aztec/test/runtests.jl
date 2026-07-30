@@ -20,6 +20,9 @@ using .AztecDiamond
         @test validation.valid
         @test validation.dominoes == order * (order + 1)
         @test sum(values(orientation_counts(tiling))) == order * (order + 1)
+        center = center_face_index(order)
+        @test center_height(tiling) == height_function(tiling)[center.row, center.column]
+
     end
 end
 
@@ -43,6 +46,23 @@ end
         @test size(last(probabilities)) == (order, order)
         @test all(matrix -> all(p -> 0 <= p <= 1, matrix), probabilities)
         @test validation.valid
+        center = center_face_index(order)
+        @test center_height(tiling) == height_function(tiling)[center.row, center.column]
+
+        choice_rng = Xoshiro(30_000 + order)
+        choices = gamma_disordered_creation_choices(
+            choice_rng,
+            weights.a,
+            weights.b,
+        )
+        choice_tiling = sample_tiling_from_choices(choices)
+        choice_validation = validate_tiling(choice_tiling)
+        @test length(choices) == order
+        @test all(level -> size(choices[level]) == (level, level), 1:order)
+        @test choice_validation.valid
+        choice_center = center_face_index(order)
+        @test center_height(choice_tiling) ==
+              height_function(choice_tiling)[choice_center.row, choice_center.column]
     end
 end
 

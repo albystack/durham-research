@@ -1,0 +1,2 @@
+distribution,distribution_params,fit_min_L,n_sizes,L_values,intercept_log_C,length_exponent,length_exponent_se,length_exponent_ci_low,length_exponent_ci_high,length_exponent_bootstrap_ci_low,length_exponent_bootstrap_ci_high,r2,sse,aic,bic
+gamma,"{""shape"":0.5}",,11,16 32 64 128 256 512 1024 2048 4096 5000 8192,0.23654609932061366,1.2517544758379398,0.002607814438278091,1.2466431595389147,1.2568657921369648,1.2456329044034744,1.2573465777077064,0.9999609392470826,0.002809593346671785,-86.99871874933625,-86.2029282037395

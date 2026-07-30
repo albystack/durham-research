@@ -1,4 +1,0 @@
-task_id,environment_model,distribution,distribution_params,L,batch_id,num_environments,walks_per_environment,base_seed
-0,temporal_iid,pareto,"{""alpha"":2.0}",256,0,100,1,4901391899125717277
-1,temporal_iid,pareto,"{""alpha"":2.0}",512,0,100,1,4647007178600822225
-2,temporal_iid,pareto,"{""alpha"":2.0}",1024,0,100,1,15661777200515555834
