@@ -24,8 +24,16 @@ function parse_arguments(arguments)
         options[key] = arguments[index + 1]
         index += 2
     end
+
+    results_paths = [
+        abspath(strip(path))
+        for path in split(options["results-dir"], ',')
+        if !isempty(strip(path))
+    ]
+    isempty(results_paths) && error("--results-dir must contain at least one path")
+
     return (
-        results_dir=abspath(options["results-dir"]),
+        results_paths=results_paths,
         output_dir=abspath(options["output-dir"]),
         bootstrap_reps=parse(Int, options["bootstrap-reps"]),
         bootstrap_seed=parse(UInt64, options["bootstrap-seed"]),
@@ -33,38 +41,69 @@ function parse_arguments(arguments)
     )
 end
 
-function load_results(results_path)
+function collect_result_files(results_paths)
+    files = String[]
+    for results_path in results_paths
+        if isfile(results_path)
+            push!(files, results_path)
+        elseif isdir(results_path)
+            for (root, _, names) in walkdir(results_path)
+                for name in names
+                    startswith(name, "batch_") && endswith(name, ".csv") || continue
+                    push!(files, joinpath(root, name))
+                end
+            end
+        else
+            error("results path does not exist: $results_path")
+        end
+    end
+    unique!(files)
+    sort!(files)
+    isempty(files) && error("no result CSV files found")
+    return files
+end
+
+function load_results(results_paths)
     grouped = Dict{Int,Vector{Int}}()
     seen_ids = Dict{Int,Set{Int}}()
-    files = String[]
-    if isfile(results_path)
-        push!(files, results_path)
-    elseif isdir(results_path)
-        for (root, _, names) in walkdir(results_path)
-            for name in names
-                startswith(name, "batch_") && endswith(name, ".csv") || continue
-                push!(files, joinpath(root, name))
-            end
-        end
-    else
-        error("results path does not exist: $results_path")
-    end
-    isempty(files) && error("no batch CSV files found under $results_path")
+    seen_seeds = Set{UInt64}()
+    files = collect_result_files(results_paths)
 
-    for path in sort(files)
+    expected_header =
+        "order,sample_id,seed,center_row,center_column,center_height"
+
+    for path in files
         lines = readlines(path)
-        first(lines) ==
-        "order,sample_id,seed,center_row,center_column,center_height" ||
-            error("unexpected header in $path")
-        for line in lines[2:end]
-            fields = split(line, ',')
-            length(fields) == 6 || error("malformed row in $path")
+        isempty(lines) && error("empty CSV: $path")
+        strip(first(lines)) == expected_header || error("unexpected header in $path")
+
+        for (line_number, line) in enumerate(lines[2:end])
+            line_number += 1 # Adjust for 0-based index of lines[2:end] + 1 for header
+            isempty(strip(line)) && continue
+            fields = split(strip(line), ',')
+            length(fields) == 6 || error("malformed row $line_number in $path")
+
             order = parse(Int, fields[1])
             sample_id = parse(Int, fields[2])
+            seed = parse(UInt64, fields[3])
+            center_row = parse(Int, fields[4])
+            center_column = parse(Int, fields[5])
             height = parse(Int, fields[6])
+
+            expected_center_row = order + 1
+            expected_center_column = fld(order, 2) + 1
+            center_row == expected_center_row ||
+                error("unexpected center row in $path line $line_number")
+            center_column == expected_center_column ||
+                error("unexpected center column in $path line $line_number")
+
             ids = get!(seen_ids, order, Set{Int}())
             sample_id in ids && error("duplicate sample id $sample_id at order $order")
             push!(ids, sample_id)
+
+            seed in seen_seeds && error("duplicate seed $seed in $path line $line_number")
+            push!(seen_seeds, seed)
+
             push!(get!(grouped, order, Int[]), height)
         end
     end
@@ -115,6 +154,7 @@ function bootstrap_statistics(rng, grouped, orders, repetitions)
     exponent_draws = Vector{Float64}(undef, repetitions)
     delta_bic_draws = Vector{Float64}(undef, repetitions)
     log_orders = log.(Float64.(orders))
+
     for repetition in 1:repetitions
         variances = Vector{Float64}(undef, length(orders))
         for (index, order) in enumerate(orders)
@@ -128,6 +168,7 @@ function bootstrap_statistics(rng, grouped, orders, repetitions)
             variance_draws[order][repetition] = estimate
             variances[index] = estimate
         end
+
         exponent_draws[repetition] = exponent_fit(orders, variances).exponent
         log_fit = linear_fit(log_orders, variances)
         log2_fit = linear_fit(log_orders .^ 2, variances)
@@ -173,6 +214,7 @@ function write_fits(
     log2_fit = linear_fit(log.(Float64.(fit_orders)) .^ 2, fit_variances)
     sorted_exponents = sort(exponent_draws)
     sorted_delta_bic = sort(delta_bic_draws)
+
     open(path, "w") do io
         println(io, "fit_min_order=$(minimum(fit_orders))")
         println(io, "fit_max_order=$(maximum(fit_orders))")
@@ -226,10 +268,12 @@ end
 function main(arguments)
     parsed = parse_arguments(arguments)
     parsed.bootstrap_reps > 0 || error("--bootstrap-reps must be positive")
-    grouped = load_results(parsed.results_dir)
+    grouped = load_results(parsed.results_paths)
     orders = sort(collect(keys(grouped)))
+
     all(length(grouped[order]) >= 2 for order in orders) ||
         error("each order requires at least two samples")
+
     fit_orders = filter(>=(parsed.min_order), orders)
     length(fit_orders) >= 3 || error("at least three fitted orders are required")
     fit_variances = [var(grouped[order]; corrected=true) for order in fit_orders]
@@ -242,6 +286,7 @@ function main(arguments)
         fit_orders,
         parsed.bootstrap_reps,
     )
+
     for order in setdiff(orders, fit_orders)
         values = grouped[order]
         draws = Vector{Float64}(undef, parsed.bootstrap_reps)
@@ -257,6 +302,7 @@ function main(arguments)
     fits_path = joinpath(parsed.output_dir, "height_fits.txt")
     curve_path = joinpath(parsed.output_dir, "height_fit_curves.csv")
     write_summary(summary_path, grouped, orders, variance_draws)
+
     exponent = exponent_fit(fit_orders, fit_variances)
     log_fit, log2_fit = write_fits(
         fits_path,

@@ -11,6 +11,7 @@ export random_uniform_weights,
        gamma_disordered_creation_choices,
        sample_tiling,
        sample_tiling_from_choices,
+       sample_gamma_center_height,
        height_function,
        center_face_index,
        center_height,
@@ -239,7 +240,9 @@ Reduce the Gamma weights while pre-drawing every independent creation coin.
 The result stores one bit per potential creation rather than a `Float64`
 probability. Coins at sites which are not holes during shuffling are ignored,
 so this is distributionally identical to drawing a coin only when needed.
-Peak storage is `O(L^2)` rather than `O(L^3)`.
+The rolling Gamma-weight state uses `O(L^2)` memory. The complete sequence
+of creation decisions uses `O(L^3)` bits, rather than `O(L^3)` Float64
+probability values.
 """
 function gamma_disordered_creation_choices(
     rng::AbstractRNG,
@@ -463,6 +466,46 @@ function sample_tiling_from_choices(
         create_dominoes_from_choices!(tiling, choices[level])
     end
     return tiling
+end
+
+
+"""
+    sample_gamma_center_height(seed, order; alpha=0.2, beta=0.25)
+
+Generate one independent Gamma-disordered Aztec-diamond environment,
+sample one dimer configuration conditional on that environment, and
+return the height at the central face.
+"""
+function sample_gamma_center_height(
+    seed::Integer,
+    order::Integer;
+    alpha::Real=0.2,
+    beta::Real=0.25,
+)
+    order > 0 || throw(ArgumentError("order must be positive"))
+    alpha > 0 || throw(ArgumentError("alpha must be positive"))
+    beta > 0 || throw(ArgumentError("beta must be positive"))
+
+    rng = Xoshiro(UInt64(seed))
+    weights = gamma_disordered_weights(
+        rng,
+        order;
+        alpha=alpha,
+        beta=beta,
+    )
+    choices = gamma_disordered_creation_choices(
+        rng,
+        weights.a,
+        weights.b,
+    )
+    tiling = sample_tiling_from_choices(choices)
+
+    count(tiling) == order * (order + 1) ||
+        throw(ErrorException(
+            "invalid domino count for order=$order seed=$seed",
+        ))
+
+    return center_height(tiling)
 end
 
 """

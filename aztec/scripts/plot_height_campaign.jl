@@ -4,7 +4,7 @@ using Printf
 
 function parse_arguments(arguments)
     options = Dict{String,String}(
-        "analysis-dir" => joinpath(@__DIR__, "..", "results", "height"),
+        "analysis-dir" => joinpath(@__DIR__, "..", "output", "gamma_height_analysis"),
         "output-dir" => joinpath(@__DIR__, "..", "output", "gamma_height_analysis"),
     )
     index = 1

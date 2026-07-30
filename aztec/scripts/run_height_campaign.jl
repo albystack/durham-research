@@ -37,23 +37,48 @@ end
 function read_config(path)
     lines = readlines(path)
     isempty(lines) && error("empty config: $path")
-    strip(lines[1]) == "order,samples,batch_size" ||
-        error("unexpected config header in $path")
-    rows = NamedTuple{(:order, :samples, :batch_size),Tuple{Int,Int,Int}}[]
+
+    header = strip(lines[1])
+    legacy = header == "order,samples,batch_size"
+    extended = header == "order,first_sample_id,samples,batch_size"
+    legacy || extended || error("unexpected config header in $path: $header")
+
+    rows = NamedTuple{
+        (:order, :first_sample_id, :samples, :batch_size),
+        Tuple{Int,Int,Int,Int},
+    }[]
+
     for (offset, line) in enumerate(lines[2:end])
         line_number = offset + 1
         isempty(strip(line)) && continue
         fields = split(strip(line), ',')
-        length(fields) == 3 || error("invalid config row $line_number")
-        row = (
-            order=parse(Int, fields[1]),
-            samples=parse(Int, fields[2]),
-            batch_size=parse(Int, fields[3]),
-        )
-        row.order > 0 && row.samples > 0 && row.batch_size > 0 ||
-            error("config values must be positive on row $line_number")
+
+        row = if legacy
+            length(fields) == 3 || error("invalid config row $line_number")
+            (
+                order=parse(Int, fields[1]),
+                first_sample_id=1,
+                samples=parse(Int, fields[2]),
+                batch_size=parse(Int, fields[3]),
+            )
+        else
+            length(fields) == 4 || error("invalid config row $line_number")
+            (
+                order=parse(Int, fields[1]),
+                first_sample_id=parse(Int, fields[2]),
+                samples=parse(Int, fields[3]),
+                batch_size=parse(Int, fields[4]),
+            )
+        end
+
+        row.order > 0 || error("order must be positive on row $line_number")
+        row.first_sample_id > 0 ||
+            error("first_sample_id must be positive on row $line_number")
+        row.samples > 0 || error("samples must be positive on row $line_number")
+        row.batch_size > 0 || error("batch_size must be positive on row $line_number")
         push!(rows, row)
     end
+
     isempty(rows) && error("config has no data rows")
     return rows
 end
@@ -73,58 +98,64 @@ function sample_seed(base_seed::UInt64, order::Int, sample_id::Int)
     return splitmix64(key)
 end
 
-function simulate_center_height(
-    order::Int,
-    seed::UInt64,
-    alpha::Float64,
-    beta::Float64,
-)
-    rng = Xoshiro(seed)
-    weights = gamma_disordered_weights(rng, order; alpha=alpha, beta=beta)
-    choices = gamma_disordered_creation_choices(rng, weights.a, weights.b)
-    weights = nothing
-    tiling = sample_tiling_from_choices(choices)
-    count(tiling) == order * (order + 1) ||
-        error("invalid domino count for order=$order seed=$seed")
-    return center_height(tiling)
-end
-
 function batch_path(output_dir, order, batch_id)
     order_dir = joinpath(output_dir, @sprintf("L_%04d", order))
     return joinpath(order_dir, @sprintf("batch_%04d.csv", batch_id))
 end
 
-function valid_existing_batch(path, expected_rows)
+function valid_existing_batch(path, expected_order, first_sample, last_sample)
     isfile(path) || return false
+
     lines = readlines(path)
+    expected_rows = last_sample - first_sample + 1
     length(lines) == expected_rows + 1 || return false
-    return strip(first(lines)) ==
-           "order,sample_id,seed,center_row,center_column,center_height"
+    strip(first(lines)) ==
+    "order,sample_id,seed,center_row,center_column,center_height" || return false
+
+    for (line, expected_id) in zip(lines[2:end], first_sample:last_sample)
+        fields = split(strip(line), ',')
+        length(fields) == 6 || return false
+        try
+            parse(Int, fields[1]) == expected_order || return false
+            parse(Int, fields[2]) == expected_id || return false
+            parse(UInt64, fields[3])
+            parse(Int, fields[4])
+            parse(Int, fields[5])
+            parse(Int, fields[6])
+        catch
+            return false
+        end
+    end
+    return true
 end
 
 function write_batch(path, results)
     mkpath(dirname(path))
     temporary_path = path * ".tmp"
-    open(temporary_path, "w") do io
-        println(io, "order,sample_id,seed,center_row,center_column,center_height")
-        for result in results
-            println(
-                io,
-                result.order,
-                ',',
-                result.sample_id,
-                ',',
-                result.seed,
-                ',',
-                result.center_row,
-                ',',
-                result.center_column,
-                ',',
-                result.center_height,
-            )
+    try
+        open(temporary_path, "w") do io
+            println(io, "order,sample_id,seed,center_row,center_column,center_height")
+            for result in results
+                println(
+                    io,
+                    result.order,
+                    ',',
+                    result.sample_id,
+                    ',',
+                    result.seed,
+                    ',',
+                    result.center_row,
+                    ',',
+                    result.center_column,
+                    ',',
+                    result.center_height,
+                )
+            end
         end
+        mv(temporary_path, path; force=true)
+    finally
+        isfile(temporary_path) && rm(temporary_path; force=true)
     end
-    mv(temporary_path, path; force=true)
 end
 
 function write_campaign_metadata(path, parsed, config_rows)
@@ -144,15 +175,35 @@ function write_campaign_metadata(path, parsed, config_rows)
         println(io, "config=$(parsed.config)")
         println(io, "orders=$(join((row.order for row in config_rows), ','))")
         println(io, "planned_samples=$(sum(row.samples for row in config_rows))")
+        println(
+            io,
+            "sample_ranges=",
+            join(
+                (
+                    "$(row.order):$(row.first_sample_id)-" *
+                    "$(row.first_sample_id + row.samples - 1)"
+                    for row in config_rows
+                ),
+                ",",
+            ),
+        )
     end
 end
 
 function run_batch(parsed, order, batch_id, first_sample, last_sample)
     count_samples = last_sample - first_sample + 1
     output_path = batch_path(parsed.output_dir, order, batch_id)
-    if valid_existing_batch(output_path, count_samples)
+
+    if valid_existing_batch(output_path, order, first_sample, last_sample)
         println("skip existing $output_path")
         return
+    end
+
+    if isfile(output_path)
+        error(
+            "existing batch is incomplete or invalid: $output_path. " *
+            "Move or delete only this specific batch file before rerunning.",
+        )
     end
 
     center = center_face_index(order)
@@ -167,7 +218,12 @@ function run_batch(parsed, order, batch_id, first_sample, last_sample)
     @threads :dynamic for offset in 1:count_samples
         sample_id = first_sample + offset - 1
         seed = sample_seed(parsed.base_seed, order, sample_id)
-        height = simulate_center_height(order, seed, parsed.alpha, parsed.beta)
+        height = sample_gamma_center_height(
+            seed,
+            order;
+            alpha=parsed.alpha,
+            beta=parsed.beta,
+        )
         results[offset] = (
             order=order,
             sample_id=sample_id,
@@ -177,6 +233,7 @@ function run_batch(parsed, order, batch_id, first_sample, last_sample)
             center_height=height,
         )
     end
+
     write_batch(output_path, results)
     elapsed = time() - started
     @printf(
@@ -206,11 +263,14 @@ function main(arguments)
         "Starting Gamma height campaign with $(nthreads()) Julia threads and ",
         "$(sum(row.samples for row in config_rows)) planned samples",
     )
+
     for row in config_rows
         batch_id = 1
-        first_sample = 1
-        while first_sample <= row.samples
-            last_sample = min(first_sample + row.batch_size - 1, row.samples)
+        first_sample = row.first_sample_id
+        final_sample = row.first_sample_id + row.samples - 1
+
+        while first_sample <= final_sample
+            last_sample = min(first_sample + row.batch_size - 1, final_sample)
             run_batch(
                 parsed,
                 row.order,
@@ -222,6 +282,7 @@ function main(arguments)
             batch_id += 1
         end
     end
+
     println("Campaign complete: $(parsed.output_dir)")
 end
 
