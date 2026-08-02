@@ -4,11 +4,25 @@ using Random
 using Printf
 using SHA
 using Statistics
+using AztecDiamond
 
-include(joinpath(@__DIR__, "..", "src", "AztecDiamond.jl"))
-using .AztecDiamond
+function print_help()
+    println("""
+    Generate and validate one illustrated arbitrary-weight Aztec diamond.
+
+    Usage:
+      julia --project=aztec aztec/scripts/run_random_weights.jl [options]
+
+    Options:
+      --order INT        Aztec-diamond order (default: 200)
+      --seed UINT        Xoshiro seed
+      --output-dir PATH  output directory
+      -h, --help         show this message
+    """)
+end
 
 function parse_arguments(arguments)
+    any(argument -> argument in ("-h", "--help"), arguments) && return nothing
     options = Dict{String,String}(
         "order" => "200",
         "seed" => "20260728",
@@ -62,7 +76,11 @@ function write_metadata(
         println(io, "weight_min=$(@sprintf("%.17g", minimum(weights)))")
         println(io, "weight_max=$(@sprintf("%.17g", maximum(weights)))")
         println(io, "weight_mean=$(@sprintf("%.17g", mean(weights)))")
-        println(io, "weight_variance_population=$(@sprintf("%.17g", var(weights; corrected=false)))")
+        println(
+            io,
+            "weight_variance_population=" *
+            "$(@sprintf("%.17g", var(weights; corrected=false)))",
+        )
         println(io, "valid=$(validation.valid)")
         println(io, "dominoes=$(validation.dominoes)")
         println(io, "expected_dominoes=$(validation.expected_dominoes)")
@@ -90,6 +108,10 @@ end
 
 function main(arguments)
     parsed = parse_arguments(arguments)
+    if isnothing(parsed)
+        print_help()
+        return
+    end
     parsed.order > 0 || error("--order must be positive")
     mkpath(parsed.output_dir)
 
@@ -97,6 +119,9 @@ function main(arguments)
     weights = random_uniform_weights(rng, parsed.order)
 
     start_probability = time_ns()
+    # The generic recurrence stores every Float64 probability table and is
+    # intended for modest illustrated examples.  The Gamma production sampler
+    # has a separate rolling-buffer implementation for large orders.
     probabilities = creation_probabilities(weights)
     elapsed_probability = (time_ns() - start_probability) / 1e9
 

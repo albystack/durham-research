@@ -1,6 +1,5 @@
-(* A compact version of the drawing workflow in Sunil Chhita's
-   supplied drawingtools.nb. Open this file in Mathematica, set the two
-   paths below if necessary, and evaluate the notebook/script. *)
+(* Optional legacy renderer for the binary tiling matrix. Open this file in
+   Mathematica, adjust the two paths if necessary, and evaluate the script. *)
 
 scriptDirectory = DirectoryName[$InputFileName];
 matrixPath = FileNameJoin[

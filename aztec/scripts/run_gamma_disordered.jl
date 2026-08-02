@@ -4,11 +4,27 @@ using Random
 using Printf
 using SHA
 using Statistics
+using AztecDiamond
 
-include(joinpath(@__DIR__, "..", "src", "AztecDiamond.jl"))
-using .AztecDiamond
+function print_help()
+    println("""
+    Generate and validate one illustrated Gamma-disordered Aztec diamond.
+
+    Usage:
+      julia --project=aztec aztec/scripts/run_gamma_disordered.jl [options]
+
+    Options:
+      --order INT        Aztec-diamond order (default: 200)
+      --seed UINT        Xoshiro seed
+      --alpha FLOAT      shape of a weights (default: 0.2)
+      --beta FLOAT       shape of b weights (default: 0.25)
+      --output-dir PATH  output directory
+      -h, --help         show this message
+    """)
+end
 
 function parse_arguments(arguments)
+    any(argument -> argument in ("-h", "--help"), arguments) && return nothing
     options = Dict{String,String}(
         "order" => "200",
         "seed" => "20260728",
@@ -111,6 +127,10 @@ end
 
 function main(arguments)
     parsed = parse_arguments(arguments)
+    if isnothing(parsed)
+        print_help()
+        return
+    end
     parsed.order > 0 || error("--order must be positive")
     parsed.alpha > 0 || error("--alpha must be positive")
     parsed.beta > 0 || error("--beta must be positive")
@@ -125,6 +145,9 @@ function main(arguments)
     )
 
     start_probability = time_ns()
+    # This illustrated example keeps all Float64 probability tables because
+    # they are useful output diagnostics.  Large production campaigns instead
+    # call sample_gamma_center_height, which stores packed decision bits.
     probabilities = gamma_disordered_probabilities(weights.a, weights.b)
     elapsed_probability = (time_ns() - start_probability) / 1e9
 

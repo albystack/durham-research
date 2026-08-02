@@ -25,6 +25,23 @@ The columns are:
 | `center_column` | \(\lfloor L/2\rfloor+1\) |
 | `center_height` | sampled height at that face |
 
-There are 26,050 data rows and no repeated `(order, sample_id)` keys.
-`campaign_metadata.txt` records the model parameters, seed convention, Julia
-version and planned sample count.
+There are 35,536 data rows, covering orders 16 through 1,300, with no repeated
+`(order, sample_id)` keys and no repeated seeds. Orders 900 and 1,000 have
+1,000 observations each; orders 1,100, 1,200, and 1,300 have 512 each.
+`campaign_metadata.txt` records the model
+parameters, seed convention, source campaigns, counts, and dataset checksum.
+
+## `double_dimer/pairs.csv`
+
+Each of the 28,304 rows represents one fresh Gamma environment and two tilings
+sampled independently conditional on it. The columns are `order`,
+`sample_id`, `seed`, center-face indices, `height_1`, `height_2`, and the
+validated difference `height_1-height_2`. The data cover orders 16 through
+1,300. They permit two complementary estimates:
+
+```text
+Var(height_1-height_2)/2   conditional tiling variance
+Cov(height_1,height_2)     disorder-induced variance
+```
+
+The metadata file records the exact schedule and checksum.

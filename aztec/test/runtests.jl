@@ -1,9 +1,11 @@
 using Test
 using Random
 using Statistics
+using AztecDiamond
 
-include(joinpath(@__DIR__, "..", "src", "AztecDiamond.jl"))
-using .AztecDiamond
+# The tests are ordered from generic shuffling, through the paper-specific
+# Gamma recurrence, to production wrappers.  Small orders permit full geometric
+# validation; production runs use the same code paths at larger orders.
 
 @testset "weighted Aztec diamond sampler" begin
     for order in 1:12
@@ -29,6 +31,66 @@ end
 @testset "uniform order-one probabilities" begin
     probabilities = creation_probabilities(ones(2, 2))
     @test probabilities[1][1, 1] == 0.5
+end
+
+@testset "order-two shuffle enumerates uniform tilings" begin
+    # There are 2^(2*3/2) = 8 order-two Aztec tilings.  Enumerating all five
+    # potential creation bits produces 32 bit patterns; unused bits should make
+    # every valid tiling occur exactly four times, never biasing the result.
+    tiling_counts = Dict{Tuple,Int}()
+    for mask in 0:31
+        choices = [falses(1, 1), falses(2, 2)]
+        bit = 0
+        for level in 1:2, index in eachindex(choices[level])
+            choices[level][index] = !iszero(mask & (1 << bit))
+            bit += 1
+        end
+        tiling = sample_tiling_from_choices(choices)
+        @test validate_tiling(tiling).valid
+        key = Tuple(vec(tiling))
+        tiling_counts[key] = get(tiling_counts, key, 0) + 1
+    end
+    @test length(tiling_counts) == 8
+    @test all(==(4), values(tiling_counts))
+end
+
+@testset "Duits--Van Peski recurrence reference values" begin
+    # A hand-computable order-two example guards equation (1.22) independently
+    # of the random sampler.  The order-one values use a'[1,1] and b'[1,1].
+    a = [2.0 3.0; 5.0 7.0]
+    b = [11.0 13.0; 17.0 19.0]
+    probabilities = gamma_disordered_probabilities(a, b)
+
+    reduced_a = (2 / (2 + 11)) * (5 + 17)
+    reduced_b = (13 / (3 + 13)) * (7 + 19)
+    @test probabilities[2] == b ./ (a .+ b)
+    @test probabilities[1][1, 1] == reduced_b / (reduced_a + reduced_b)
+end
+
+@testset "pre-drawn Gamma coins match reduced probabilities" begin
+    # Both public implementations must encode exactly the same recurrence and
+    # b/(a+b) choice convention.  Replaying an identical scalar RNG stream in
+    # descending level order makes this an exact, bit-for-bit comparison.
+    environment_rng = Xoshiro(12_345)
+    weights = gamma_disordered_weights(environment_rng, 9; alpha=0.2, beta=0.25)
+    probabilities = gamma_disordered_probabilities(weights.a, weights.b)
+
+    coin_seed = 54_321
+    actual = gamma_disordered_creation_choices(
+        Xoshiro(coin_seed),
+        weights.a,
+        weights.b,
+    )
+    expected = Vector{BitMatrix}(undef, 9)
+    expected_rng = Xoshiro(coin_seed)
+    for level in 9:-1:1
+        expected[level] = falses(level, level)
+        for index in eachindex(expected[level], probabilities[level])
+            expected[level][index] =
+                rand(expected_rng) < probabilities[level][index]
+        end
+    end
+    @test actual == expected
 end
 
 @testset "Gamma-disordered model" begin
@@ -72,6 +134,16 @@ end
     @test all(>(0), draws)
     @test isapprox(mean(draws), 1.0; atol=0.015)
     @test isapprox(var(draws; corrected=false), 2.0; atol=0.06)
+end
+
+
+@testset "public argument validation" begin
+    rng = Xoshiro(1)
+    @test_throws ArgumentError random_uniform_weights(rng, 0)
+    @test_throws ArgumentError random_gamma_weights(rng, 2, 2; shape=0.0)
+    @test_throws ArgumentError center_face_index(0)
+    @test_throws ArgumentError sample_tiling(rng, [fill(0.5, 2, 2)])
+    @test_throws ArgumentError sample_tiling_from_choices([falses(2, 2)])
 end
 
 
@@ -133,4 +205,67 @@ end
     ]
     @test length(heights) == 20
     @test length(unique(heights)) > 1
+end
+
+@testset "double-dimer center-height pairs" begin
+    differences = Int[]
+    for order in (4, 8, 12)
+        seed = UInt64(80_000 + order)
+        first_result = sample_gamma_center_height_pair(
+            seed,
+            order;
+            alpha=0.2,
+            beta=0.25,
+        )
+        second_result = sample_gamma_center_height_pair(
+            seed,
+            order;
+            alpha=0.2,
+            beta=0.25,
+        )
+        @test first_result == second_result
+        @test first_result.difference ==
+              first_result.height_1 - first_result.height_2
+        push!(differences, first_result.difference)
+
+        rng = Xoshiro(seed)
+        weights = gamma_disordered_weights(rng, order; alpha=0.2, beta=0.25)
+        choices = gamma_disordered_creation_choice_pair(rng, weights.a, weights.b)
+        first_tiling = sample_tiling_from_choices(choices.first)
+        second_tiling = sample_tiling_from_choices(choices.second)
+        @test first_result.height_1 == center_height(first_tiling)
+        @test first_result.height_2 == center_height(second_tiling)
+        @test validate_tiling(first_tiling).valid
+        @test validate_tiling(second_tiling).valid
+    end
+    @test any(!=(0), differences)
+end
+
+@testset "multiple conditional copies share only the environment" begin
+    rng = Xoshiro(90_000)
+    weights = gamma_disordered_weights(rng, 12; alpha=0.2, beta=0.25)
+    copies = gamma_disordered_creation_choices(rng, weights.a, weights.b, 3)
+    @test length(copies) == 3
+    @test all(length(copy) == 12 for copy in copies)
+    @test any(copies[1][level] != copies[2][level] for level in 1:12)
+    @test_throws ArgumentError gamma_disordered_creation_choices(
+        rng,
+        weights.a,
+        weights.b,
+        0,
+    )
+end
+
+@testset "finite-sample double-dimer variance identity" begin
+    # This is the algebra used by the analysis script.  Corrected sample
+    # variance and covariance must all use the same n-1 denominator.
+    height_1 = [10, 13, 11, 15, 12]
+    height_2 = [9, 12, 14, 13, 10]
+    difference = height_1 .- height_2
+    paired_marginal = (var(height_1) + var(height_2)) / 2
+    @test isapprox(
+        var(difference) / 2,
+        paired_marginal - cov(height_1, height_2);
+        atol=1e-12,
+    )
 end

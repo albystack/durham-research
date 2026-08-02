@@ -5,7 +5,34 @@ using Printf
 using Random
 using Statistics
 
+# Statistical scope
+# -----------------
+# Raw observations are independent *within each order*.  We resample within
+# order, recompute the size-level sample variances, and then refit each growth
+# curve.  The affine BIC comparison is an unweighted least-squares diagnostic
+# on these noisy variance estimates; it is useful for comparing two curves
+# with the same number of parameters, but is not a formal likelihood for the
+# underlying height samples.  The README states this limitation explicitly.
+
+function print_help()
+    println("""
+    Analyse center-height samples with within-size bootstrap resampling.
+
+    Usage:
+      julia --project=aztec aztec/scripts/analyze_height_campaign.jl [options]
+
+    Options:
+      --results-dir PATHS   CSV files/directories, comma separated
+      --output-dir PATH     directory for fit summaries
+      --bootstrap-reps INT  bootstrap repetitions (default: 2000)
+      --bootstrap-seed UINT deterministic bootstrap seed
+      --min-order INT       smallest size included in fits (default: 24)
+      -h, --help            show this message
+    """)
+end
+
 function parse_arguments(arguments)
+    any(argument -> argument in ("-h", "--help"), arguments) && return nothing
     options = Dict{String,String}(
         "results-dir" =>
             joinpath(@__DIR__, "..", "data", "height", "center_height_samples.csv"),
@@ -77,8 +104,8 @@ function load_results(results_paths)
         isempty(lines) && error("empty CSV: $path")
         strip(first(lines)) == expected_header || error("unexpected header in $path")
 
-        for (line_number, line) in enumerate(lines[2:end])
-            line_number += 1 # Adjust for 0-based index of lines[2:end] + 1 for header
+        for (offset, line) in enumerate(lines[2:end])
+            line_number = offset + 1
             isempty(strip(line)) && continue
             fields = split(strip(line), ',')
             length(fields) == 6 || error("malformed row $line_number in $path")
@@ -112,6 +139,7 @@ end
 
 function percentile(sorted_values, probability)
     isempty(sorted_values) && error("cannot take percentile of empty data")
+    0 <= probability <= 1 || error("percentile probability must lie in [0, 1]")
     position = 1 + (length(sorted_values) - 1) * probability
     lower = floor(Int, position)
     upper = ceil(Int, position)
@@ -121,6 +149,8 @@ function percentile(sorted_values, probability)
 end
 
 function linear_fit(x, y)
+    length(x) == length(y) || throw(DimensionMismatch("x and y lengths differ"))
+    length(x) >= 2 || error("linear fit needs at least two observations")
     design = hcat(ones(length(x)), x)
     coefficients = design \ y
     fitted = design * coefficients
@@ -138,6 +168,8 @@ function linear_fit(x, y)
 end
 
 function exponent_fit(orders, variances)
+    all(>(1), orders) || error("power fit requires orders greater than one")
+    all(>(0), variances) || error("power fit requires positive variances")
     x = log.(log.(Float64.(orders)))
     y = log.(variances)
     fit = linear_fit(x, y)
@@ -151,10 +183,15 @@ end
 
 function bootstrap_statistics(rng, grouped, orders, repetitions)
     variance_draws = Dict(order => Vector{Float64}(undef, repetitions) for order in orders)
-    exponent_draws = Vector{Float64}(undef, repetitions)
+    # A very small bootstrap sample can occasionally have zero variance.  The
+    # affine fits remain defined, but log(variance) does not; retain only
+    # strictly positive replicates for the descriptive power exponent.
+    exponent_draws = Float64[]
     delta_bic_draws = Vector{Float64}(undef, repetitions)
     log_orders = log.(Float64.(orders))
 
+    # One bootstrap replicate preserves the experiment's stratification: each
+    # size is resampled only from observations at that same size.
     for repetition in 1:repetitions
         variances = Vector{Float64}(undef, length(orders))
         for (index, order) in enumerate(orders)
@@ -169,7 +206,8 @@ function bootstrap_statistics(rng, grouped, orders, repetitions)
             variances[index] = estimate
         end
 
-        exponent_draws[repetition] = exponent_fit(orders, variances).exponent
+        all(>(0), variances) &&
+            push!(exponent_draws, exponent_fit(orders, variances).exponent)
         log_fit = linear_fit(log_orders, variances)
         log2_fit = linear_fit(log_orders .^ 2, variances)
         delta_bic_draws[repetition] = log_fit.bic - log2_fit.bic
@@ -210,6 +248,9 @@ function write_fits(
     exponent_draws,
     delta_bic_draws,
 )
+    # Both affine candidates have two parameters.  Their BIC difference is
+    # therefore driven entirely by residual fit, with the common penalty kept
+    # in the output for transparency.
     log_fit = linear_fit(log.(Float64.(fit_orders)), fit_variances)
     log2_fit = linear_fit(log.(Float64.(fit_orders)) .^ 2, fit_variances)
     sorted_exponents = sort(exponent_draws)
@@ -219,6 +260,7 @@ function write_fits(
         println(io, "fit_min_order=$(minimum(fit_orders))")
         println(io, "fit_max_order=$(maximum(fit_orders))")
         println(io, "fit_points=$(length(fit_orders))")
+        println(io, "bootstrap_reps=$(length(delta_bic_draws))")
         println(io, "log_intercept=$(log_fit.intercept)")
         println(io, "log_slope=$(log_fit.slope)")
         println(io, "log_rss=$(log_fit.rss)")
@@ -244,6 +286,7 @@ function write_fits(
         println(io, "power_exponent=$(exponent.exponent)")
         println(io, "power_exponent_bootstrap_low=$(percentile(sorted_exponents, 0.025))")
         println(io, "power_exponent_bootstrap_high=$(percentile(sorted_exponents, 0.975))")
+        println(io, "power_positive_bootstrap_reps=$(length(exponent_draws))")
     end
     return log_fit, log2_fit
 end
@@ -267,6 +310,10 @@ end
 
 function main(arguments)
     parsed = parse_arguments(arguments)
+    if isnothing(parsed)
+        print_help()
+        return
+    end
     parsed.bootstrap_reps > 0 || error("--bootstrap-reps must be positive")
     grouped = load_results(parsed.results_paths)
     orders = sort(collect(keys(grouped)))
@@ -286,6 +333,7 @@ function main(arguments)
         fit_orders,
         parsed.bootstrap_reps,
     )
+    isempty(exponent_draws) && error("no bootstrap replicate had positive fitted variances")
 
     for order in setdiff(orders, fit_orders)
         values = grouped[order]

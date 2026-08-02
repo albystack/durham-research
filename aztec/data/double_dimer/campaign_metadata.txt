@@ -1,0 +1,17 @@
+model=double dimer in biased Gamma-disordered Aztec diamond
+observable=center-height difference H1-H2
+one_sample=fresh environment plus two conditionally independent tilings
+variance_identity=Var(H1-H2)/2=E[Var(H|environment)]
+covariance_identity=Cov(H1,H2)=Var(E[H|environment])
+center_index=(L+1, floor(L/2)+1)
+alpha=0.2
+beta=0.25
+gamma_scale=1
+base_seed=20260802
+rng=Xoshiro with SplitMix64-derived per-sample seeds
+julia_version=1.12.6
+julia_threads=4
+total_pairs=28304
+orders=16,24,32,48,64,96,128,192,256,384,512,600,700,800,900,1000,1100,1200,1300
+pair_counts=16:4000,24:4000,32:4000,48:3000,64:3000,96:2500,128:2000,192:1500,256:1000,384:1000,512:256,600:256,700:256,800:256,900:256,1000:256,1100:256,1200:256,1300:256
+dataset_sha256=49963d68277041d63c97fcfe96c8f365c14cf52421ee568f4a17f34c922045af

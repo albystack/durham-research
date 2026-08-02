@@ -2,7 +2,26 @@
 
 using Printf
 
+# Dependency-free plotting keeps the retained analysis reproducible with a
+# stock Julia installation.  The output is editable vector SVG; PNG files in
+# results/ are rendered derivatives for convenient previewing.
+
+function print_help()
+    println("""
+    Plot the single-height summary and fitted curves as SVG.
+
+    Usage:
+      julia --project=aztec aztec/scripts/plot_height_campaign.jl [options]
+
+    Options:
+      --analysis-dir PATH  directory containing height_summary.csv and curves
+      --output-dir PATH    destination directory
+      -h, --help           show this message
+    """)
+end
+
 function parse_arguments(arguments)
+    any(argument -> argument in ("-h", "--help"), arguments) && return nothing
     options = Dict{String,String}(
         "analysis-dir" => joinpath(@__DIR__, "..", "output", "gamma_height_analysis"),
         "output-dir" => joinpath(@__DIR__, "..", "output", "gamma_height_analysis"),
@@ -24,6 +43,8 @@ function parse_arguments(arguments)
 end
 
 function read_numeric_csv(path)
+    # Analysis CSVs are deliberately numeric-only, so a tiny strict reader is
+    # sufficient and avoids adding a dataframe/CSV dependency just for plots.
     lines = readlines(path)
     isempty(lines) && error("empty CSV: $path")
     headers = Symbol.(split(first(lines), ','))
@@ -50,8 +71,8 @@ function polyline_points(xs, ys)
 end
 
 function write_plot(path, summary, curves)
-    width = 1000.0
-    height = 650.0
+    width = 1100.0
+    height = 680.0
     left = 95.0
     right = 35.0
     top = 70.0
@@ -59,6 +80,8 @@ function write_plot(path, summary, curves)
     plot_width = width - left - right
     plot_height = height - top - bottom
 
+    isempty(summary) && error("height summary is empty")
+    isempty(curves) && error("height fit curve is empty")
     orders = [row.order for row in summary]
     variances = [row.variance_height for row in summary]
     lows = [row.variance_bootstrap_low for row in summary]
@@ -80,7 +103,13 @@ function write_plot(path, summary, curves)
         println(
             io,
             "<svg xmlns=\"http://www.w3.org/2000/svg\" ",
-            "viewBox=\"0 0 $width $height\" width=\"1000\" height=\"650\">",
+            "viewBox=\"0 0 $width $height\">",
+        )
+        println(
+            io,
+            "<title>Gamma-disordered Aztec diamond: center-height fluctuations</title>",
+            "<desc>Monte Carlo center-height variances with bootstrap intervals and ",
+            "ordinary-log, squared-log, and free-power fitted curves through order 1300.</desc>",
         )
         println(io, "<rect width=\"$width\" height=\"$height\" fill=\"white\"/>")
         println(
@@ -119,7 +148,13 @@ function write_plot(path, summary, curves)
             "stroke=\"black\" stroke-width=\"1.5\"/>",
         )
 
-        for order in orders
+        # Label at most ten logarithmically positioned observed orders; all
+        # observations are still plotted even when their tick label is omitted.
+        tick_indices = unique(
+            round.(Int, range(1, length(orders), length=min(10, length(orders))))
+        )
+        for index in tick_indices
+            order = orders[index]
             x = x_position(order)
             println(
                 io,
@@ -215,6 +250,10 @@ end
 
 function main(arguments)
     parsed = parse_arguments(arguments)
+    if isnothing(parsed)
+        print_help()
+        return
+    end
     summary = read_numeric_csv(joinpath(parsed.analysis_dir, "height_summary.csv"))
     curves = read_numeric_csv(joinpath(parsed.analysis_dir, "height_fit_curves.csv"))
     mkpath(parsed.output_dir)

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100.0 680.0">
+<title>Double-dimer center-height difference</title><desc>Variance of H1-H2 with bootstrap intervals and three fitted growth curves.</desc>
+<rect width="1100.0" height="680.0" fill="white"/>
+<text x="550.0" y="32" text-anchor="middle" font-family="Arial,sans-serif" font-size="20" font-weight="bold">Double-dimer center-height difference</text>
+<line x1="95.0" y1="590.0" x2="1065.0" y2="590.0" stroke="#dddddd"/>
+<text x="83.0" y="595.0" text-anchor="end" font-family="Arial,sans-serif" font-size="13">0.0</text>
+<line x1="95.0" y1="486.0" x2="1065.0" y2="486.0" stroke="#dddddd"/>
+<text x="83.0" y="491.0" text-anchor="end" font-family="Arial,sans-serif" font-size="13">4.1</text>
+<line x1="95.0" y1="382.0" x2="1065.0" y2="382.0" stroke="#dddddd"/>
+<text x="83.0" y="387.0" text-anchor="end" font-family="Arial,sans-serif" font-size="13">8.2</text>
+<line x1="95.0" y1="278.0" x2="1065.0" y2="278.0" stroke="#dddddd"/>
+<text x="83.0" y="283.0" text-anchor="end" font-family="Arial,sans-serif" font-size="13">12.4</text>
+<line x1="95.0" y1="173.99999999999997" x2="1065.0" y2="173.99999999999997" stroke="#dddddd"/>
+<text x="83.0" y="178.99999999999997" text-anchor="end" font-family="Arial,sans-serif" font-size="13">16.5</text>
+<line x1="95.0" y1="70.0" x2="1065.0" y2="70.0" stroke="#dddddd"/>
+<text x="83.0" y="75.0" text-anchor="end" font-family="Arial,sans-serif" font-size="13">20.6</text>
+<line x1="95.0" y1="70.0" x2="95.0" y2="590.0" stroke="black" stroke-width="1.5"/>
+<line x1="95.0" y1="590.0" x2="1065.0" y2="590.0" stroke="black" stroke-width="1.5"/>
+<line x1="95.0" y1="590.0" x2="95.0" y2="596.0" stroke="black"/>
+<text x="95.0" y="615.0" text-anchor="middle" font-family="Arial,sans-serif" font-size="12">16</text>
+<line x1="247.89324679665796" y1="590.0" x2="247.89324679665796" y2="596.0" stroke="black"/>
+<text x="247.89324679665796" y="615.0" text-anchor="middle" font-family="Arial,sans-serif" font-size="12">32</text>
+<line x1="400.78649359331575" y1="590.0" x2="400.78649359331575" y2="596.0" stroke="black"/>
+<text x="400.78649359331575" y="615.0" text-anchor="middle" font-family="Arial,sans-serif" font-size="12">64</text>
+<line x1="553.6797403899737" y1="590.0" x2="553.6797403899737" y2="596.0" stroke="black"/>
+<text x="553.6797403899737" y="615.0" text-anchor="middle" font-family="Arial,sans-serif" font-size="12">128</text>
+<line x1="706.5729871866316" y1="590.0" x2="706.5729871866316" y2="596.0" stroke="black"/>
+<text x="706.5729871866316" y="615.0" text-anchor="middle" font-family="Arial,sans-serif" font-size="12">256</text>
+<line x1="859.4662339832896" y1="590.0" x2="859.4662339832896" y2="596.0" stroke="black"/>
+<text x="859.4662339832896" y="615.0" text-anchor="middle" font-family="Arial,sans-serif" font-size="12">512</text>
+<line x1="928.4533658620643" y1="590.0" x2="928.4533658620643" y2="596.0" stroke="black"/>
+<text x="928.4533658620643" y="615.0" text-anchor="middle" font-family="Arial,sans-serif" font-size="12">700</text>
+<line x1="983.8878824905142" y1="590.0" x2="983.8878824905142" y2="596.0" stroke="black"/>
+<text x="983.8878824905142" y="615.0" text-anchor="middle" font-family="Arial,sans-serif" font-size="12">900</text>
+<line x1="1028.1514891625725" y1="590.0" x2="1028.1514891625725" y2="596.0" stroke="black"/>
+<text x="1028.1514891625725" y="615.0" text-anchor="middle" font-family="Arial,sans-serif" font-size="12">1100</text>
+<line x1="1065.0" y1="590.0" x2="1065.0" y2="596.0" stroke="black"/>
+<text x="1065.0" y="615.0" text-anchor="middle" font-family="Arial,sans-serif" font-size="12">1300</text>
+<text x="580.0" y="655.0" text-anchor="middle" font-family="Arial,sans-serif" font-size="16">Aztec-diamond order L (log scale)</text>
+<text x="22" y="330.0" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" transform="rotate(-90 22 330.0)">Height variance</text>
+<line x1="95.0" y1="436.92044191912674" x2="95.0" y2="422.14740820666" stroke="#222222" stroke-width="1.1"/>
+<line x1="184.43681598954987" y1="416.9906209924206" x2="184.43681598954987" y2="400.7893131305715" stroke="#222222" stroke-width="1.1"/>
+<line x1="247.89324679665796" y1="407.16975776558144" x2="247.89324679665796" y2="390.16344683497846" stroke="#222222" stroke-width="1.1"/>
+<line x1="337.3300627862078" y1="378.46399038004665" x2="337.3300627862078" y2="355.7039665341572" stroke="#222222" stroke-width="1.1"/>
+<line x1="400.78649359331575" y1="362.20540746869057" x2="400.78649359331575" y2="336.74518227430156" stroke="#222222" stroke-width="1.1"/>
+<line x1="490.22330958286574" y1="355.9268597850519" x2="490.22330958286574" y2="328.35789030542014" stroke="#222222" stroke-width="1.1"/>
+<line x1="553.6797403899737" y1="338.31354062431217" x2="553.6797403899737" y2="304.0306133295103" stroke="#222222" stroke-width="1.1"/>
+<line x1="643.1165563795237" y1="329.4974834592713" x2="643.1165563795237" y2="290.777597287612" stroke="#222222" stroke-width="1.1"/>
+<line x1="706.5729871866316" y1="316.4991233756359" x2="706.5729871866316" y2="266.6337249555043" stroke="#222222" stroke-width="1.1"/>
+<line x1="796.0098031761817" y1="333.48672703206677" x2="796.0098031761817" y2="279.1876438427706" stroke="#222222" stroke-width="1.1"/>
+<line x1="859.4662339832896" y1="321.44872833589" x2="859.4662339832896" y2="217.25487017377336" stroke="#222222" stroke-width="1.1"/>
+<line x1="894.4510665009643" y1="264.9173753442698" x2="894.4510665009643" y2="121.71511045012251" stroke="#222222" stroke-width="1.1"/>
+<line x1="928.4533658620643" y1="321.07979151115075" x2="928.4533658620643" y2="204.87216381628224" stroke="#222222" stroke-width="1.1"/>
+<line x1="957.9074973080725" y1="253.72506131303092" x2="957.9074973080725" y2="108.51851851851856" stroke="#222222" stroke-width="1.1"/>
+<line x1="983.8878824905142" y1="349.9254463543385" x2="983.8878824905142" y2="246.80116467383644" stroke="#222222" stroke-width="1.1"/>
+<line x1="1007.1281289704638" y1="273.79595643346886" x2="1007.1281289704638" y2="158.25513362124633" stroke="#222222" stroke-width="1.1"/>
+<line x1="1028.1514891625725" y1="321.67120271057684" x2="1028.1514891625725" y2="193.79788447622525" stroke="#222222" stroke-width="1.1"/>
+<line x1="1047.3443132976222" y1="305.3316968391161" x2="1047.3443132976222" y2="196.37287080917457" stroke="#222222" stroke-width="1.1"/>
+<line x1="1065.0" y1="303.7587721761725" x2="1065.0" y2="193.8039098086397" stroke="#222222" stroke-width="1.1"/>
+<polyline points="95.000,429.521 184.437,408.951 247.893,398.734 337.330,367.400 400.786,349.632 490.223,342.542 553.680,321.361 643.117,310.648 706.573,291.901 796.010,307.036 859.466,270.187 894.451,195.139 928.453,264.125 957.907,181.296 983.888,299.356 1007.128,216.861 1028.151,259.508 1047.344,251.270 1065.000,248.279" fill="none" stroke="#222222" stroke-width="2.5"/>
+<circle cx="95.0" cy="429.5207113124933" r="4" fill="#222222"/>
+<circle cx="184.43681598954987" cy="408.95082212464854" r="4" fill="#222222"/>
+<circle cx="247.89324679665796" cy="398.733542981949" r="4" fill="#222222"/>
+<circle cx="337.3300627862078" cy="367.40035356670626" r="4" fill="#222222"/>
+<circle cx="400.78649359331575" cy="349.63210956223736" r="4" fill="#222222"/>
+<circle cx="490.22330958286574" cy="342.5424213266223" r="4" fill="#222222"/>
+<circle cx="553.6797403899737" cy="321.3614173686358" r="4" fill="#222222"/>
+<circle cx="643.1165563795237" cy="310.6477230471961" r="4" fill="#222222"/>
+<circle cx="706.5729871866316" cy="291.9007601463861" r="4" fill="#222222"/>
+<circle cx="796.0098031761817" cy="307.03608352940927" r="4" fill="#222222"/>
+<circle cx="859.4662339832896" cy="270.1869278006111" r="4" fill="#222222"/>
+<circle cx="894.4510665009643" cy="195.13891036497637" r="4" fill="#222222"/>
+<circle cx="928.4533658620643" cy="264.124501657706" r="4" fill="#222222"/>
+<circle cx="957.9074973080725" cy="181.29606150507706" r="4" fill="#222222"/>
+<circle cx="983.8878824905142" cy="299.35578843855086" r="4" fill="#222222"/>
+<circle cx="1007.1281289704638" cy="216.8610597218834" r="4" fill="#222222"/>
+<circle cx="1028.1514891625725" cy="259.50815857205845" r="4" fill="#222222"/>
+<circle cx="1047.3443132976222" cy="251.27042732015465" r="4" fill="#222222"/>
+<circle cx="1065.0" cy="248.27938317348804" r="4" fill="#222222"/>
+<polyline points="184.437,400.036 247.893,387.642 337.330,370.174 400.786,357.780 490.223,340.311 553.680,327.917 643.117,310.449 706.573,298.055 796.010,280.587 859.466,268.193 894.451,261.360 928.453,254.719 957.907,248.966 983.888,243.892 1007.128,239.353 1028.151,235.246 1047.344,231.498 1065.000,228.049" fill="none" stroke="#2864dc" stroke-width="2.5"/>
+<polyline points="184.437,387.221 247.893,379.602 337.330,367.745 400.786,358.537 490.223,344.438 553.680,333.641 643.117,317.302 706.573,304.915 796.010,286.335 859.466,272.358 894.451,264.370 928.453,256.414 957.907,249.370 983.888,243.038 1007.128,237.280 1028.151,231.995 1047.344,227.107 1065.000,222.558" fill="none" stroke="#e68613" stroke-width="2.5"/>
+<polyline points="184.437,404.295 247.893,390.724 337.330,371.946 400.786,358.845 490.223,340.662 553.680,327.944 643.117,310.253 706.573,297.856 796.010,280.584 859.466,268.463 894.451,261.824 928.453,255.402 957.907,249.861 983.888,244.991 1007.128,240.647 1028.151,236.729 1047.344,233.161 1065.000,229.885" fill="none" stroke="#228b22" stroke-width="2.5" stroke-dasharray="6,4"/>
+<line x1="113.0" y1="92.0" x2="141.0" y2="92.0" stroke="#222222" stroke-width="2.5"/>
+<text x="150.0" y="97.0" font-family="Arial,sans-serif" font-size="13">Var(H1-H2)</text>
+<line x1="113.0" y1="114.0" x2="141.0" y2="114.0" stroke="#2864dc" stroke-width="2.5"/>
+<text x="150.0" y="119.0" font-family="Arial,sans-serif" font-size="13">a + b log L</text>
+<line x1="113.0" y1="136.0" x2="141.0" y2="136.0" stroke="#e68613" stroke-width="2.5"/>
+<text x="150.0" y="141.0" font-family="Arial,sans-serif" font-size="13">a + b (log L)^2</text>
+<line x1="113.0" y1="158.0" x2="141.0" y2="158.0" stroke="#228b22" stroke-width="2.5" stroke-dasharray="6,4"/>
+<text x="150.0" y="163.0" font-family="Arial,sans-serif" font-size="13">C (log L)^p</text>
+</svg>

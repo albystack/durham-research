@@ -1,15 +1,20 @@
 model=biased Gamma-disordered Aztec diamond
 observable=center face height
 one_sample=fresh random environment plus one conditional dimer cover
-height_convention=Sunil Chhita email 2026-07-29
+height_convention=staggered face table documented in aztec/README.md
 center_index=(L+1, floor(L/2)+1)
 alpha=0.2
 beta=0.25
 gamma_scale=1
-base_seed=20260729
 rng=Xoshiro with SplitMix64-derived per-sample seeds
 julia_version=1.12.6
-julia_threads=4
-config=/Users/alberto/Desktop/research/aztec/configs/gamma_height_pilot.csv
-orders=16,24,32,48,64,96,128,192,256,384,512,600
-planned_samples=26050
+total_samples=35536
+orders=16,24,32,48,64,96,128,192,256,384,512,600,700,800,900,1000,1100,1200,1300
+sample_counts=16:4000,24:4000,32:4000,48:3000,64:3000,96:2500,128:2000,192:1500,256:1000,384:1000,512:2000,600:2000,700:1000,800:1000,900:1000,1000:1000,1100:512,1200:512,1300:512
+source_1=pilot; base_seed=20260729; samples=26050
+source_2=large_stage1; base_seed=20260729; samples=2000
+source_3=large_stage2; base_seed=20260731; samples=3950
+source_4=extension_stage1; base_seed=20260801; samples=1024
+source_5=extension_stage2; base_seed=20260801; samples=976
+source_6=new_sizes; base_seed=20260801; samples=1536
+dataset_sha256=809ea3961d457b11e0f10261ff9d000b9760400f38959e6f53adaaf27ec743e6

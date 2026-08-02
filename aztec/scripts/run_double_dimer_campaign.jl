@@ -1,27 +1,30 @@
 #!/usr/bin/env julia
 
-using Random
-using Printf
-using Base.Threads
 using AztecDiamond
+using Base.Threads
+using Printf
 
-# This runner is intentionally file-based.  Long order-L simulations can be
-# interrupted safely because every batch is written atomically and every
-# sample seed is a pure function of (campaign seed, order, sample ID).
-const HEADER = "order,sample_id,seed,center_row,center_column,center_height"
+const HEADER =
+    "order,sample_id,seed,center_row,center_column,height_1,height_2,height_difference"
+
+# One CSV row is one disorder environment.  The two heights in that row share
+# only that environment; all creation coins are drawn independently.
 
 function print_help()
     println("""
-    Run a resumable Gamma-disordered center-height campaign.
+    Run a resumable Gamma-disordered double-dimer center-height campaign.
+
+    Each observation uses one fresh Gamma environment and two independent
+    tilings conditional on that shared environment.
 
     Usage:
       JULIA_NUM_THREADS=4 julia --project=aztec \\
-        aztec/scripts/run_height_campaign.jl [options]
+        aztec/scripts/run_double_dimer_campaign.jl [options]
 
     Options:
       --config PATH       CSV sample schedule
       --output-dir PATH   directory for atomic batch CSVs
-      --base-seed UINT    campaign seed (default: 20260729)
+      --base-seed UINT    campaign seed (default: 20260802)
       --alpha FLOAT       Gamma shape for a weights (default: 0.2)
       --beta FLOAT        Gamma shape for b weights (default: 0.25)
       -h, --help          show this message
@@ -31,9 +34,9 @@ end
 function parse_arguments(arguments)
     any(argument -> argument in ("-h", "--help"), arguments) && return nothing
     options = Dict{String,String}(
-        "config" => joinpath(@__DIR__, "..", "configs", "gamma_height_pilot.csv"),
-        "output-dir" => joinpath(@__DIR__, "..", "output", "gamma_height_pilot"),
-        "base-seed" => "20260729",
+        "config" => joinpath(@__DIR__, "..", "configs", "double_dimer_smoke.csv"),
+        "output-dir" => joinpath(@__DIR__, "..", "output", "double_dimer_smoke"),
+        "base-seed" => "20260802",
         "alpha" => "0.2",
         "beta" => "0.25",
     )
@@ -59,8 +62,7 @@ end
 function read_config(path)
     lines = readlines(path)
     isempty(lines) && error("empty config: $path")
-
-    header = strip(lines[1])
+    header = strip(first(lines))
     legacy = header == "order,samples,batch_size"
     extended = header == "order,first_sample_id,samples,batch_size"
     legacy || extended || error("unexpected config header in $path: $header")
@@ -69,12 +71,10 @@ function read_config(path)
         (:order, :first_sample_id, :samples, :batch_size),
         Tuple{Int,Int,Int,Int},
     }[]
-
     for (offset, line) in enumerate(lines[2:end])
         line_number = offset + 1
         isempty(strip(line)) && continue
         fields = split(strip(line), ',')
-
         row = if legacy
             length(fields) == 3 || error("invalid config row $line_number")
             (
@@ -92,20 +92,13 @@ function read_config(path)
                 batch_size=parse(Int, fields[4]),
             )
         end
-
         row.order > 0 || error("order must be positive on row $line_number")
-        row.first_sample_id > 0 ||
-            error("first_sample_id must be positive on row $line_number")
+        row.first_sample_id > 0 || error("first sample ID must be positive")
         row.samples > 0 || error("samples must be positive on row $line_number")
-        row.batch_size > 0 || error("batch_size must be positive on row $line_number")
+        row.batch_size > 0 || error("batch size must be positive on row $line_number")
         push!(rows, row)
     end
-
     isempty(rows) && error("config has no data rows")
-
-    # batch_id starts at one for every config row, so duplicate orders would
-    # map to the same filenames.  Reject them rather than risk an ambiguous
-    # resume or accidental overwrite.
     orders = [row.order for row in rows]
     length(unique(orders)) == length(orders) ||
         error("config must contain at most one row per order")
@@ -113,9 +106,9 @@ function read_config(path)
 end
 
 function splitmix64(value::UInt64)
-    # SplitMix64 is used as a deterministic *hash*, not as the simulation RNG.
-    # It thoroughly mixes nearby public identifiers before Xoshiro consumes
-    # the resulting 64-bit sample seed.
+    # Deterministically hash public sample identifiers into well-separated
+    # Xoshiro seeds.  This makes batching, threading, and resumption irrelevant
+    # to the random stream assigned to a sample.
     z = value + 0x9e3779b97f4a7c15
     z = (z ⊻ (z >> 30)) * 0xbf58476d1ce4e5b9
     z = (z ⊻ (z >> 27)) * 0x94d049bb133111eb
@@ -123,8 +116,6 @@ function splitmix64(value::UInt64)
 end
 
 function sample_seed(base_seed::UInt64, order::Int, sample_id::Int)
-    # A sample's seed depends only on its public identifiers, never on thread
-    # scheduling or batch boundaries. This makes resumed runs byte-reproducible.
     key =
         base_seed ⊻
         (UInt64(order) * 0xd6e8feb86659fd93) ⊻
@@ -145,15 +136,12 @@ function valid_existing_batch(
     last_sample,
 )
     isfile(path) || return false
-
     lines = readlines(path)
-    expected_rows = last_sample - first_sample + 1
-    length(lines) == expected_rows + 1 || return false
+    length(lines) == last_sample - first_sample + 2 || return false
     strip(first(lines)) == HEADER || return false
-
     for (line, expected_id) in zip(lines[2:end], first_sample:last_sample)
         fields = split(strip(line), ',')
-        length(fields) == 6 || return false
+        length(fields) == 8 || return false
         try
             parse(Int, fields[1]) == expected_order || return false
             parse(Int, fields[2]) == expected_id || return false
@@ -161,7 +149,9 @@ function valid_existing_batch(
                 sample_seed(base_seed, expected_order, expected_id) || return false
             parse(Int, fields[4]) == expected_order + 1 || return false
             parse(Int, fields[5]) == fld(expected_order, 2) + 1 || return false
-            parse(Int, fields[6])
+            height_1 = parse(Int, fields[6])
+            height_2 = parse(Int, fields[7])
+            parse(Int, fields[8]) == height_1 - height_2 || return false
         catch
             return false
         end
@@ -178,43 +168,31 @@ function write_batch(path, results)
             for result in results
                 println(
                     io,
-                    result.order,
-                    ',',
-                    result.sample_id,
-                    ',',
-                    result.seed,
-                    ',',
-                    result.center_row,
-                    ',',
-                    result.center_column,
-                    ',',
-                    result.center_height,
+                    result.order, ',', result.sample_id, ',', result.seed, ',',
+                    result.center_row, ',', result.center_column, ',',
+                    result.height_1, ',', result.height_2, ',', result.height_difference,
                 )
             end
         end
-        # Rename is atomic on one filesystem.  A crash therefore leaves either
-        # a complete final CSV or a disposable .tmp file, never a partial CSV
-        # that a resumed campaign could mistake for finished work.
+        # Atomic rename prevents an interrupted write from looking complete.
         mv(temporary_path, path; force=true)
     finally
         isfile(temporary_path) && rm(temporary_path; force=true)
     end
 end
 
-function write_campaign_metadata(path, parsed, config_rows)
+function write_metadata(path, parsed, config_rows)
     temporary_path = path * ".tmp"
     try
         open(temporary_path, "w") do io
-            println(io, "model=biased Gamma-disordered Aztec diamond")
-            println(io, "observable=center face height")
+            println(io, "model=double dimer in biased Gamma-disordered Aztec diamond")
+            println(io, "observable=center-height difference H1-H2")
             println(
                 io,
-                "one_sample=fresh random environment plus one conditional dimer cover",
+                "one_sample=fresh environment plus two conditionally independent tilings",
             )
-            println(
-                io,
-                "height_convention=staggered face table documented in aztec/README.md",
-            )
+            println(io, "variance_identity=Var(H1-H2)/2=E[Var(H|environment)]")
+            println(io, "covariance_identity=Cov(H1,H2)=Var(E[H|environment])")
             println(io, "center_index=(L+1, floor(L/2)+1)")
             println(io, "alpha=$(parsed.alpha)")
             println(io, "beta=$(parsed.beta)")
@@ -225,19 +203,7 @@ function write_campaign_metadata(path, parsed, config_rows)
             println(io, "julia_threads=$(nthreads())")
             println(io, "config=$(parsed.config)")
             println(io, "orders=$(join((row.order for row in config_rows), ','))")
-            println(io, "planned_samples=$(sum(row.samples for row in config_rows))")
-            println(
-                io,
-                "sample_ranges=",
-                join(
-                    (
-                        "$(row.order):$(row.first_sample_id)-" *
-                        "$(row.first_sample_id + row.samples - 1)"
-                        for row in config_rows
-                    ),
-                    ",",
-                ),
-            )
+            println(io, "planned_pairs=$(sum(row.samples for row in config_rows))")
         end
         mv(temporary_path, path; force=true)
     finally
@@ -246,9 +212,7 @@ function write_campaign_metadata(path, parsed, config_rows)
 end
 
 function run_batch(parsed, order, batch_id, first_sample, last_sample)
-    count_samples = last_sample - first_sample + 1
     output_path = batch_path(parsed.output_dir, order, batch_id)
-
     if valid_existing_batch(
         output_path,
         parsed.base_seed,
@@ -259,30 +223,28 @@ function run_batch(parsed, order, batch_id, first_sample, last_sample)
         println("skip existing $output_path")
         return
     end
+    isfile(output_path) && error(
+        "existing batch is incomplete or invalid: $output_path. " *
+        "Move only that file before rerunning.",
+    )
 
-    if isfile(output_path)
-        error(
-            "existing batch is incomplete or invalid: $output_path. " *
-            "Move or delete only this specific batch file before rerunning.",
-        )
-    end
-
+    count_samples = last_sample - first_sample + 1
     center = center_face_index(order)
     results = Vector{
         NamedTuple{
-            (:order, :sample_id, :seed, :center_row, :center_column, :center_height),
-            Tuple{Int,Int,UInt64,Int,Int,Int},
+            (:order, :sample_id, :seed, :center_row, :center_column,
+             :height_1, :height_2, :height_difference),
+            Tuple{Int,Int,UInt64,Int,Int,Int,Int,Int},
         },
     }(undef, count_samples)
 
     started = time()
-    # Each thread writes to a distinct preallocated slot.  Because seeds do not
-    # depend on execution order, changing JULIA_NUM_THREADS cannot change the
-    # resulting CSV bytes.
+    # Results are written by array index, so thread scheduling cannot reorder
+    # rows.  The deterministic per-sample seed makes thread count irrelevant.
     @threads :dynamic for offset in 1:count_samples
         sample_id = first_sample + offset - 1
         seed = sample_seed(parsed.base_seed, order, sample_id)
-        height = sample_gamma_center_height(
+        pair = sample_gamma_center_height_pair(
             seed,
             order;
             alpha=parsed.alpha,
@@ -294,19 +256,19 @@ function run_batch(parsed, order, batch_id, first_sample, last_sample)
             seed=seed,
             center_row=center.row,
             center_column=center.column,
-            center_height=height,
+            height_1=pair.height_1,
+            height_2=pair.height_2,
+            height_difference=pair.difference,
         )
     end
-
     write_batch(output_path, results)
-    elapsed = time() - started
     @printf(
-        "completed L=%d batch=%d samples=%d:%d in %.2fs\n",
+        "completed double L=%d batch=%d samples=%d:%d in %.2fs\n",
         order,
         batch_id,
         first_sample,
         last_sample,
-        elapsed,
+        time() - started,
     )
     GC.gc()
 end
@@ -321,40 +283,28 @@ function main(arguments)
     parsed.beta > 0 || error("--beta must be positive")
     config_rows = read_config(parsed.config)
     mkpath(parsed.output_dir)
-
     println(
-        "Starting Gamma height campaign with $(nthreads()) Julia threads and ",
-        "$(sum(row.samples for row in config_rows)) planned samples",
+        "Starting double-dimer campaign with $(nthreads()) threads and ",
+        "$(sum(row.samples for row in config_rows)) planned pairs",
     )
 
     for row in config_rows
         batch_id = 1
         first_sample = row.first_sample_id
         final_sample = row.first_sample_id + row.samples - 1
-
         while first_sample <= final_sample
             last_sample = min(first_sample + row.batch_size - 1, final_sample)
-            run_batch(
-                parsed,
-                row.order,
-                batch_id,
-                first_sample,
-                last_sample,
-            )
+            run_batch(parsed, row.order, batch_id, first_sample, last_sample)
             first_sample = last_sample + 1
             batch_id += 1
         end
     end
-
-    # Write metadata only after every batch has been generated or validated.
-    # A failed resume with the wrong seed therefore cannot overwrite the
-    # metadata belonging to the valid batches already on disk.
-    write_campaign_metadata(
+    write_metadata(
         joinpath(parsed.output_dir, "campaign_metadata.txt"),
         parsed,
         config_rows,
     )
-    println("Campaign complete: $(parsed.output_dir)")
+    println("Double-dimer campaign complete: $(parsed.output_dir)")
 end
 
 main(ARGS)

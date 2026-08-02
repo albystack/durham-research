@@ -6,6 +6,9 @@ __pycache__/
 
 # Julia local runtime artifacts
 .julia/
+# This is a reusable Julia library supporting multiple Julia minor versions;
+# resolve standard-library versions locally rather than pinning one developer's.
+/aztec/Manifest.toml
 
 # macOS metadata
 .DS_Store
