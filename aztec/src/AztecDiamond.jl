@@ -25,13 +25,19 @@ export random_uniform_weights,
        gamma_disordered_probabilities,
        gamma_disordered_creation_choices,
        gamma_disordered_creation_choice_pair,
+       uniform_creation_choices,
        sample_tiling,
        sample_tiling_from_choices,
        sample_gamma_center_height,
        sample_gamma_center_height_pair,
+       sample_gamma_spatial_increment_pair,
+       sample_uniform_spatial_increment_pair,
        height_function,
+       face_height,
        center_face_index,
        center_height,
+       symmetric_face_columns,
+       symmetric_height_increment,
        validate_tiling,
        orientation_counts,
        write_table,
@@ -432,6 +438,26 @@ function gamma_disordered_creation_choice_pair(
     return (first=choices[1], second=choices[2])
 end
 
+"""
+    uniform_creation_choices(rng, order)
+
+Draw all independent fair creation coins for a uniformly random order-`L`
+Aztec-diamond tiling.  This is the no-disorder control: every potential
+creation orientation has probability one half.
+"""
+function uniform_creation_choices(rng::AbstractRNG, order::Integer)
+    order > 0 || throw(ArgumentError("order must be positive"))
+    choices = Vector{BitMatrix}(undef, order)
+    for level in 1:order
+        level_choices = falses(level, level)
+        @inbounds for index in eachindex(level_choices)
+            level_choices[index] = rand(rng, Bool)
+        end
+        choices[level] = level_choices
+    end
+    return choices
+end
+
 # ---------------------------------------------------------------------------
 # Domino shuffling
 # ---------------------------------------------------------------------------
@@ -724,6 +750,103 @@ function sample_gamma_center_height_pair(
 end
 
 
+"""
+    sample_gamma_spatial_increment_pair(seed, order, separations; alpha, beta)
+
+Generate one Gamma environment and two conditionally independent tilings.
+For each requested face-column separation, return the height increment between
+two faces placed symmetrically around the centre row.  The two replicas make
+the connected and disorder contributions directly observable:
+
+`Var(delta_1-delta_2)/2` is conditional tiling noise, while
+`Cov(delta_1,delta_2)` is disorder-induced fluctuation.
+"""
+function sample_gamma_spatial_increment_pair(
+    seed::Integer,
+    order::Integer,
+    separations::AbstractVector{<:Integer};
+    alpha::Real=0.2,
+    beta::Real=0.25,
+)
+    order > 0 || throw(ArgumentError("order must be positive"))
+    alpha > 0 || throw(ArgumentError("alpha must be positive"))
+    beta > 0 || throw(ArgumentError("beta must be positive"))
+    all(separation -> 0 < separation < order, separations) ||
+        throw(ArgumentError("every separation must lie between 1 and order-1"))
+
+    rng = Xoshiro(UInt64(seed))
+    weights = gamma_disordered_weights(rng, order; alpha=alpha, beta=beta)
+    choices = gamma_disordered_creation_choice_pair(rng, weights.a, weights.b)
+    first_tiling = sample_tiling_from_choices(choices.first)
+    second_tiling = sample_tiling_from_choices(choices.second)
+    expected_dominoes = order * (order + 1)
+    count(first_tiling) == expected_dominoes ||
+        throw(ErrorException("invalid first spatial tiling for order=$order seed=$seed"))
+    count(second_tiling) == expected_dominoes ||
+        throw(ErrorException("invalid second spatial tiling for order=$order seed=$seed"))
+
+    return [
+        begin
+            columns = symmetric_face_columns(order, separation)
+            first_increment = symmetric_height_increment(first_tiling, separation)
+            second_increment = symmetric_height_increment(second_tiling, separation)
+            (
+                separation=Int(separation),
+                left_column=columns.left,
+                right_column=columns.right,
+                increment_1=first_increment,
+                increment_2=second_increment,
+                difference=first_increment - second_increment,
+            )
+        end
+        for separation in separations
+    ]
+end
+
+"""
+    sample_uniform_spatial_increment_pair(seed, order, separations)
+
+Generate two independent uniform Aztec-diamond tilings and measure the same
+spatial increments as the Gamma experiment.  There is no shared random
+environment, so their cross-replica covariance should be zero; their marginal
+and half-difference variances provide the ordinary-log control.
+"""
+function sample_uniform_spatial_increment_pair(
+    seed::Integer,
+    order::Integer,
+    separations::AbstractVector{<:Integer},
+)
+    order > 0 || throw(ArgumentError("order must be positive"))
+    all(separation -> 0 < separation < order, separations) ||
+        throw(ArgumentError("every separation must lie between 1 and order-1"))
+    rng = Xoshiro(UInt64(seed))
+    first_tiling = sample_tiling_from_choices(uniform_creation_choices(rng, order))
+    second_tiling = sample_tiling_from_choices(uniform_creation_choices(rng, order))
+    expected_dominoes = order * (order + 1)
+    count(first_tiling) == expected_dominoes ||
+        throw(ErrorException("invalid first uniform tiling for order=$order seed=$seed"))
+    count(second_tiling) == expected_dominoes ||
+        throw(ErrorException("invalid second uniform tiling for order=$order seed=$seed"))
+
+    return [
+        begin
+            columns = symmetric_face_columns(order, separation)
+            first_increment = symmetric_height_increment(first_tiling, separation)
+            second_increment = symmetric_height_increment(second_tiling, separation)
+            (
+                separation=Int(separation),
+                left_column=columns.left,
+                right_column=columns.right,
+                increment_1=first_increment,
+                increment_2=second_increment,
+                difference=first_increment - second_increment,
+            )
+        end
+        for separation in separations
+    ]
+end
+
+
 # ---------------------------------------------------------------------------
 # Height observable
 # ---------------------------------------------------------------------------
@@ -755,6 +878,32 @@ function height_function(tiling::AbstractMatrix{Bool})
 end
 
 """
+    face_height(tiling, row, column)
+
+Compute one entry of `height_function(tiling)` directly.  This costs only one
+vertical path and avoids allocating the full staggered height table.
+"""
+function face_height(
+    tiling::AbstractMatrix{Bool},
+    row::Integer,
+    column::Integer,
+)
+    side1, side2 = size(tiling)
+    side1 == side2 || throw(ArgumentError("tiling matrix must be square"))
+    iseven(side1) || throw(ArgumentError("tiling matrix side length must be even"))
+    order = side1 ÷ 2
+    1 <= row <= side1 + 1 || throw(ArgumentError("face row is out of range"))
+    1 <= column <= order || throw(ArgumentError("face column is out of range"))
+
+    height = 2 * column - 2
+    edge_column = 2 * column - 1
+    @inbounds for edge_row in 1:(row - 1)
+        height += tiling[edge_row, edge_column] ? 3 : -1
+    end
+    return height
+end
+
+"""
     center_face_index(order)
 
 Return the row and column of the face closest to the geometric center in the
@@ -777,15 +926,43 @@ function center_height(tiling::AbstractMatrix{Bool})
     iseven(side1) || throw(ArgumentError("tiling matrix side length must be even"))
     order = side1 ÷ 2
     center = center_face_index(order)
-    # Start from the known top-boundary value and integrate only along the one
-    # vertical path needed for the central observable.  This avoids allocating
-    # the full (2L+1) x (L+1) height table in production runs.
-    height = 2 * center.column - 2
-    edge_column = 2 * center.column - 1
-    for row in 1:order
-        height += tiling[row, edge_column] ? 3 : -1
-    end
-    return height
+    return face_height(tiling, center.row, center.column)
+end
+
+"""
+    symmetric_face_columns(order, separation)
+
+Return two valid face columns separated by `separation` and centred as closely
+as parity permits around the geometric middle of the Aztec diamond.
+"""
+function symmetric_face_columns(order::Integer, separation::Integer)
+    order > 1 || throw(ArgumentError("order must exceed one"))
+    0 < separation < order ||
+        throw(ArgumentError("separation must lie between 1 and order-1"))
+    left = fld(order - separation, 2) + 1
+    right = left + separation
+    1 <= left < right <= order || error("internal symmetric-column error")
+    return (left=left, right=right)
+end
+
+"""
+    symmetric_height_increment(tiling, separation)
+
+Height at the right member minus height at the left member of a symmetric
+pair of faces on the central row.  Only two vertical paths are evaluated.
+"""
+function symmetric_height_increment(
+    tiling::AbstractMatrix{Bool},
+    separation::Integer,
+)
+    side1, side2 = size(tiling)
+    side1 == side2 || throw(ArgumentError("tiling matrix must be square"))
+    iseven(side1) || throw(ArgumentError("tiling matrix side length must be even"))
+    order = side1 ÷ 2
+    columns = symmetric_face_columns(order, separation)
+    row = order + 1
+    return face_height(tiling, row, columns.right) -
+           face_height(tiling, row, columns.left)
 end
 
 # ---------------------------------------------------------------------------

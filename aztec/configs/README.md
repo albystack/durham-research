@@ -22,10 +22,16 @@ both be globally unique.
 - `double_dimer_campaign.csv` produced the retained 28,304 paired observations.
 - `double_dimer_large_continuation.csv` is the recommended next run: it adds
   another 256 pairs at each large order without reusing sample IDs.
+- `spatial_publication_gamma.csv` and `spatial_publication_uniform.csv` are the
+  publication-focused paired-replica schedules. They measure symmetric
+  central-row increments at separations `L/32`, `L/16`, `L/8`, and `L/4`.
+  The Gamma campaign shares one environment between replicas; the uniform
+  campaign is the no-disorder control.
 
 ## Fast checks
 
-The `*_smoke.csv` schedules use matching orders 4, 8, and 12 so the complete
-single/double variance-decomposition pipeline can be tested quickly. The
+The original `*_smoke.csv` schedules use matching orders 4, 8, and 12.
+`spatial_smoke.csv` uses five geometrically separated orders so the nested
+quadratic-in-log fit and held-out prediction can also be tested. The
 `*_benchmark.csv` schedules use deliberately distant sample IDs and are for
 timing and memory measurements only; do not merge them into production data.

@@ -37,6 +37,22 @@ otherwise. The observable is the face nearest the geometric centre:
 Production code integrates along that one column and never allocates the full
 height table.
 
+### Spatial increments and the publication experiment
+
+The super-roughness literature predicts spatial height-difference covariances.
+For two replicas in one Gamma environment, this project measures
+
+```text
+delta_a(r) = H_a(x+r) - H_a(x),  a = 1,2,
+T(r) = Var(delta_1(r)-delta_2(r))/2,
+D(r) = Cov(delta_1(r), delta_2(r)).
+```
+
+`T(r)` is the connected/conditional contribution and `D(r)` is the disorder
+contribution. Symmetric pairs on the central row are recorded at `r/L` equal
+to `1/32`, `1/16`, `1/8`, and `1/4`. A separate uniform campaign applies the
+identical geometry with no shared environment.
+
 ### Single height
 
 One observation uses a fresh environment, one conditional tiling, and its
@@ -131,6 +147,30 @@ julia --project=aztec aztec/scripts/plot_double_dimer_campaign.jl \
   --analysis-dir aztec/output/double_analysis \
   --output-dir aztec/output/double_analysis
 ```
+
+## Run the publication-focused spatial experiment
+
+The complete Gamma campaign, uniform control, bootstrap analysis, and figures
+are resumable through one command:
+
+```bash
+JULIA_NUM_THREADS=8 sh aztec/scripts/run_spatial_publication_campaign.sh
+```
+
+The primary nested comparison is
+
+```text
+H0: a + b log(r)
+H1: a + b log(r) + c (log(r))^2.
+```
+
+The analysis reports paired-environment bootstrap intervals for `c`, BIC for
+the nested models, cutoff sensitivity across four relative separations, and
+prediction error on the two largest held-out orders. A joint analysis preserves
+the shared environments across separations and estimates one common quadratic
+coefficient with fraction-specific intercepts and log slopes. Both unweighted
+and inverse-bootstrap-variance-weighted fits are reported. The uniform control
+checks that the workflow remains consistent with ordinary logarithmic growth.
 
 ## Fitted curves and statistical scope
 

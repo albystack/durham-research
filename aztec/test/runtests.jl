@@ -269,3 +269,65 @@ end
         atol=1e-12,
     )
 end
+
+
+@testset "direct spatial height increments" begin
+    rng = Xoshiro(100_001)
+    order = 14
+    tiling = sample_tiling_from_choices(uniform_creation_choices(rng, order))
+    full_heights = height_function(tiling)
+    for separation in (1, 2, 4, 7, 13)
+        columns = symmetric_face_columns(order, separation)
+        expected =
+            full_heights[order + 1, columns.right] -
+            full_heights[order + 1, columns.left]
+        @test symmetric_height_increment(tiling, separation) == expected
+        @test face_height(tiling, order + 1, columns.left) ==
+              full_heights[order + 1, columns.left]
+        @test face_height(tiling, order + 1, columns.right) ==
+              full_heights[order + 1, columns.right]
+    end
+    @test_throws ArgumentError symmetric_face_columns(order, 0)
+    @test_throws ArgumentError symmetric_face_columns(order, order)
+end
+
+@testset "Gamma and uniform spatial replica wrappers" begin
+    separations = [2, 4, 8]
+    gamma_first = sample_gamma_spatial_increment_pair(
+        UInt64(110_001),
+        16,
+        separations;
+        alpha=0.2,
+        beta=0.25,
+    )
+    gamma_second = sample_gamma_spatial_increment_pair(
+        UInt64(110_001),
+        16,
+        separations;
+        alpha=0.2,
+        beta=0.25,
+    )
+    @test gamma_first == gamma_second
+    @test [row.separation for row in gamma_first] == separations
+    @test all(
+        row.difference == row.increment_1 - row.increment_2
+        for row in gamma_first
+    )
+
+    uniform_first = sample_uniform_spatial_increment_pair(
+        UInt64(120_001),
+        16,
+        separations,
+    )
+    uniform_second = sample_uniform_spatial_increment_pair(
+        UInt64(120_001),
+        16,
+        separations,
+    )
+    @test uniform_first == uniform_second
+    @test [row.separation for row in uniform_first] == separations
+    @test all(
+        row.difference == row.increment_1 - row.increment_2
+        for row in uniform_first
+    )
+end

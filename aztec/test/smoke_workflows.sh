@@ -88,6 +88,46 @@ julia --project=aztec --startup-file=no aztec/scripts/plot_double_dimer_campaign
   --analysis-dir "$pair_analysis" \
   --output-dir "$pair_analysis"
 
+spatial_gamma="$smoke_root/spatial_gamma"
+spatial_uniform="$smoke_root/spatial_uniform"
+spatial_analysis="$smoke_root/spatial_analysis"
+
+julia --project=aztec --startup-file=no aztec/scripts/run_spatial_campaign.jl \
+  --model gamma \
+  --config aztec/configs/spatial_smoke.csv \
+  --output-dir "$spatial_gamma" \
+  --base-seed 107
+
+if julia --project=aztec --startup-file=no \
+  aztec/scripts/run_spatial_campaign.jl \
+  --model gamma \
+  --config aztec/configs/spatial_smoke.csv \
+  --output-dir "$spatial_gamma" \
+  --base-seed 999 >/dev/null 2>&1
+then
+  echo "spatial runner accepted a batch generated with a different seed" >&2
+  exit 1
+fi
+
+julia --project=aztec --startup-file=no aztec/scripts/run_spatial_campaign.jl \
+  --model uniform \
+  --config aztec/configs/spatial_smoke.csv \
+  --output-dir "$spatial_uniform" \
+  --base-seed 108
+
+julia --project=aztec --startup-file=no aztec/scripts/analyze_spatial_campaign.jl \
+  --gamma-results "$spatial_gamma" \
+  --uniform-results "$spatial_uniform" \
+  --output-dir "$spatial_analysis" \
+  --bootstrap-reps 50 \
+  --bootstrap-seed 109 \
+  --min-order 64 \
+  --holdout-orders 2
+
+julia --project=aztec --startup-file=no aztec/scripts/plot_spatial_campaign.jl \
+  --analysis-dir "$spatial_analysis" \
+  --output-dir "$spatial_analysis"
+
 # Also exercise the two illustrated one-off samplers at a tiny order.
 julia --project=aztec --startup-file=no aztec/scripts/run_gamma_disordered.jl \
   --order 6 --seed 105 --output-dir "$smoke_root/gamma_example"
@@ -102,6 +142,16 @@ for artifact in \
   "$pair_analysis/double_dimer_variance_fits.svg" \
   "$pair_analysis/disorder_covariance_fits.svg" \
   "$pair_analysis/variance_decomposition.svg" \
+  "$spatial_analysis/spatial_summary.csv" \
+  "$spatial_analysis/spatial_model_comparison.csv" \
+  "$spatial_analysis/spatial_weighted_model_comparison.csv" \
+  "$spatial_analysis/spatial_pooled_model_comparison.csv" \
+  "$spatial_analysis/spatial_cutoff_sensitivity.csv" \
+  "$spatial_analysis/spatial_analysis_report.md" \
+  "$spatial_analysis/gamma_disorder_spatial_fits.svg" \
+  "$spatial_analysis/uniform_control_spatial_fits.svg" \
+  "$spatial_analysis/spatial_variance_decomposition.svg" \
+  "$spatial_analysis/pooled_log2_coefficients.svg" \
   "$smoke_root/gamma_example/tiling_mathematica_style.svg" \
   "$smoke_root/uniform_example/tiling_mathematica_style.svg"
 do
