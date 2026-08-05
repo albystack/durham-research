@@ -41,3 +41,6 @@ logs/
 analysis_*/
 figures_*/
 output/
+
+# Hamilton-local Julia environment
+.hamilton_env/

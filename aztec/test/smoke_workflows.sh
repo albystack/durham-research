@@ -158,4 +158,49 @@ do
   test -s "$artifact"
 done
 
-echo "All Aztec command-line smoke workflows passed."
+
+square_baseline="$smoke_root/square_baseline"
+square_directed="$smoke_root/square_directed"
+square_baseline_csv="$smoke_root/square_baseline.csv"
+square_directed_csv="$smoke_root/square_directed.csv"
+
+julia --project=aztec --startup-file=no aztec/scripts/run_square_grid_campaign.jl \
+  --environment-model baseline \
+  --config aztec/configs/square_grid_smoke.csv \
+  --output-dir "$square_baseline" \
+  --base-seed 110
+
+julia --project=aztec --startup-file=no aztec/scripts/run_square_grid_campaign.jl \
+  --environment-model directed_site_iid \
+  --distribution gamma \
+  --parameter 0.5 \
+  --config aztec/configs/square_grid_smoke.csv \
+  --output-dir "$square_directed" \
+  --base-seed 111
+
+if julia --project=aztec --startup-file=no \
+  aztec/scripts/run_square_grid_campaign.jl \
+  --environment-model directed_site_iid \
+  --parameter 0.5 \
+  --config aztec/configs/square_grid_smoke.csv \
+  --output-dir "$square_directed" \
+  --base-seed 999 >/dev/null 2>&1
+then
+  echo "square-grid runner accepted batches generated with a different seed" >&2
+  exit 1
+fi
+
+julia --project=aztec --startup-file=no aztec/scripts/merge_square_grid_batches.jl \
+  --inputs "$square_baseline" \
+  --output "$square_baseline_csv"
+
+julia --project=aztec --startup-file=no aztec/scripts/merge_square_grid_batches.jl \
+  --inputs "$square_directed" \
+  --output "$square_directed_csv"
+
+test -s "$square_baseline_csv"
+test -s "$square_directed_csv"
+test -s "$square_baseline/campaign_metadata.txt"
+test -s "$square_directed/campaign_metadata.txt"
+
+echo "All Aztec and square-grid command-line smoke workflows passed."

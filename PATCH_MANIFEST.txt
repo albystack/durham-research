@@ -1,0 +1,22 @@
+Square-grid Stage C-G patch
+
+.gitignore
+SQUARE_GRID_INSTALL.md
+SQUARE_GRID_VALIDATION.md
+aztec/README.md
+aztec/configs/README.md
+aztec/configs/square_grid_smoke.csv
+aztec/configs/square_grid_pilot.csv
+aztec/docs/SQUARE_GRID_MODEL.md
+aztec/scripts/run_square_grid_campaign.jl
+aztec/scripts/merge_square_grid_batches.jl
+aztec/src/AztecDiamond.jl
+aztec/src/SquareGrid.jl
+aztec/test/runtests.jl
+aztec/test/square_grid_runtests.jl
+aztec/test/smoke_workflows.sh
+hpc/README.md
+hpc/setup_hamilton_environment.sh
+hpc/square_grid_smoke.slurm
+hpc/square_grid_pilot.slurm
+hpc/analyze_square_grid.slurm

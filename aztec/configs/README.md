@@ -35,3 +35,9 @@ The original `*_smoke.csv` schedules use matching orders 4, 8, and 12.
 quadratic-in-log fit and held-out prediction can also be tested. The
 `*_benchmark.csv` schedules use deliberately distant sample IDs and are for
 timing and memory measurements only; do not merge them into production data.
+
+## Square-grid schedules
+
+- `square_grid_smoke.csv`: two tiny sizes for CLI and Hamilton validation.
+- `square_grid_pilot.csv`: 50 resumable tasks across `L=16,32,64,128,256` with 570 environments per model.
+  Run it separately for the baseline and directed Gamma environments.
