@@ -11,7 +11,7 @@ const HEADER =
 
 function print_help()
     println("""
-    Analyse disordered spatial increments and the no-disorder control.
+    Analyse Gamma spatial increments and the uniform control.
 
     The primary nested comparison is
 
@@ -24,8 +24,6 @@ function print_help()
     Options:
       --gamma-results PATHS   files/directories, comma separated
       --uniform-results PATHS files/directories, comma separated
-      --gamma-model LABEL     expected disorder label (default: gamma)
-      --uniform-model LABEL   expected baseline label (default: uniform)
       --output-dir PATH
       --bootstrap-reps INT    default 2000
       --bootstrap-seed UINT
@@ -45,8 +43,6 @@ function parse_arguments(arguments)
     options = Dict{String,String}(
         "gamma-results" => joinpath(@__DIR__, "..", "output", "spatial_gamma_smoke"),
         "uniform-results" => joinpath(@__DIR__, "..", "output", "spatial_uniform_smoke"),
-        "gamma-model" => "gamma",
-        "uniform-model" => "uniform",
         "output-dir" => joinpath(@__DIR__, "..", "output", "spatial_analysis"),
         "bootstrap-reps" => "2000",
         "bootstrap-seed" => "20260805",
@@ -66,8 +62,6 @@ function parse_arguments(arguments)
     return (
         gamma_paths=parse_paths(options["gamma-results"]),
         uniform_paths=parse_paths(options["uniform-results"]),
-        gamma_model=options["gamma-model"],
-        uniform_model=options["uniform-model"],
         output_dir=abspath(options["output-dir"]),
         bootstrap_reps=parse(Int, options["bootstrap-reps"]),
         bootstrap_seed=parse(UInt64, options["bootstrap-seed"]),
@@ -157,11 +151,6 @@ function load_results(paths, expected_model)
     orders = sort(unique(key[3] for key in keys(groups)))
     for order in orders
         reference = sample_keys_by_group[(fractions[1]..., order)]
-        sample_ids = first.(reference)
-        length(unique(sample_ids)) == length(sample_ids) ||
-            error("duplicate sample IDs at order $order")
-        sort(sample_ids) == collect(minimum(sample_ids):maximum(sample_ids)) ||
-            error("non-contiguous sample IDs at order $order")
         for fraction in fractions[2:end]
             sample_keys_by_group[(fraction..., order)] == reference ||
                 error("fraction rows are not aligned by environment at order $order")
@@ -290,8 +279,6 @@ function fit_comparison(x, y, holdout_orders; weights=nothing)
     return (
         log=log_fit,
         quadratic=quadratic_fit,
-        trained_log=train_log,
-        trained_quadratic=train_quadratic,
         delta_bic=log_fit.bic - quadratic_fit.bic,
         log_holdout_rmse=log_rmse,
         quadratic_holdout_rmse=quadratic_rmse,
@@ -365,8 +352,7 @@ function write_fits(
     open(prediction_path, "w") do prediction_io
         println(
             prediction_io,
-            "model,fraction_num,fraction_den,component,order,separation,fit_role," *
-            "observed,log_fit,log_plus_log2_fit",
+            "model,fraction_num,fraction_den,component,order,separation,observed,log_fit,log_plus_log2_fit",
         )
         for model in ("gamma", "uniform")
             data = datasets[model]
@@ -418,23 +404,19 @@ function write_fits(
                             quadratic_holdout_rmse=comparison.quadratic_holdout_rmse,
                         ),
                     )
-                    log_predictions = predict(comparison.trained_log, x)
-                    quadratic_predictions = predict(
-                        comparison.trained_quadratic, x; quadratic=true)
-                    training_count = length(keys_for_fraction) - holdout_orders
-                    for (index, (key, observed, log_value, quadratic_value)) in enumerate(zip(
+                    log_predictions = predict(comparison.log, x)
+                    quadratic_predictions = predict(comparison.quadratic, x; quadratic=true)
+                    for (key, observed, log_value, quadratic_value) in zip(
                         keys_for_fraction,
                         y,
                         log_predictions,
                         quadratic_predictions,
-                    ))
-                        fit_role = index <= training_count ? "training" : "heldout"
+                    )
                         @printf(
                             prediction_io,
-                            "%s,%d,%d,%s,%d,%d,%s,%.10g,%.10g,%.10g\n",
+                            "%s,%d,%d,%s,%d,%d,%.10g,%.10g,%.10g\n",
                             model, numerator, denominator, component, key[3],
-                            data.separations[key], fit_role, observed, log_value,
-                            quadratic_value,
+                            data.separations[key], observed, log_value, quadratic_value,
                         )
                     end
                 end
@@ -605,203 +587,6 @@ function pooled_comparison(
         null_holdout_rmse=null_rmse,
         quadratic_holdout_rmse=quadratic_rmse,
     )
-end
-
-# Covariance-aware pooled fit. Rows are ordered by size and then fraction so
-# each size contributes one independent cross-fraction covariance block.
-function pooled_order_major_matrices(data, selected_orders, component_values)
-    fraction_count = length(data.fractions)
-    row_count = fraction_count * length(selected_orders)
-    null_design = zeros(row_count, 2 * fraction_count)
-    quadratic_design = zeros(row_count, 2 * fraction_count + 1)
-    response = zeros(row_count)
-    row = 1
-    for order in selected_orders, (fraction_index, fraction) in enumerate(data.fractions)
-        key = (fraction..., order)
-        log_separation = log(Float64(data.separations[key]))
-        null_design[row, 2 * fraction_index - 1] = 1
-        null_design[row, 2 * fraction_index] = log_separation
-        quadratic_design[row, 1:end-1] .= null_design[row, :]
-        quadratic_design[row, end] = log_separation^2
-        response[row] = component_values[key]
-        row += 1
-    end
-    return null_design, quadratic_design, response
-end
-
-function regularized_precision(covariance_matrix)
-    decomposition = eigen(Symmetric(Matrix(covariance_matrix)))
-    scale = max(maximum(decomposition.values), eps(Float64))
-    floor_value = scale * 1e-8
-    inverse_values = 1.0 ./ max.(decomposition.values, floor_value)
-    return decomposition.vectors * Diagonal(inverse_values) * decomposition.vectors'
-end
-
-function block_gls_regression(design, response, covariance_blocks)
-    block_count = length(covariance_blocks)
-    block_count > 0 || error("GLS needs covariance blocks")
-    block_size = size(first(covariance_blocks), 1)
-    length(response) == block_count * block_size ||
-        throw(DimensionMismatch("GLS blocks do not match the response"))
-    parameter_count = size(design, 2)
-    normal = zeros(parameter_count, parameter_count)
-    rhs = zeros(parameter_count)
-    precisions = Matrix{Float64}[]
-    for (block_index, covariance_matrix) in enumerate(covariance_blocks)
-        size(covariance_matrix) == (block_size, block_size) ||
-            throw(DimensionMismatch("inconsistent GLS block size"))
-        precision = regularized_precision(covariance_matrix)
-        push!(precisions, precision)
-        rows = ((block_index - 1) * block_size + 1):(block_index * block_size)
-        block_design = design[rows, :]
-        normal .+= block_design' * precision * block_design
-        rhs .+= block_design' * precision * response[rows]
-    end
-    coefficients = normal \ rhs
-    fitted = design * coefficients
-    quadratic_form = 0.0
-    for block_index in 1:block_count
-        rows = ((block_index - 1) * block_size + 1):(block_index * block_size)
-        residual = response[rows] - fitted[rows]
-        quadratic_form += dot(residual, precisions[block_index] * residual)
-    end
-    bic = quadratic_form + parameter_count * log(length(response))
-    return (coefficients=coefficients, fitted=fitted, rss=quadratic_form, bic=bic)
-end
-
-function pooled_gls_comparison(
-    data,
-    selected_orders,
-    component_values,
-    holdout_orders,
-    covariance_by_order,
-)
-    null_design, quadratic_design, response = pooled_order_major_matrices(
-        data, selected_orders, component_values)
-    covariance_blocks = [covariance_by_order[order] for order in selected_orders]
-    null_fit = block_gls_regression(null_design, response, covariance_blocks)
-    quadratic_fit = block_gls_regression(quadratic_design, response, covariance_blocks)
-
-    training_orders = selected_orders[1:(end - holdout_orders)]
-    testing_orders = selected_orders[(end - holdout_orders + 1):end]
-    train_null, train_quadratic, train_response = pooled_order_major_matrices(
-        data, training_orders, component_values)
-    test_null, test_quadratic, test_response = pooled_order_major_matrices(
-        data, testing_orders, component_values)
-    training_blocks = [covariance_by_order[order] for order in training_orders]
-    trained_null = block_gls_regression(train_null, train_response, training_blocks)
-    trained_quadratic = block_gls_regression(
-        train_quadratic, train_response, training_blocks)
-    null_rmse = sqrt(mean(abs2, test_response - test_null * trained_null.coefficients))
-    quadratic_rmse = sqrt(mean(
-        abs2, test_response - test_quadratic * trained_quadratic.coefficients))
-    return (
-        common_coefficient=quadratic_fit.coefficients[end],
-        delta_bic=null_fit.bic - quadratic_fit.bic,
-        null_holdout_rmse=null_rmse,
-        quadratic_holdout_rmse=quadratic_rmse,
-    )
-end
-
-function write_pooled_gls_fits(
-    path,
-    datasets,
-    points,
-    repetitions,
-    min_order,
-    holdout_orders,
-    rng,
-)
-    components = (:marginal, :conditional, :disorder)
-    output_rows = NamedTuple[]
-    for model in ("gamma", "uniform")
-        data = datasets[model]
-        selected_orders = sort(unique(
-            key[3] for key in keys(data.groups) if key[3] >= min_order))
-        length(selected_orders) >= holdout_orders + 3 ||
-            error("too few orders for pooled GLS $model fit")
-        fraction_count = length(data.fractions)
-        joint_draws = Dict(
-            (component, order) => zeros(repetitions, fraction_count)
-            for component in components for order in selected_orders
-        )
-        for order in selected_orders
-            reference_key = (data.fractions[1]..., order)
-            sample_count = length(data.groups[reference_key])
-            indices = Vector{Int}(undef, sample_count)
-            for repetition in 1:repetitions
-                rand!(rng, indices, 1:sample_count)
-                for (fraction_index, fraction) in enumerate(data.fractions)
-                    statistics = paired_statistics(data.groups[(fraction..., order)], indices)
-                    for component in components
-                        joint_draws[(component, order)][repetition, fraction_index] =
-                            getproperty(statistics, component)
-                    end
-                end
-            end
-        end
-
-        for component in components
-            covariance_by_order = Dict(
-                order => cov(joint_draws[(component, order)]; dims=1, corrected=true)
-                for order in selected_orders
-            )
-            point_values = Dict(
-                key => getproperty(points[(model, key...)], component)
-                for key in keys(data.groups) if key[3] >= min_order
-            )
-            comparison = pooled_gls_comparison(
-                data, selected_orders, point_values, holdout_orders, covariance_by_order)
-            coefficient_draws = Vector{Float64}(undef, repetitions)
-            delta_draws = similar(coefficient_draws)
-            for repetition in 1:repetitions
-                bootstrap_values = Dict{Tuple{Int,Int,Int},Float64}()
-                for order in selected_orders, (fraction_index, fraction) in enumerate(data.fractions)
-                    bootstrap_values[(fraction..., order)] =
-                        joint_draws[(component, order)][repetition, fraction_index]
-                end
-                bootstrap_comparison = pooled_gls_comparison(
-                    data,
-                    selected_orders,
-                    bootstrap_values,
-                    holdout_orders,
-                    covariance_by_order,
-                )
-                coefficient_draws[repetition] = bootstrap_comparison.common_coefficient
-                delta_draws[repetition] = bootstrap_comparison.delta_bic
-            end
-            coefficient_interval = interval(coefficient_draws)
-            delta_interval = interval(delta_draws)
-            push!(output_rows, (
-                model=model,
-                component=String(component),
-                method="block_gls",
-                common_log2_coefficient=comparison.common_coefficient,
-                coefficient_low=coefficient_interval.low,
-                coefficient_high=coefficient_interval.high,
-                coefficient_positive_fraction=mean(coefficient_draws .> 0),
-                delta_bic=comparison.delta_bic,
-                delta_bic_low=delta_interval.low,
-                delta_bic_high=delta_interval.high,
-                quadratic_bic_win_fraction=mean(delta_draws .> 0),
-                log_holdout_rmse=comparison.null_holdout_rmse,
-                quadratic_holdout_rmse=comparison.quadratic_holdout_rmse,
-            ))
-        end
-    end
-    open(path, "w") do io
-        println(io,
-            "model,component,method,common_log2_coefficient,coefficient_low," *
-            "coefficient_high,coefficient_positive_fraction," *
-            "delta_bic_log_minus_quadratic,delta_bic_low,delta_bic_high," *
-            "quadratic_bic_win_fraction,log_holdout_rmse,quadratic_holdout_rmse")
-        for row in output_rows
-            @printf(io,
-                "%s,%s,%s,%.10g,%.10g,%.10g,%.10g,%.10g,%.10g,%.10g,%.10g,%.10g,%.10g\n",
-                values(row)...)
-        end
-    end
-    return output_rows
 end
 
 function write_pooled_fits(
@@ -976,8 +761,8 @@ function write_report(
     open(path, "w") do io
         println(io, "# Spatial height-increment analysis")
         println(io)
-        println(io, "Independent disordered environments: **$gamma_environment_count**.")
-        println(io, "Independent no-disorder replica pairs: **$uniform_pair_count**.")
+        println(io, "Independent Gamma environments: **$gamma_environment_count**.")
+        println(io, "Independent uniform replica pairs: **$uniform_pair_count**.")
         println(io, "Bootstrap repetitions: **$repetitions**; fitted orders start at **$min_order**; the largest **$holdout_orders** orders test prediction.")
         println(io)
         println(io, "## Joint environment-clustered result")
@@ -988,11 +773,11 @@ function write_report(
         println(io, "|---|---|---:|---:|---:|---:|---:|")
         for row in pooled_primary
             observable = if row.model == "gamma" && row.component == "disorder"
-                "Disorder covariance"
+                "Gamma disorder covariance"
             elseif row.model == "gamma"
-                "Disordered conditional"
+                "Gamma conditional"
             else
-                "No-disorder marginal control"
+                "Uniform marginal control"
             end
             @printf(
                 io,
@@ -1004,7 +789,7 @@ function write_report(
             )
         end
         println(io)
-        println(io, "## Primary disorder result")
+        println(io, "## Primary Gamma disorder result")
         println(io)
         println(io, "The nested comparison is `a + b log(r)` versus `a + b log(r) + c(log(r))^2`. Positive delta BIC favors the quadratic extension.")
         println(io)
@@ -1021,7 +806,7 @@ function write_report(
             )
         end
         println(io)
-        println(io, "## No-disorder control")
+        println(io, "## Uniform control")
         println(io)
         println(io, "| separation | c | 95% bootstrap interval | delta BIC | held-out RMSE log / quadratic |")
         println(io, "|---:|---:|---:|---:|---:|")
@@ -1104,15 +889,11 @@ function main(arguments)
     parsed.bootstrap_reps > 0 || error("bootstrap repetitions must be positive")
     parsed.holdout_orders > 0 || error("holdout orders must be positive")
     datasets = Dict(
-        "gamma" => load_results(parsed.gamma_paths, parsed.gamma_model),
-        "uniform" => load_results(parsed.uniform_paths, parsed.uniform_model),
+        "gamma" => load_results(parsed.gamma_paths, "gamma"),
+        "uniform" => load_results(parsed.uniform_paths, "uniform"),
     )
     datasets["gamma"].fractions == datasets["uniform"].fractions ||
-        error("disorder and baseline campaigns must use the same fractions")
-    gamma_orders = sort(unique(key[3] for key in keys(datasets["gamma"].groups)))
-    uniform_orders = sort(unique(key[3] for key in keys(datasets["uniform"].groups)))
-    gamma_orders == uniform_orders ||
-        error("disorder and baseline campaigns must use the same orders")
+        error("Gamma and uniform campaigns must use the same fractions")
 
     rng = Xoshiro(parsed.bootstrap_seed)
     points = Dict{Tuple,NamedTuple}()
@@ -1134,7 +915,6 @@ function main(arguments)
         "spatial_weighted_model_comparison.csv",
     )
     pooled_fits_path = joinpath(parsed.output_dir, "spatial_pooled_model_comparison.csv")
-    pooled_gls_path = joinpath(parsed.output_dir, "spatial_pooled_gls_comparison.csv")
     predictions_path = joinpath(parsed.output_dir, "spatial_fit_curves.csv")
     cutoff_path = joinpath(parsed.output_dir, "spatial_cutoff_sensitivity.csv")
     report_path = joinpath(parsed.output_dir, "spatial_analysis_report.md")
@@ -1168,15 +948,6 @@ function main(arguments)
         parsed.holdout_orders,
         Xoshiro(parsed.bootstrap_seed ⊻ 0x706f6f6c65645f62),
     )
-    gls_rows = write_pooled_gls_fits(
-        pooled_gls_path,
-        datasets,
-        points,
-        parsed.bootstrap_reps,
-        parsed.min_order,
-        parsed.holdout_orders,
-        Xoshiro(xor(parsed.bootstrap_seed, 0x676c735f626f6f74)),
-    )
     write_cutoff_sensitivity(
         cutoff_path,
         datasets,
@@ -1196,36 +967,9 @@ function main(arguments)
         parsed.min_order,
         parsed.holdout_orders,
     )
-    open(report_path, "a") do io
-        println(io)
-        println(io, "## Covariance-aware pooled sensitivity")
-        println(io)
-        println(io, "Block GLS uses one bootstrap-estimated cross-fraction covariance matrix per order. Independent orders form separate covariance blocks; eigenvalues below `1e-8` of the largest block eigenvalue are regularized.")
-        println(io)
-        println(io, "| observable | common c | 95% interval | P(c>0) | delta BIC | held-out RMSE log / quadratic |")
-        println(io, "|---|---:|---:|---:|---:|---:|")
-        for row in gls_rows
-            include_row = (row.model == "gamma" && row.component in ("disorder", "conditional")) ||
-                          (row.model == "uniform" && row.component in ("marginal", "disorder"))
-            include_row || continue
-            observable = if row.model == "gamma" && row.component == "disorder"
-                "Disorder covariance"
-            elseif row.model == "gamma"
-                "Disordered $(row.component)"
-            elseif row.component == "disorder"
-                "No-disorder replica covariance"
-            else
-                "No-disorder $(row.component)"
-            end
-            @printf(io, "| %s | %.4g | [%.4g, %.4g] | %.3f | %.3f | %.3f / %.3f |\n",
-                observable, row.common_log2_coefficient, row.coefficient_low,
-                row.coefficient_high, row.coefficient_positive_fraction, row.delta_bic,
-                row.log_holdout_rmse, row.quadratic_holdout_rmse)
-        end
-    end
     println("Spatial analysis complete")
     println("  output: $(parsed.output_dir)")
     println("  report: $report_path")
 end
 
-abspath(PROGRAM_FILE) == abspath(@__FILE__) && main(ARGS)
+main(ARGS)

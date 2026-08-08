@@ -35,7 +35,6 @@ export AbstractSquareGridEnvironment,
        validate_matching,
        symmetric_probe_vertices,
        spatial_height_increment,
-       dimer_height_increment_along_path,
        sample_spatial_increment_pair,
        derive_sample_seeds,
        horizontal_edge_id,
@@ -71,12 +70,6 @@ struct UndirectedConductanceEnvironment <: AbstractSquareGridEnvironment
     parameter::Float64
 end
 
-"Materialized transition CDFs for one fixed environment and square size."
-struct MaterializedTransitionEnvironment <: AbstractSquareGridEnvironment
-    L::Int
-    cdf::Vector{NTuple{3,Float64}}
-end
-
 "Deterministic direction weights, primarily for exact tiny-grid tests."
 struct FixedEnvironment <: AbstractSquareGridEnvironment
     weights::NTuple{4,Float64}
@@ -89,8 +82,8 @@ struct FixedEnvironment <: AbstractSquareGridEnvironment
 end
 
 function check_distribution(distribution::Symbol, parameter::Real)
-    distribution in (:gamma, :lognormal, :uniform) ||
-        throw(ArgumentError("distribution must be :gamma, :lognormal, or :uniform"))
+    distribution in (:gamma, :lognormal) ||
+        throw(ArgumentError("distribution must be :gamma or :lognormal"))
     parameter > 0 || throw(ArgumentError("distribution parameter must be positive"))
     return Float64(parameter)
 end
@@ -156,10 +149,6 @@ end
     elseif distribution === :lognormal
         # Mean-one lognormal with standard deviation parameter sigma in log-space.
         return exp(parameter * randn(rng) - parameter^2 / 2)
-    elseif distribution === :uniform
-        # The global upper scale cancels from the tree law. Parameter 2 gives
-        # a convenient mean-one Uniform(0, 2) representative.
-        return max(parameter * rand(rng), floatmin(Float64))
     end
     throw(ArgumentError("unsupported distribution: $distribution"))
 end
@@ -254,47 +243,6 @@ end
     threshold <= weights[1] + weights[2] && return EAST
     threshold <= weights[1] + weights[2] + weights[3] && return SOUTH
     return WEST
-end
-
-@inline function choose_direction(environment::MaterializedTransitionEnvironment,
-                                  x::Integer, y::Integer, L::Integer,
-                                  rng::AbstractRNG)::UInt8
-    Int(L) == environment.L || throw(ArgumentError("materialized environment has wrong L"))
-    north, east, south = environment.cdf[vertex_index(L, x, y)]
-    draw = rand(rng)
-    draw <= north && return NORTH
-    draw <= east && return EAST
-    draw <= south && return SOUTH
-    return WEST
-end
-
-materialize_environment(environment::Union{BaselineEnvironment,FixedEnvironment},
-                        L::Integer) = environment
-
-"Precompute each row-normalised transition law once for reuse by both replicas."
-function materialize_environment(
-    environment::Union{DirectedSiteIIDEnvironment,UndirectedConductanceEnvironment},
-    L::Integer,
-)
-    checked_L = check_L(L)
-    cdf = Vector{NTuple{3,Float64}}(undef, vertex_count(checked_L))
-    for index in eachindex(cdf)
-        point = vertex_coordinates(checked_L, index)
-        weights = ntuple(
-            direction -> edge_weight(
-                environment, point.x, point.y, UInt8(direction), checked_L),
-            4,
-        )
-        total = sum(weights)
-        isfinite(total) && total > 0 || throw(ErrorException(
-            "transition weights must have positive finite sum"))
-        cdf[index] = (
-            weights[1] / total,
-            (weights[1] + weights[2]) / total,
-            (weights[1] + weights[2] + weights[3]) / total,
-        )
-    end
-    return MaterializedTransitionEnvironment(checked_L, cdf)
 end
 
 "A rooted tree sampled on the wired square. Parent directions point toward the root."
@@ -635,39 +583,6 @@ function validate_matching(matching::TemperleyMatching)
         return (valid=false, reason="wrong vertex matching count", edges=expected_edges)
     face_owned == (2L)^2 - 1 ||
         return (valid=false, reason="wrong face matching count", edges=expected_edges)
-
-    # Reconstruct every matched incidence from the primal and dual parents.
-    # This is stronger than checking owner totals: it detects a duplicate or an
-    # owner label that is not incident to the white node claiming it.
-    claimed = falses(expected_edges)
-    for index in eachindex(matching.tree.parent_direction)
-        point = vertex_coordinates(L, index)
-        edge = parent_edge_id(
-            L, point.x, point.y, matching.tree.parent_direction[index])
-        matching.edge_owner[edge] == 1 ||
-            return (valid=false, reason="vertex parent has wrong owner", edges=expected_edges)
-        claimed[edge] &&
-            return (valid=false, reason="matching edge claimed twice", edges=expected_edges)
-        claimed[edge] = true
-    end
-    number_of_faces = (2L)^2
-    length(matching.dual_parent_edge) == number_of_faces ||
-        return (valid=false, reason="wrong dual-parent length", edges=expected_edges)
-    matching.dual_parent_edge[matching.outer_face] == 0 ||
-        return (valid=false, reason="outer face has a dual parent", edges=expected_edges)
-    for face in 1:number_of_faces
-        face == matching.outer_face && continue
-        edge = matching.dual_parent_edge[face]
-        1 <= edge <= expected_edges ||
-            return (valid=false, reason="invalid face parent edge", edges=expected_edges)
-        matching.edge_owner[edge] == 2 ||
-            return (valid=false, reason="face parent has wrong owner", edges=expected_edges)
-        claimed[edge] &&
-            return (valid=false, reason="matching edge claimed twice", edges=expected_edges)
-        claimed[edge] = true
-    end
-    all(claimed) ||
-        return (valid=false, reason="unclaimed matching edge", edges=expected_edges)
     return (
         valid=true,
         reason="ok",
@@ -675,84 +590,6 @@ function validate_matching(matching::TemperleyMatching)
         vertex_matches=vertex_owned,
         face_matches=face_owned,
     )
-end
-
-@inline function interior_black_edge_id(L::Int, scaled_x::Int, scaled_y::Int)
-    if isodd(scaled_x) && iseven(scaled_y)
-        return horizontal_edge_id(L, fld(scaled_x, 2), fld(scaled_y, 2))
-    elseif iseven(scaled_x) && isodd(scaled_y)
-        return vertical_edge_id(L, fld(scaled_x, 2), fld(scaled_y, 2))
-    end
-    throw(ArgumentError("($scaled_x,$scaled_y) is not an interior black edge-node"))
-end
-
-"Return `(matched, white_to_black_dx, white_to_black_dy)` for one graph link."
-function matching_link_data(
-    matching::TemperleyMatching,
-    first::Tuple{Int,Int},
-    second::Tuple{Int,Int},
-)
-    abs(first[1] - second[1]) + abs(first[2] - second[2]) == 1 ||
-        throw(ArgumentError("Temperley graph links must join nearest neighbours"))
-    first_is_white = iseven(first[1]) == iseven(first[2])
-    second_is_white = iseven(second[1]) == iseven(second[2])
-    first_is_white != second_is_white ||
-        throw(ArgumentError("link does not join a white node to a black node"))
-    white = first_is_white ? first : second
-    black = first_is_white ? second : first
-    edge = interior_black_edge_id(matching.tree.L, black...)
-    matched = if iseven(white[1])
-        x, y = fld(white[1], 2), fld(white[2], 2)
-        parent_edge_id(matching.tree.L, x, y, parent_direction(matching.tree, x, y)) == edge
-    else
-        face = face_id(
-            matching.tree.L, fld(white[1] - 1, 2), fld(white[2] - 1, 2))
-        face != matching.outer_face && matching.dual_parent_edge[face] == edge
-    end
-    return (
-        matched=matched,
-        dx=black[1] - white[1],
-        dy=black[2] - white[2],
-    )
-end
-
-"""
-    dimer_height_increment_along_path(matching, path)
-
-Independently integrate matching flow minus the degree-four reference flow
-along a nearest-neighbour path of dual cells in the scaled Temperley lattice.
-Cell `(i,j)` is the unit square with lower-left graph coordinate `(i,j)`.
-The result is exact in quarter-height units and is path-independent away from
-the removed root/outer-face singularity.
-"""
-function dimer_height_increment_along_path(
-    matching::TemperleyMatching,
-    path::AbstractVector{<:Tuple{Int,Int}},
-)
-    length(path) >= 2 || throw(ArgumentError("height path needs at least two cells"))
-    quarter_units = 0
-    for index in 1:(length(path) - 1)
-        first, second = path[index], path[index + 1]
-        step_x, step_y = second[1] - first[1], second[2] - first[2]
-        abs(step_x) + abs(step_y) == 1 ||
-            throw(ArgumentError("height path must use nearest-neighbour dual steps"))
-        if step_x != 0
-            crossing_x = max(first[1], second[1])
-            lower_y = first[2]
-            link_first = (crossing_x, lower_y)
-            link_second = (crossing_x, lower_y + 1)
-        else
-            lower_x = first[1]
-            crossing_y = max(first[2], second[2])
-            link_first = (lower_x, crossing_y)
-            link_second = (lower_x + 1, crossing_y)
-        end
-        link = matching_link_data(matching, link_first, link_second)
-        flow_quarters = link.matched ? 3 : -1
-        intersection_sign = step_x * link.dy - step_y * link.dx
-        quarter_units += intersection_sign * flow_quarters
-    end
-    return quarter_units // 4
 end
 
 "Probe vertices separated by `separation` and centred as closely as parity allows."
@@ -839,7 +676,6 @@ function sample_spatial_increment_pair(
     seeds = derive_sample_seeds(sample_seed)
     environment = make_environment(
         environment_model, seeds.environment, distribution, parameter)
-    environment = materialize_environment(environment, L)
     first_tree = sample_full_tree(
         environment, L, Random.Xoshiro(seeds.replica_1); max_steps_per_walk=max_steps_per_walk)
     second_tree = sample_full_tree(

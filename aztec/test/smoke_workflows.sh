@@ -146,6 +146,7 @@ for artifact in \
   "$spatial_analysis/spatial_model_comparison.csv" \
   "$spatial_analysis/spatial_weighted_model_comparison.csv" \
   "$spatial_analysis/spatial_pooled_model_comparison.csv" \
+  "$spatial_analysis/spatial_pooled_gls_comparison.csv" \
   "$spatial_analysis/spatial_cutoff_sensitivity.csv" \
   "$spatial_analysis/spatial_analysis_report.md" \
   "$spatial_analysis/gamma_disorder_spatial_fits.svg" \
@@ -202,5 +203,9 @@ test -s "$square_baseline_csv"
 test -s "$square_directed_csv"
 test -s "$square_baseline/campaign_metadata.txt"
 test -s "$square_directed/campaign_metadata.txt"
+test -s "$square_baseline/campaign_manifest.toml"
+test -s "$square_directed/campaign_manifest.toml"
+test -s "$square_baseline/L_0016/execution_0001.txt"
+test -s "$square_directed/L_0016/execution_0001.txt"
 
 echo "All Aztec and square-grid command-line smoke workflows passed."

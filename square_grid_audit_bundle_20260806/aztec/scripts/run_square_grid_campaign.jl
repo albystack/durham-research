@@ -4,11 +4,11 @@ using AztecDiamond
 using AztecDiamond.SquareGrid
 using Base.Threads
 using Printf
-using SHA
 
-# This schema intentionally remains readable by analyze_spatial_campaign.jl.
-# New square-grid rows use a unique campaign identity in the first field;
-# legacy `gamma` and `uniform` labels remain supported by the analyser.
+# This schema intentionally matches analyze_spatial_campaign.jl. The first
+# field is an analysis role: `gamma` for a random Gamma environment and
+# `uniform` for the no-disorder baseline. Exact square-grid model semantics are
+# frozen in campaign_metadata.txt and in the diagnostic files.
 const HEADER =
     "model,order,sample_id,seed,fraction_num,fraction_den,separation," *
     "left_column,right_column,increment_1,increment_2,difference"
@@ -28,8 +28,8 @@ function print_help()
       --environment-model NAME   baseline, directed_site_iid, or
                                  undirected_conductance
                                  (default: directed_site_iid)
-      --distribution NAME        gamma, lognormal, or uniform (default: gamma)
-      --parameter FLOAT          Gamma k, lognormal sigma, or uniform upper bound
+      --distribution NAME        gamma (default: gamma)
+      --parameter FLOAT          mean-one Gamma shape (default: 0.5)
       --config PATH              campaign CSV
       --output-dir PATH          atomic batch output directory
       --fractions LIST           rational fractions of the full side 2L
@@ -88,14 +88,10 @@ function parse_arguments(arguments)
     environment_model = Symbol(lowercase(options["environment-model"]))
     environment_model in (:baseline, :directed_site_iid, :undirected_conductance) ||
         error("invalid --environment-model")
-    requested_distribution = Symbol(lowercase(options["distribution"]))
-    requested_distribution in (:gamma, :lognormal, :uniform) ||
-        error("--distribution must be gamma, lognormal, or uniform")
-    requested_parameter = parse(Float64, options["parameter"])
-    requested_parameter > 0 || error("--parameter must be positive")
-    # Baseline identity and seeds must not depend on irrelevant disorder flags.
-    distribution = environment_model === :baseline ? :none : requested_distribution
-    parameter = environment_model === :baseline ? 0.0 : requested_parameter
+    distribution = Symbol(lowercase(options["distribution"]))
+    distribution == :gamma || error("the current campaign runner supports gamma only")
+    parameter = parse(Float64, options["parameter"])
+    parameter > 0 || error("--parameter must be positive")
     fractions = parse_fraction.(split(options["fractions"], ','))
     length(unique(fractions)) == length(fractions) || error("fractions must be unique")
     sort!(fractions; by=fraction -> fraction.num / fraction.den)
@@ -182,17 +178,8 @@ function model_salt(model::Symbol)
     return UInt64(0x756e646972656374)
 end
 
-function distribution_salt(distribution::Symbol)
-    distribution === :none && return UInt64(0x6e6f5f646973746e)
-    distribution === :gamma && return UInt64(0x67616d6d615f6c77)
-    distribution === :lognormal && return UInt64(0x6c6f676e6f726d6c)
-    distribution === :uniform && return UInt64(0x756e69666f726d77)
-    error("unsupported distribution $distribution")
-end
-
 function sample_seed(parsed, order, sample_id)
-    parameter_bits = xor(
-        reinterpret(UInt64, parsed.parameter), distribution_salt(parsed.distribution))
+    parameter_bits = reinterpret(UInt64, parsed.parameter)
     key = parsed.base_seed ⊻ model_salt(parsed.environment_model) ⊻
           parameter_bits ⊻
           (UInt64(order) * 0xd6e8feb86659fd93) ⊻
@@ -212,18 +199,7 @@ function separations_for_order(order, fractions)
     return separations
 end
 
-parameter_token(value::Float64) =
-    replace(@sprintf("%.12g", value), "-" => "m", "." => "p", "+" => "")
-
-function campaign_id(parsed)
-    parsed.environment_model === :baseline && return "square_grid__baseline"
-    return join((
-        "square_grid",
-        String(parsed.environment_model),
-        String(parsed.distribution),
-        "p_$(parameter_token(parsed.parameter))",
-    ), "__")
-end
+analysis_model(parsed) = parsed.environment_model === :baseline ? "uniform" : "gamma"
 
 function batch_path(output_dir, order, batch_id)
     order_dir = joinpath(output_dir, @sprintf("L_%04d", order))
@@ -233,10 +209,6 @@ end
 diagnostic_path(output_dir, order, batch_id) =
     joinpath(dirname(batch_path(output_dir, order, batch_id)),
              @sprintf("diagnostic_%04d.csv", batch_id))
-
-execution_path(output_dir, order, batch_id) =
-    joinpath(dirname(batch_path(output_dir, order, batch_id)),
-             @sprintf("execution_%04d.txt", batch_id))
 
 function valid_existing_batch(data_path, diagnostics_path, parsed, task)
     isfile(data_path) && isfile(diagnostics_path) || return false
@@ -249,7 +221,7 @@ function valid_existing_batch(data_path, diagnostics_path, parsed, task)
     strip(first(diagnostic_lines)) == DIAGNOSTIC_HEADER || return false
     line_index = 2
     separations = separations_for_order(task.order, parsed.fractions)
-    expected_model = campaign_id(parsed)
+    expected_model = analysis_model(parsed)
     for sample_id in task.first_sample:task.last_sample
         expected_seed = sample_seed(parsed, task.order, sample_id)
         for (fraction, separation) in zip(parsed.fractions, separations)
@@ -316,23 +288,6 @@ function write_batch(data_path, diagnostics_path, rows_by_sample, diagnostics)
     end
 end
 
-function write_execution_provenance(path, parsed, task, elapsed_seconds)
-    write_atomic(path) do io
-        println(io, "task_id=$(task.task_id)")
-        println(io, "order=$(task.order)")
-        println(io, "first_sample=$(task.first_sample)")
-        println(io, "last_sample=$(task.last_sample)")
-        println(io, "campaign_id=$(campaign_id(parsed))")
-        println(io, "elapsed_seconds=$(elapsed_seconds)")
-        println(io, "hostname=$(get(ENV, "HOSTNAME", "unknown"))")
-        println(io, "slurm_job_id=$(get(ENV, "SLURM_JOB_ID", "not_applicable"))")
-        println(io, "slurm_array_job_id=$(get(ENV, "SLURM_ARRAY_JOB_ID", "not_applicable"))")
-        println(io, "slurm_array_task_id=$(get(ENV, "SLURM_ARRAY_TASK_ID", "not_applicable"))")
-        println(io, "threads=$(nthreads())")
-        println(io, "julia_version=$(VERSION)")
-    end
-end
-
 function run_task(parsed, task)
     data_path = batch_path(parsed.output_dir, task.order, task.batch_id)
     diagnostics_path = diagnostic_path(parsed.output_dir, task.order, task.batch_id)
@@ -363,7 +318,7 @@ function run_task(parsed, task)
         )
         rows_by_sample[offset] = [
             (
-                model=campaign_id(parsed),
+                model=analysis_model(parsed),
                 order=task.order,
                 sample_id=sample_id,
                 seed=seed,
@@ -383,14 +338,7 @@ function run_task(parsed, task)
             result.diagnostics,
         )
     end
-    elapsed_seconds = time() - started
     write_batch(data_path, diagnostics_path, rows_by_sample, diagnostics)
-    write_execution_provenance(
-        execution_path(parsed.output_dir, task.order, task.batch_id),
-        parsed,
-        task,
-        elapsed_seconds,
-    )
     @printf(
         "completed square-grid %s L=%d task=%d batch=%d samples=%d:%d in %.2fs\n",
         parsed.environment_model,
@@ -399,87 +347,32 @@ function run_task(parsed, task)
         task.batch_id,
         task.first_sample,
         task.last_sample,
-        elapsed_seconds,
+        time() - started,
     )
     GC.gc()
 end
 
 function metadata_text(parsed, config_rows, tasks)
     fractions = join((string(f.num, '/', f.den) for f in parsed.fractions), ',')
-    schedule = join((
-        string(row.order, ':', row.first_sample_id, ':', row.samples, ':', row.batch_size)
-        for row in config_rows
-    ), ',')
-    parameterization = if parsed.distribution === :gamma
-        "Gamma(shape=k,scale=1/k), mean one"
-    elseif parsed.distribution === :lognormal
-        "LogNormal(mu=-sigma^2/2,sigma), mean one"
-    elseif parsed.distribution === :uniform
-        "Uniform(0,upper); global scale is immaterial (upper=2 is mean one)"
-    else
-        "not_applicable"
-    end
-    repository_root = normpath(joinpath(@__DIR__, "..", ".."))
-    project_path = joinpath(repository_root, "aztec", "Project.toml")
-    manifest_path = joinpath(repository_root, "aztec", "Manifest.toml")
-    sampler_path = joinpath(repository_root, "aztec", "src", "SquareGrid.jl")
-    runner_path = abspath(@__FILE__)
-    file_hash(path) = isfile(path) ? bytes2hex(sha256(read(path))) : "unavailable"
-    git_commit = try
-        readchomp(pipeline(`git -C $repository_root rev-parse HEAD`; stderr=devnull))
-    catch
-        "unavailable"
-    end
-    git_status = try
-        status = readchomp(
-            pipeline(`git -C $repository_root status --porcelain`; stderr=devnull))
-        isempty(status) ? "clean" : "dirty"
-    catch
-        "unavailable"
-    end
     return join([
-        "schema_version=2",
-        "campaign_id=$(campaign_id(parsed))",
         "geometry=square_grid_temperley",
         "observable=central_horizontal_dimer_height_increment",
         "environment_model=$(parsed.environment_model)",
-        "analysis_role=$(parsed.environment_model === :baseline ? "baseline" : "disorder")",
+        "analysis_model=$(analysis_model(parsed))",
         "distribution=$(parsed.distribution)",
-        "parameter=$(parsed.distribution === :none ? "not_applicable" : parsed.parameter)",
-        "parameterization=$parameterization",
+        "parameter=$(parsed.parameter)",
+        "parameterization=Gamma(shape=k,scale=1/k), mean one",
         "boundary=wired_square",
         "outer_face=lower_left_cell_-L_-L",
         "fractions_of_full_side=$fractions",
         "base_seed=$(parsed.base_seed)",
         "config=$(parsed.config)",
-        "config_sha256=$(file_hash(parsed.config))",
-        "project_sha256=$(file_hash(project_path))",
-        "manifest_sha256=$(file_hash(manifest_path))",
-        "square_grid_source_sha256=$(file_hash(sampler_path))",
-        "runner_source_sha256=$(file_hash(runner_path))",
-        "git_commit=$git_commit",
-        "git_status=$git_status",
         "config_rows=$(length(config_rows))",
-        "schedule_order_first_samples_batch=$schedule",
-        "expected_environments=$(sum(row.samples for row in config_rows))",
         "expanded_tasks=$(length(tasks))",
         "julia_version=$(VERSION)",
         "threads=$(nthreads())",
-        "seed_identity=base_seed+environment_model+distribution+parameter+order+sample_id",
         "height_note=exact Temperley matching flow across central cut; deterministic reference flow cancels",
     ], '\n') * "\n"
-end
-
-toml_quote(value) = "\"" * replace(
-    value, "\\" => "\\\\", "\"" => "\\\"", "\n" => "\\n") * "\""
-
-function manifest_text(metadata)
-    io = IOBuffer()
-    for line in split(chomp(metadata), '\n')
-        key, value = split(line, '='; limit=2)
-        println(io, key, " = ", toml_quote(value))
-    end
-    return String(take!(io))
 end
 
 function ensure_metadata(parsed, config_rows, tasks)
@@ -488,20 +381,10 @@ function ensure_metadata(parsed, config_rows, tasks)
     expected = metadata_text(parsed, config_rows, tasks)
     if isfile(path)
         read(path, String) == expected || error("existing campaign metadata differs: $path")
-    else
-        write_atomic(path) do io
-            print(io, expected)
-        end
+        return
     end
-    manifest_path = joinpath(parsed.output_dir, "campaign_manifest.toml")
-    expected_manifest = manifest_text(expected)
-    if isfile(manifest_path)
-        read(manifest_path, String) == expected_manifest ||
-            error("existing campaign manifest differs: $manifest_path")
-    else
-        write_atomic(manifest_path) do io
-            print(io, expected_manifest)
-        end
+    write_atomic(path) do io
+        print(io, expected)
     end
 end
 
@@ -528,4 +411,4 @@ function main(arguments)
     end
 end
 
-abspath(PROGRAM_FILE) == abspath(@__FILE__) && main(ARGS)
+main(ARGS)

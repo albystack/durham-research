@@ -38,36 +38,15 @@ All four outgoing weights equal one.
 
 ### Directed site-i.i.d. model
 
-At every interior site, north/east/south/west weights are independent. Opposite orientations of one geometric edge are generally different. The initial disorder law was mean-one Gamma:
+At every interior site, north/east/south/west weights are independent. Opposite orientations of one geometric edge are generally different. The initial disorder law is mean-one Gamma:
 
 \[
 w_{x,d}\sim\operatorname{Gamma}(k,1/k),\qquad k=0.5.
 \]
 
-The robustness panel also supports Gamma `k=1`, mean-one lognormal weights,
-and `Uniform(0,2)` weights. Overall deterministic rescaling of every edge
-weight leaves the tree law unchanged.
-
 ### Undirected conductance comparison
 
 Each unoriented geometric edge receives one conductance shared by both orientations. This is implemented as a separate model and is never pooled with the directed model.
-
-### Scope relative to the random-bond dimer literature
-
-The directed model is the square-grid spanning-tree environment studied in the
-earlier LERW experiments and is the model requested in the supervisor email.
-The Kenyon--Propp--Wilson correspondence makes it a genuine weighted dimer
-measure on the associated Temperley graph: a directed primal weight is carried
-by the link from a primal-vertex white node to the corresponding edge-node,
-while the face-to-edge links have unit weight.
-
-This structured disorder is **not** the canonical random-bond domino model in
-which every dimer edge receives an independent random energy. Consequently, a
-null squared-log result here is evidence about this directed
-spanning-tree/Temperley law only. It neither contradicts nor tests the full
-i.i.d. random-bond square-lattice dimer model used in the Zeng--Leath--Hwa and
-Cardy--Ostlund super-roughness literature. The undirected-conductance model is
-also a separate structured law and is reported separately.
 
 All environment weights are deterministic functions of the public environment seed and a geometric site or edge key. Query order and Julia thread scheduling cannot change them.
 
@@ -142,11 +121,6 @@ For each `(model,L,sample_id)`, derive separate deterministic seeds for:
 - replica 2 Wilson walks.
 
 Both replicas share only the environment. Every separation for one replica is evaluated on the same complete tree and matching. Statistical resampling must keep both replicas and all fractions from one environment together.
-
-The covariance-aware pooled sensitivity analysis estimates the joint `4 x 4`
-covariance of the four fraction-level statistics at each order using common
-environment-bootstrap indices. Block generalized least squares uses these
-within-order covariances and treats different orders as independent blocks.
 
 ## Initial pilot
 

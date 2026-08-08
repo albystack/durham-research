@@ -89,3 +89,31 @@ sbatch \
   --export=ALL,DISORDER_RESULTS=/nobackup/fvkl37/square_grid/directed_gamma_k05,BASELINE_RESULTS=/nobackup/fvkl37/square_grid/baseline,ANALYSIS_DIR=/nobackup/fvkl37/square_grid/analysis_directed_k05 \
   hpc/analyze_square_grid.slurm
 ```
+
+## Robustness campaigns
+
+The hardened runner gives every law/model pair a unique label, includes the
+law in deterministic seed derivation, materializes one transition table shared
+by both replicas, and writes a hashed TOML campaign manifest plus per-task
+Slurm provenance. List the 899 production tasks with:
+
+```bash
+julia --project=.hamilton_env aztec/scripts/run_square_grid_campaign.jl \
+  --config aztec/configs/square_grid_robustness.csv --list-tasks
+```
+
+Submit with an explicit array and concurrency cap. For example, directed
+Gamma `k=1` is:
+
+```bash
+sbatch --array=1-899%20 \
+  --export=ALL,ENVIRONMENT_MODEL=directed_site_iid,DISTRIBUTION=gamma,PARAMETER=1.0,BASE_SEED=20260881,CONFIG=aztec/configs/square_grid_robustness.csv,OUTPUT_DIR=/nobackup/fvkl37/square_grid_robustness/directed_gamma_k1 \
+  hpc/square_grid_robustness.slurm
+```
+
+Use distinct output directories and base seeds for directed matched-variance
+lognormal (`sigma=1.048147073968205`), directed `Uniform(0,2)`, and
+undirected-conductance campaigns. Analyse each separately against the frozen
+legacy baseline; pass its actual campaign labels through `DISORDER_LABEL` and
+`BASELINE_LABEL`. The analysis now writes a block-GLS sensitivity table using
+the bootstrap-estimated `4 x 4` cross-fraction covariance at each order.
