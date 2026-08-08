@@ -27,6 +27,8 @@ both be globally unique.
   central-row increments at separations `L/32`, `L/16`, `L/8`, and `L/4`.
   The Gamma campaign shares one environment between replicas; the uniform
   campaign is the no-disorder control.
+- `aztec_gamma_parameter_pilot.csv` is the three-task safety pilot used before
+  launching an additional Gamma-parameter campaign on Hamilton.
 
 ## Fast checks
 

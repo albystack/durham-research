@@ -22,10 +22,12 @@ function print_help()
     environment.  The reported coefficient interval is for c.
 
     Options:
-      --gamma-results PATHS   files/directories, comma separated
-      --uniform-results PATHS files/directories, comma separated
-      --gamma-model LABEL     expected disorder label (default: gamma)
-      --uniform-model LABEL   expected baseline label (default: uniform)
+      --gamma-results PATHS   files/directories, comma or colon separated
+      --uniform-results PATHS files/directories, comma or colon separated
+      --gamma-model LABELS    expected disorder label(s), colon separated
+                              (default: gamma)
+      --uniform-model LABELS  expected baseline label(s), colon separated
+                              (default: uniform)
       --output-dir PATH
       --bootstrap-reps INT    default 2000
       --bootstrap-seed UINT
@@ -35,7 +37,9 @@ function print_help()
     """)
 end
 
-parse_paths(value) = [abspath(strip(path)) for path in split(value, ',') if !isempty(strip(path))]
+parse_paths(value) = [
+    abspath(strip(path)) for path in split(value, r"[:,]") if !isempty(strip(path))
+]
 
 function parse_arguments(arguments)
     if any(argument -> argument in ("-h", "--help"), arguments)
@@ -97,6 +101,8 @@ function collect_files(paths)
 end
 
 function load_results(paths, expected_model)
+    expected_models = Set(split(expected_model, ':'))
+    all(!isempty, expected_models) || error("expected model labels must be nonempty")
     # group key: (fraction numerator, fraction denominator, order)
     groups = Dict{Tuple{Int,Int,Int},Vector{NTuple{3,Int}}}()
     seen = Set{Tuple{Int,Int,Int,Int}}()
@@ -112,7 +118,8 @@ function load_results(paths, expected_model)
             isempty(strip(line)) && continue
             fields = split(strip(line), ',')
             length(fields) == 12 || error("malformed row $(offset + 1) in $path")
-            fields[1] == expected_model || error("unexpected model in $path")
+            fields[1] in expected_models ||
+                error("unexpected model $(fields[1]) in $path")
             order = parse(Int, fields[2])
             sample_id = parse(Int, fields[3])
             seed = parse(UInt64, fields[4])

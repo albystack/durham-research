@@ -78,6 +78,8 @@ end
         loaded = SGA.load_results([valid_path], "test_campaign")
         @test loaded.fractions == [(1, 4), (1, 2)]
         @test sort(unique(key[3] for key in keys(loaded.groups))) == [16, 32]
+        @test SGA.load_results([valid_path], "legacy:test_campaign").fractions ==
+              loaded.fractions
         @test_throws ErrorException SGA.load_results([valid_path], "wrong_campaign")
 
         incomplete_path = joinpath(directory, "batch_incomplete.csv")
