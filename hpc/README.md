@@ -117,3 +117,8 @@ undirected-conductance campaigns. Analyse each separately against the frozen
 legacy baseline; pass its actual campaign labels through `DISORDER_LABEL` and
 `BASELINE_LABEL`. The analysis now writes a block-GLS sensitivity table using
 the bootstrap-estimated `4 x 4` cross-fraction covariance at each order.
+
+For a node-QOS-limited recovery of already submitted one-sample arrays, see
+[`PACKED_CAMPAIGNS.md`](PACKED_CAMPAIGNS.md). The packed workflow preserves the
+original task IDs and dependency chain; it must not be used without first
+holding the corresponding pending original tasks.

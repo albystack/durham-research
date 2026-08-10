@@ -44,10 +44,25 @@ runner validation was job `18243620` and passed.
 Job `18243729` will consolidate all twelve block-GLS tables into one CSV and
 one compact comparison report after the nine new-law analyses finish.
 
+### 9 August completion and recovery status
+
+The Aztec parameter branch completed end to end on 9 August.  Production jobs
+`18243432`--`18243434`, analysis jobs `18243441`--`18243449`, and consolidated
+summary job `18243729` all finished with exit code zero.  The consolidated
+outputs are preserved locally in `aztec/results/hamilton_20260809/`.
+
+The unfinished high-order square-grid tasks were moved to resumable packed
+allocations after real-data smoke jobs `18249791` and `18249792` passed.  The
+ultra-size jobs use five workers per node.  The high-size jobs use eleven after
+production job `18243074` established a 17.41 GB maximum RSS.  Exact task
+manifests, SHA-256 files, superseded scheduler IDs, and active scheduler IDs are
+recorded under `/home/fvkl37/hamilton-booster-20260809/manifests` on Hamilton;
+the launch and recovery procedure is documented in `hpc/PACKED_CAMPAIGNS.md`.
+
 ## Status commands
 
 ```sh
-ssh -S /tmp/codex-hamilton.sock fvkl37@hamilton8.dur.ac.uk
+ssh fvkl37@hamilton8.dur.ac.uk
 squeue -u fvkl37
 sacct -j JOB_ID --format=JobID,State,Elapsed,MaxRSS,ExitCode
 ```
