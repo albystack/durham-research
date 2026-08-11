@@ -65,6 +65,56 @@ a 17.41 GB maximum RSS.  Its separate job map retains both generations of job
 IDs and the derived manifest excluding the two tasks completed by the smoke
 test.
 
+## 11 August shared-partition, size-aware recovery
+
+Hamilton's `long` partition exposes only one standard node and is intended for
+jobs that need more than three days.  The packed square-grid allocations take
+minutes, not days.  On 11 August, the still-pending recovery work was therefore
+moved to the 119-node `shared` pool with command-line walltime overrides.  The
+running lognormal group `18249837_14` was left untouched; only held pending
+elements and their obsolete release jobs were replaced.
+
+The replacement launcher is
+`repack_hamilton_size_aware_20260811.sh`.  It derives and hashes disjoint task
+manifests by lattice size, verifies that their union exactly matches each
+superseded manifest, and rebuilds the original-array release dependencies.  Its
+remote job map and checksum are:
+
+```text
+/home/fvkl37/hamilton-booster-20260809/manifests/size_aware_shared_job_map_20260811.txt
+/home/fvkl37/hamilton-booster-20260809/manifests/size_aware_shared_job_map_20260811.txt.sha256
+```
+
+The measured packing envelope on Hamilton's 246 GB standard nodes is:
+
+| Order | Measured or conservative peak RSS | Workers | Per-worker limit | Allocation | Walltime |
+|---:|---:|---:|---:|---:|---:|
+| 6,144 | 40 GB | 5 | 44 GB | 220 GB | 1 hour |
+| 5,120 | 28 GB | 7 | 34 GB | 238 GB | 45 minutes |
+| 4,096 | 17.41 GB | 12 | 20 GB | 240 GB | 30 minutes |
+| 3,072 | 9.38 GB | 20 | 12 GB | 240 GB | 20 minutes |
+| 2,560 | 5.90 GB baseline; under 7 GB scaled disorder estimate | 30 | 8 GB | 240 GB | 20 minutes |
+
+Do not reuse the 2,560 estimate after changing the sampler, lattice
+representation, Julia version, or environment construction.  The replacement
+keeps at least about 20% per-worker headroom against the campaign measurements
+or conservative size scaling.
+
+The held original validation arrays were also updated in place from `long` to
+`shared`.  Their high-size elements retain 30 minutes and 48 GB each; their
+ultra-size elements retain one hour and 96 GB each.  Existing outputs normally
+validate in 5--10 seconds, while these limits still allow an unexpectedly
+missing task to be recomputed instead of silently weakening the dependency
+chain.  The exact post-update scheduler records and checksum are stored in
+`size_aware_shared_original_updates_20260811.txt` and its `.sha256` file beside
+the size-aware job map.
+
+The first four seven-worker `L=5120` allocations began concurrently on four
+different shared nodes.  The first completed in 18 minutes 13 seconds with a
+27,768,828 KB peak RSS for its largest rank, below the 34 GB worker limit; all
+seven task logs ended with completion markers and the Slurm allocation exited
+zero.  This is the retained real-data validation of the new packing.
+
 ## Audit requirements
 
 Retain the following together:

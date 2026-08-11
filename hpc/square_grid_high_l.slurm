@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=sqgrid-highL
-#SBATCH --partition=long
-#SBATCH --time=24:00:00
+#SBATCH --partition=shared
+#SBATCH --time=01:00:00
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=96G
 #SBATCH --output=logs/%x-%A_%a.out

@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=sqgrid-pack
-#SBATCH --partition=long
-#SBATCH --time=24:00:00
+#SBATCH --partition=shared
+#SBATCH --time=01:00:00
 #SBATCH --nodes=1
 #SBATCH --output=logs/%x-%A_%a.out
 #SBATCH --error=logs/%x-%A_%a.err
@@ -9,7 +9,8 @@
 # Run several independent square-grid task IDs inside one Slurm allocation.
 # The submission command must set --ntasks to at least GROUP_SIZE and request
 # enough memory for all workers.  TASK_FILE contains one original task ID per
-# line, preserving the exact task/seed identity of the original campaign.
+# line, preserving the exact task/seed identity of the original campaign.  The
+# command line may override the one-hour default for a size-specific group.
 
 set -euo pipefail
 

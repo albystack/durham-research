@@ -59,6 +59,18 @@ manifests, SHA-256 files, superseded scheduler IDs, and active scheduler IDs are
 recorded under `/home/fvkl37/hamilton-booster-20260809/manifests` on Hamilton;
 the launch and recovery procedure is documented in `hpc/PACKED_CAMPAIGNS.md`.
 
+On 11 August, the remaining held work was moved from the one-node `long`
+partition to the 119-node `shared` pool.  It was also split by lattice size so
+that measured memory envelopes permit 5, 7, 12, 20, and 30 workers per node at
+orders 6,144, 5,120, 4,096, 3,072, and 2,560 respectively.  The migration left
+the running job `18249837_14` untouched and replaced only held work.  Its
+audited launcher is `hpc/repack_hamilton_size_aware_20260811.sh`; the active
+remote IDs and checksummed manifests are recorded in
+`size_aware_shared_job_map_20260811.txt` under the Hamilton manifest directory.
+The held original arrays were moved in place to `shared` as well, so their
+post-booster validation pass no longer drains through the one-node recovery
+bottleneck.
+
 ## Status commands
 
 ```sh

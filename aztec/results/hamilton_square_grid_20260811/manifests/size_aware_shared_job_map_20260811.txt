@@ -1,0 +1,32 @@
+created_at=2026-08-11T07:41:39+01:00
+partition=shared|strategy=size_aware|wrapper=/home/fvkl37/hamilton-booster-20260809/scripts/square_grid_packed.slurm
+protected_old_job=18249837_14|tasks=66-70|state=RUNNING
+cancelled_old_boosters=18249837_[15-24] 18249839 18249841 18250662 18250664 18250666 18250668 18250670
+cancelled_old_releases=18249838 18249840 18249842 18250663 18250665 18250667 18250669 18250671
+piece=logn-5120|tasks=50|group_size=7|groups=8|mem=238G|worker_mem=34G|time=00:45:00|job=18257678|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/sizeaware_18243079_L5120_tasks_071_120.txt
+release_original=18243079|dependencies=18249837_14:18257678|job=18257679
+piece=unif-6144|tasks=40|group_size=5|groups=8|mem=220G|worker_mem=44G|time=01:00:00|job=18257680|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/sizeaware_18243081_L6144_tasks_001_040.txt
+piece=unif-5120|tasks=80|group_size=7|groups=12|mem=238G|worker_mem=34G|time=00:45:00|job=18257681|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/sizeaware_18243081_L5120_tasks_041_120.txt
+release_original=18243081|dependencies=18257680:18257681|job=18257682
+piece=undir-6144|tasks=40|group_size=5|groups=8|mem=220G|worker_mem=44G|time=01:00:00|job=18257683|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/sizeaware_18243083_L6144_tasks_001_040.txt
+piece=undir-5120|tasks=80|group_size=7|groups=12|mem=238G|worker_mem=34G|time=00:45:00|job=18257684|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/sizeaware_18243083_L5120_tasks_041_120.txt
+release_original=18243083|dependencies=18257683:18257684|job=18257685
+piece=dg05-3072|tasks=293|group_size=20|groups=15|mem=240G|worker_mem=12G|time=00:20:00|job=18257686|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/sizeaware_18243074_L3072_tasks_158_450.txt
+piece=dg05-2560|tasks=400|group_size=30|groups=14|mem=240G|worker_mem=8G|time=00:20:00|job=18257687|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/sizeaware_18243074_L2560_tasks_451_850.txt
+release_original=18243074|dependencies=18257686:18257687|job=18257688
+piece=dg1-4096|tasks=150|group_size=12|groups=13|mem=240G|worker_mem=20G|time=00:30:00|job=18257689|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/sizeaware_18243076_L4096_tasks_001_150.txt
+piece=dg1-3072|tasks=300|group_size=20|groups=15|mem=240G|worker_mem=12G|time=00:20:00|job=18257690|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/sizeaware_18243076_L3072_tasks_151_450.txt
+piece=dg1-2560|tasks=400|group_size=30|groups=14|mem=240G|worker_mem=8G|time=00:20:00|job=18257691|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/sizeaware_18243076_L2560_tasks_451_850.txt
+release_original=18243076|dependencies=18257689:18257690:18257691|job=18257692
+piece=logn-4096|tasks=150|group_size=12|groups=13|mem=240G|worker_mem=20G|time=00:30:00|job=18257693|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/sizeaware_18243078_L4096_tasks_001_150.txt
+piece=logn-3072|tasks=300|group_size=20|groups=15|mem=240G|worker_mem=12G|time=00:20:00|job=18257694|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/sizeaware_18243078_L3072_tasks_151_450.txt
+piece=logn-2560|tasks=400|group_size=30|groups=14|mem=240G|worker_mem=8G|time=00:20:00|job=18257695|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/sizeaware_18243078_L2560_tasks_451_850.txt
+release_original=18243078|dependencies=18257693:18257694:18257695|job=18257696
+piece=unif-4096|tasks=150|group_size=12|groups=13|mem=240G|worker_mem=20G|time=00:30:00|job=18257697|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/sizeaware_18243080_L4096_tasks_001_150.txt
+piece=unif-3072|tasks=300|group_size=20|groups=15|mem=240G|worker_mem=12G|time=00:20:00|job=18257698|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/sizeaware_18243080_L3072_tasks_151_450.txt
+piece=unif-2560|tasks=400|group_size=30|groups=14|mem=240G|worker_mem=8G|time=00:20:00|job=18257699|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/sizeaware_18243080_L2560_tasks_451_850.txt
+release_original=18243080|dependencies=18257697:18257698:18257699|job=18257700
+piece=undir-4096|tasks=150|group_size=12|groups=13|mem=240G|worker_mem=20G|time=00:30:00|job=18257701|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/sizeaware_18243082_L4096_tasks_001_150.txt
+piece=undir-3072|tasks=300|group_size=20|groups=15|mem=240G|worker_mem=12G|time=00:20:00|job=18257702|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/sizeaware_18243082_L3072_tasks_151_450.txt
+piece=undir-2560|tasks=400|group_size=30|groups=14|mem=240G|worker_mem=8G|time=00:20:00|job=18257703|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/sizeaware_18243082_L2560_tasks_451_850.txt
+release_original=18243082|dependencies=18257701:18257702:18257703|job=18257704
