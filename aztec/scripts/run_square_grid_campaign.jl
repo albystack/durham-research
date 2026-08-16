@@ -15,6 +15,10 @@ const HEADER =
 const DIAGNOSTIC_HEADER =
     "order,sample_id,sample_seed,environment_seed,replica_1_seed,replica_2_seed," *
     "raw_steps_1,raw_steps_2,branches_1,branches_2"
+const TEMPORAL_DIAGNOSTIC_HEADER =
+    "order,sample_id,sample_seed,replica_1_weight_seed,replica_1_direction_seed," *
+    "replica_2_weight_seed,replica_2_direction_seed,sampled_weight_vectors_1," *
+    "sampled_weight_vectors_2,raw_steps_1,raw_steps_2,branches_1,branches_2"
 
 function print_help()
     println("""
@@ -25,11 +29,12 @@ function print_help()
         aztec/scripts/run_square_grid_campaign.jl [options]
 
     Options:
-      --environment-model NAME   baseline, directed_site_iid, or
-                                 undirected_conductance
+      --environment-model NAME   baseline, ordinary_ust, directed_site_iid,
+                                 undirected_conductance, or temporal_iid
                                  (default: directed_site_iid)
-      --distribution NAME        gamma, lognormal, or uniform (default: gamma)
-      --parameter FLOAT          Gamma k, lognormal sigma, or uniform upper bound
+      --distribution NAME        gamma, lognormal, uniform, or baseline
+                                 (temporal uniform is Uniform(1-a, 1+a))
+      --parameter FLOAT          Gamma k, lognormal sigma, or uniform parameter
       --config PATH              campaign CSV
       --output-dir PATH          atomic batch output directory
       --fractions LIST           rational fractions of the full side 2L
@@ -86,16 +91,25 @@ function parse_arguments(arguments)
         index += 2
     end
     environment_model = Symbol(lowercase(options["environment-model"]))
-    environment_model in (:baseline, :directed_site_iid, :undirected_conductance) ||
+    environment_model in (:baseline, :ordinary_ust, :directed_site_iid,
+                          :undirected_conductance, :temporal_iid) ||
         error("invalid --environment-model")
     requested_distribution = Symbol(lowercase(options["distribution"]))
-    requested_distribution in (:gamma, :lognormal, :uniform) ||
-        error("--distribution must be gamma, lognormal, or uniform")
+    requested_distribution in (:baseline, :gamma, :lognormal, :uniform) ||
+        error("--distribution must be baseline, gamma, lognormal, or uniform")
     requested_parameter = parse(Float64, options["parameter"])
     requested_parameter > 0 || error("--parameter must be positive")
     # Baseline identity and seeds must not depend on irrelevant disorder flags.
-    distribution = environment_model === :baseline ? :none : requested_distribution
-    parameter = environment_model === :baseline ? 0.0 : requested_parameter
+    environment_model === :baseline && requested_distribution === :baseline &&
+        error("fixed baseline uses its implicit unit weights; use temporal_iid for refreshed baseline")
+    environment_model === :ordinary_ust && requested_distribution !== :baseline &&
+        error("--environment-model ordinary_ust requires --distribution baseline")
+    environment_model !== :temporal_iid && requested_distribution === :baseline &&
+        environment_model !== :ordinary_ust &&
+        error("--distribution baseline is only valid with --environment-model temporal_iid or ordinary_ust")
+    distribution = environment_model in (:baseline, :ordinary_ust) ? :none : requested_distribution
+    parameter = (environment_model in (:baseline, :ordinary_ust) || requested_distribution === :baseline) ?
+                0.0 : requested_parameter
     fractions = parse_fraction.(split(options["fractions"], ','))
     length(unique(fractions)) == length(fractions) || error("fractions must be unique")
     sort!(fractions; by=fraction -> fraction.num / fraction.den)
@@ -178,17 +192,23 @@ end
 
 function model_salt(model::Symbol)
     model === :baseline && return UInt64(0x626173656c696e65)
+    model === :ordinary_ust && return UInt64(0x6f7264696e617279)
     model === :directed_site_iid && return UInt64(0x6469726563746564)
+    model === :temporal_iid && return UInt64(0x74656d706f72616c)
     return UInt64(0x756e646972656374)
 end
 
 function distribution_salt(distribution::Symbol)
     distribution === :none && return UInt64(0x6e6f5f646973746e)
+    distribution === :baseline && return UInt64(0x74656d705f626173)
     distribution === :gamma && return UInt64(0x67616d6d615f6c77)
     distribution === :lognormal && return UInt64(0x6c6f676e6f726d6c)
     distribution === :uniform && return UInt64(0x756e69666f726d77)
     error("unsupported distribution $distribution")
 end
+
+diagnostic_header(parsed) = parsed.environment_model === :temporal_iid ?
+    TEMPORAL_DIAGNOSTIC_HEADER : DIAGNOSTIC_HEADER
 
 function sample_seed(parsed, order, sample_id)
     parameter_bits = xor(
@@ -217,6 +237,7 @@ parameter_token(value::Float64) =
 
 function campaign_id(parsed)
     parsed.environment_model === :baseline && return "square_grid__baseline"
+    parsed.environment_model === :ordinary_ust && return "square_grid__ordinary_ust"
     return join((
         "square_grid",
         String(parsed.environment_model),
@@ -246,7 +267,7 @@ function valid_existing_batch(data_path, diagnostics_path, parsed, task)
     length(lines) == sample_count * length(parsed.fractions) + 1 || return false
     length(diagnostic_lines) == sample_count + 1 || return false
     strip(first(lines)) == HEADER || return false
-    strip(first(diagnostic_lines)) == DIAGNOSTIC_HEADER || return false
+    strip(first(diagnostic_lines)) == diagnostic_header(parsed) || return false
     line_index = 2
     separations = separations_for_order(task.order, parsed.fractions)
     expected_model = campaign_id(parsed)
@@ -289,7 +310,7 @@ function write_atomic(writer, path)
     end
 end
 
-function write_batch(data_path, diagnostics_path, rows_by_sample, diagnostics)
+function write_batch(data_path, diagnostics_path, rows_by_sample, diagnostics, parsed)
     write_atomic(data_path) do io
         println(io, HEADER)
         for rows in rows_by_sample, row in rows
@@ -303,15 +324,27 @@ function write_batch(data_path, diagnostics_path, rows_by_sample, diagnostics)
         end
     end
     write_atomic(diagnostics_path) do io
-        println(io, DIAGNOSTIC_HEADER)
+        println(io, diagnostic_header(parsed))
         for row in diagnostics
-            println(
-                io,
-                row.order, ',', row.sample_id, ',', row.sample_seed, ',',
-                row.environment_seed, ',', row.replica_1_seed, ',', row.replica_2_seed, ',',
-                row.raw_steps_1, ',', row.raw_steps_2, ',',
-                row.branches_1, ',', row.branches_2,
-            )
+            if parsed.environment_model === :temporal_iid
+                println(
+                    io,
+                    row.order, ',', row.sample_id, ',', row.sample_seed, ',',
+                    row.replica_1_weight_seed, ',', row.replica_1_direction_seed, ',',
+                    row.replica_2_weight_seed, ',', row.replica_2_direction_seed, ',',
+                    row.sampled_weight_vectors_1, ',', row.sampled_weight_vectors_2, ',',
+                    row.raw_steps_1, ',', row.raw_steps_2, ',',
+                    row.branches_1, ',', row.branches_2,
+                )
+            else
+                println(
+                    io,
+                    row.order, ',', row.sample_id, ',', row.sample_seed, ',',
+                    row.environment_seed, ',', row.replica_1_seed, ',', row.replica_2_seed, ',',
+                    row.raw_steps_1, ',', row.raw_steps_2, ',',
+                    row.branches_1, ',', row.branches_2,
+                )
+            end
         end
     end
 end
@@ -352,15 +385,33 @@ function run_task(parsed, task)
     @threads :dynamic for offset in 1:sample_count
         sample_id = task.first_sample + offset - 1
         seed = sample_seed(parsed, task.order, sample_id)
-        result = sample_spatial_increment_pair(
-            seed,
-            task.order,
-            separations;
-            environment_model=parsed.environment_model,
-            distribution=parsed.distribution,
-            parameter=parsed.parameter,
-            max_steps_per_walk=parsed.max_steps_per_walk,
-        )
+        result = if parsed.environment_model === :temporal_iid
+            sample_temporal_spatial_increment_pair(
+                seed,
+                task.order,
+                separations;
+                distribution=parsed.distribution,
+                parameter=parsed.distribution === :baseline ? nothing : parsed.parameter,
+                max_steps_per_walk=parsed.max_steps_per_walk,
+            )
+        elseif parsed.environment_model === :ordinary_ust
+            sample_ordinary_ust_spatial_increment_pair(
+                seed,
+                task.order,
+                separations;
+                max_steps_per_walk=parsed.max_steps_per_walk,
+            )
+        else
+            sample_spatial_increment_pair(
+                seed,
+                task.order,
+                separations;
+                environment_model=parsed.environment_model,
+                distribution=parsed.distribution,
+                parameter=parsed.parameter,
+                max_steps_per_walk=parsed.max_steps_per_walk,
+            )
+        end
         rows_by_sample[offset] = [
             (
                 model=campaign_id(parsed),
@@ -384,7 +435,7 @@ function run_task(parsed, task)
         )
     end
     elapsed_seconds = time() - started
-    write_batch(data_path, diagnostics_path, rows_by_sample, diagnostics)
+    write_batch(data_path, diagnostics_path, rows_by_sample, diagnostics, parsed)
     write_execution_provenance(
         execution_path(parsed.output_dir, task.order, task.batch_id),
         parsed,
@@ -410,11 +461,15 @@ function metadata_text(parsed, config_rows, tasks)
         string(row.order, ':', row.first_sample_id, ':', row.samples, ':', row.batch_size)
         for row in config_rows
     ), ',')
-    parameterization = if parsed.distribution === :gamma
+    parameterization = if parsed.distribution === :baseline
+        "all temporal directional weights equal to one"
+    elseif parsed.distribution === :gamma
         "Gamma(shape=k,scale=1/k), mean one"
     elseif parsed.distribution === :lognormal
         "LogNormal(mu=-sigma^2/2,sigma), mean one"
     elseif parsed.distribution === :uniform
+        parsed.environment_model === :temporal_iid ?
+        "Uniform(1-a,1+a), mean one" :
         "Uniform(0,upper); global scale is immaterial (upper=2 is mean one)"
     else
         "not_applicable"
@@ -443,7 +498,7 @@ function metadata_text(parsed, config_rows, tasks)
         "geometry=square_grid_temperley",
         "observable=central_horizontal_dimer_height_increment",
         "environment_model=$(parsed.environment_model)",
-        "analysis_role=$(parsed.environment_model === :baseline ? "baseline" : "disorder")",
+        "analysis_role=$(parsed.environment_model === :temporal_iid ? "temporal_marginal_variance" : (parsed.environment_model === :ordinary_ust ? "ordinary_ust_marginal_variance" : (parsed.environment_model === :baseline ? "baseline" : "disorder")))",
         "distribution=$(parsed.distribution)",
         "parameter=$(parsed.distribution === :none ? "not_applicable" : parsed.parameter)",
         "parameterization=$parameterization",
@@ -467,6 +522,7 @@ function metadata_text(parsed, config_rows, tasks)
         "threads=$(nthreads())",
         "seed_identity=base_seed+environment_model+distribution+parameter+order+sample_id",
         "height_note=exact Temperley matching flow across central cut; deterministic reference flow cancels",
+        "temporal_pairing=$(parsed.environment_model === :temporal_iid ? "independent temporal replicas; covariance is only an independence control" : (parsed.environment_model === :ordinary_ust ? "independent ordinary-UST replicas; covariance is only an independence control" : "shared fixed environment"))",
     ], '\n') * "\n"
 end
 

@@ -21,6 +21,7 @@ export AbstractSquareGridEnvironment,
        BaselineEnvironment,
        DirectedSiteIIDEnvironment,
        UndirectedConductanceEnvironment,
+       TemporalIIDEnvironment,
        FixedEnvironment,
        TreeSample,
        TemperleyMatching,
@@ -37,7 +38,10 @@ export AbstractSquareGridEnvironment,
        spatial_height_increment,
        dimer_height_increment_along_path,
        sample_spatial_increment_pair,
+       sample_ordinary_ust_spatial_increment_pair,
+       sample_temporal_spatial_increment_pair,
        derive_sample_seeds,
+       derive_temporal_sample_seeds,
        horizontal_edge_id,
        vertical_edge_id,
        parent_edge_id,
@@ -69,6 +73,22 @@ struct UndirectedConductanceEnvironment <: AbstractSquareGridEnvironment
     seed::UInt64
     distribution::Symbol
     parameter::Float64
+end
+
+"""
+Independent temporal transition weights for one Wilson-tree sample.
+
+Unlike the site and conductance environments, this is not a quenched spatial
+environment: every raw transition draws and discards a new N/E/S/W vector.
+The mutable RNG belongs to exactly one tree sample and must never be shared
+between replicas when estimating the temporal marginal observable.
+"""
+mutable struct TemporalIIDEnvironment{R<:AbstractRNG} <: AbstractSquareGridEnvironment
+    weight_seed::UInt64
+    distribution::Symbol
+    parameter::Union{Nothing,Float64}
+    weight_rng::R
+    sampled_weight_vectors::Int64
 end
 
 "Materialized transition CDFs for one fixed environment and square size."
@@ -105,6 +125,27 @@ function UndirectedConductanceEnvironment(seed::Integer; distribution::Symbol=:g
                                           parameter::Real=0.5)
     return UndirectedConductanceEnvironment(
         UInt64(seed), distribution, check_distribution(distribution, parameter))
+end
+
+function TemporalIIDEnvironment(seed::Integer; distribution::Symbol=:gamma,
+                                parameter::Union{Nothing,Real}=0.5)
+    distribution in (:baseline, :gamma, :lognormal, :uniform) || throw(ArgumentError(
+        "temporal distribution must be :baseline, :gamma, :lognormal, or :uniform"))
+    if distribution === :baseline
+        parameter === nothing || Float64(parameter) > 0 ||
+            throw(ArgumentError("baseline temporal weights need a positive placeholder parameter"))
+        return TemporalIIDEnvironment(UInt64(seed), :baseline, nothing,
+                                      Random.Xoshiro(UInt64(seed)), 0)
+    end
+    isnothing(parameter) && throw(ArgumentError("temporal disorder needs a parameter"))
+    checked = Float64(parameter)
+    checked > 0 || throw(ArgumentError("temporal distribution parameter must be positive"))
+    # This is deliberately the historical temporal convention, not the
+    # fixed-square-grid Uniform(0, upper) convention.
+    distribution === :uniform && checked >= 1 && throw(ArgumentError(
+        "temporal uniform parameter must satisfy 0 < a < 1 for Uniform(1-a, 1+a)"))
+    return TemporalIIDEnvironment(UInt64(seed), distribution, checked,
+                                  Random.Xoshiro(UInt64(seed)), 0)
 end
 
 @inline function splitmix64(value::UInt64)::UInt64
@@ -207,6 +248,30 @@ end
     return sample_scalar_weight(key, environment.distribution, environment.parameter)
 end
 
+@inline function temporal_scalar_weight(
+    rng::AbstractRNG,
+    distribution::Symbol,
+    parameter::Union{Nothing,Float64},
+)::Float64
+    distribution === :baseline && return 1.0
+    distribution === :gamma && return rand_gamma(rng, parameter::Float64, inv(parameter::Float64))
+    distribution === :lognormal && return exp(
+        (parameter::Float64) * randn(rng) - (parameter::Float64)^2 / 2)
+    distribution === :uniform && return 1.0 - (parameter::Float64) +
+                                      2.0 * (parameter::Float64) * rand(rng)
+    throw(ArgumentError("unsupported temporal distribution: $distribution"))
+end
+
+"Draw and discard one fresh directional vector for a single raw transition."
+@inline function temporal_weights!(environment::TemporalIIDEnvironment)
+    environment.sampled_weight_vectors += 1
+    return ntuple(
+        _ -> temporal_scalar_weight(
+            environment.weight_rng, environment.distribution, environment.parameter),
+        4,
+    )
+end
+
 @inline grid_side(L::Integer) = 2 * Int(L) - 1
 @inline vertex_count(L::Integer) = grid_side(L)^2
 
@@ -265,6 +330,22 @@ end
     draw <= north && return NORTH
     draw <= east && return EAST
     draw <= south && return SOUTH
+    return WEST
+end
+
+@inline function choose_direction(environment::TemporalIIDEnvironment,
+                                  x::Integer, y::Integer, L::Integer,
+                                  rng::AbstractRNG)::UInt8
+    # x, y, and L intentionally do not enter the weight draw: revisits receive
+    # fresh temporal disorder rather than a cached site value.
+    weights = temporal_weights!(environment)
+    total = weights[1] + weights[2] + weights[3] + weights[4]
+    isfinite(total) && total > 0 || throw(ErrorException(
+        "temporal transition weights must have positive finite sum"))
+    threshold = rand(rng) * total
+    threshold <= weights[1] && return NORTH
+    threshold <= weights[1] + weights[2] && return EAST
+    threshold <= weights[1] + weights[2] + weights[3] && return SOUTH
     return WEST
 end
 
@@ -806,6 +887,17 @@ function derive_sample_seeds(sample_seed::Integer)
     )
 end
 
+"Separate temporal weight and direction streams for two independent tree replicas."
+function derive_temporal_sample_seeds(sample_seed::Integer)
+    seed = UInt64(sample_seed)
+    return (
+        replica_1_weight=splitmix64(seed ⊻ 0x74656d705f726577),
+        replica_1_direction=splitmix64(seed ⊻ 0x74656d705f726564),
+        replica_2_weight=splitmix64(seed ⊻ 0x74656d705f726631),
+        replica_2_direction=splitmix64(seed ⊻ 0x74656d705f726632),
+    )
+end
+
 function make_environment(model::Symbol, environment_seed::UInt64,
                           distribution::Symbol, parameter::Real)
     model === :baseline && return BaselineEnvironment()
@@ -866,6 +958,124 @@ function sample_spatial_increment_pair(
         environment_seed=seeds.environment,
         replica_1_seed=seeds.replica_1,
         replica_2_seed=seeds.replica_2,
+        raw_steps_1=first_tree.raw_steps,
+        raw_steps_2=second_tree.raw_steps,
+        branches_1=first_tree.branches,
+        branches_2=second_tree.branches,
+    )
+    return (rows=rows, diagnostics=diagnostics)
+end
+
+"""
+    sample_ordinary_ust_spatial_increment_pair(sample_seed, L, separations; ...)
+
+Draw two independent ordinary simple-random-walk UST samples, then send both
+through the same `TreeSample -> TemperleyMatching -> spatial_height_increment`
+path as the temporal refreshed-weight experiment.  The recorded environment
+seed is an unused deterministic namespace marker retained for the common
+campaign diagnostic schema; no spatial environment is constructed or shared.
+"""
+function sample_ordinary_ust_spatial_increment_pair(
+    sample_seed::Integer,
+    L::Integer,
+    separations::AbstractVector{<:Integer};
+    max_steps_per_walk::Union{Nothing,Integer}=nothing,
+)
+    isempty(separations) && throw(ArgumentError("at least one separation is required"))
+    length(unique(separations)) == length(separations) ||
+        throw(ArgumentError("separations must be unique"))
+    seeds = derive_sample_seeds(sample_seed)
+    first_tree = sample_full_tree(
+        BaselineEnvironment(), L, Random.Xoshiro(seeds.replica_1);
+        max_steps_per_walk=max_steps_per_walk)
+    second_tree = sample_full_tree(
+        BaselineEnvironment(), L, Random.Xoshiro(seeds.replica_2);
+        max_steps_per_walk=max_steps_per_walk)
+    first_matching = build_temperley_matching(first_tree)
+    second_matching = build_temperley_matching(second_tree)
+    rows = [
+        begin
+            probes = symmetric_probe_vertices(L, separation)
+            first = spatial_height_increment(first_matching, separation)
+            second = spatial_height_increment(second_matching, separation)
+            (
+                separation=Int(separation),
+                left_x=probes.left.x,
+                right_x=probes.right.x,
+                increment_1=first,
+                increment_2=second,
+                difference=first - second,
+            )
+        end
+        for separation in separations
+    ]
+    diagnostics = (
+        environment_seed=seeds.environment,
+        replica_1_seed=seeds.replica_1,
+        replica_2_seed=seeds.replica_2,
+        raw_steps_1=first_tree.raw_steps,
+        raw_steps_2=second_tree.raw_steps,
+        branches_1=first_tree.branches,
+        branches_2=second_tree.branches,
+    )
+    return (rows=rows, diagnostics=diagnostics)
+end
+
+"""
+    sample_temporal_spatial_increment_pair(sample_seed, L, separations; ...)
+
+Draw two fully independent Wilson trees whose directional weights are refreshed
+at every raw transition.  The pair is an independence control for the temporal
+marginal variance: it has no shared quenched environment and must not be
+interpreted as a disorder-covariance estimator.
+"""
+function sample_temporal_spatial_increment_pair(
+    sample_seed::Integer,
+    L::Integer,
+    separations::AbstractVector{<:Integer};
+    distribution::Symbol=:gamma,
+    parameter::Union{Nothing,Real}=0.5,
+    max_steps_per_walk::Union{Nothing,Integer}=nothing,
+)
+    isempty(separations) && throw(ArgumentError("at least one separation is required"))
+    length(unique(separations)) == length(separations) ||
+        throw(ArgumentError("separations must be unique"))
+    seeds = derive_temporal_sample_seeds(sample_seed)
+    first_environment = TemporalIIDEnvironment(
+        seeds.replica_1_weight; distribution=distribution, parameter=parameter)
+    second_environment = TemporalIIDEnvironment(
+        seeds.replica_2_weight; distribution=distribution, parameter=parameter)
+    first_tree = sample_full_tree(
+        first_environment, L, Random.Xoshiro(seeds.replica_1_direction);
+        max_steps_per_walk=max_steps_per_walk)
+    second_tree = sample_full_tree(
+        second_environment, L, Random.Xoshiro(seeds.replica_2_direction);
+        max_steps_per_walk=max_steps_per_walk)
+    first_matching = build_temperley_matching(first_tree)
+    second_matching = build_temperley_matching(second_tree)
+    rows = [
+        begin
+            probes = symmetric_probe_vertices(L, separation)
+            first = spatial_height_increment(first_matching, separation)
+            second = spatial_height_increment(second_matching, separation)
+            (
+                separation=Int(separation),
+                left_x=probes.left.x,
+                right_x=probes.right.x,
+                increment_1=first,
+                increment_2=second,
+                difference=first - second,
+            )
+        end
+        for separation in separations
+    ]
+    diagnostics = (
+        replica_1_weight_seed=seeds.replica_1_weight,
+        replica_1_direction_seed=seeds.replica_1_direction,
+        replica_2_weight_seed=seeds.replica_2_weight,
+        replica_2_direction_seed=seeds.replica_2_direction,
+        sampled_weight_vectors_1=first_environment.sampled_weight_vectors,
+        sampled_weight_vectors_2=second_environment.sampled_weight_vectors,
         raw_steps_1=first_tree.raw_steps,
         raw_steps_2=second_tree.raw_steps,
         branches_1=first_tree.branches,

@@ -8,8 +8,13 @@ module SpatialAnalyzerHarness
 include(joinpath(@__DIR__, "..", "scripts", "analyze_spatial_campaign.jl"))
 end
 
+module TemporalSpatialAnalyzerHarness
+include(joinpath(@__DIR__, "..", "scripts", "analyze_temporal_square_grid_campaign.jl"))
+end
+
 const SGR = SquareGridRunnerHarness
 const SGA = SpatialAnalyzerHarness
+const TSGA = TemporalSpatialAnalyzerHarness
 
 @testset "square-grid campaign identities and provenance" begin
     common = [
@@ -22,6 +27,10 @@ const SGA = SpatialAnalyzerHarness
     ))
     baseline_lognormal = SGR.parse_arguments(vcat(
         ["--environment-model", "baseline", "--distribution", "lognormal", "--parameter", "1.2"],
+        common,
+    ))
+    ordinary_ust = SGR.parse_arguments(vcat(
+        ["--environment-model", "ordinary_ust", "--distribution", "baseline", "--parameter", "0.5"],
         common,
     ))
     directed_gamma = SGR.parse_arguments(vcat(
@@ -41,9 +50,11 @@ const SGA = SpatialAnalyzerHarness
         common,
     ))
     @test SGR.campaign_id(baseline_gamma) == "square_grid__baseline"
+    @test SGR.campaign_id(ordinary_ust) == "square_grid__ordinary_ust"
     @test SGR.campaign_id(baseline_gamma) == SGR.campaign_id(baseline_lognormal)
     @test SGR.sample_seed(baseline_gamma, 64, 7) ==
           SGR.sample_seed(baseline_lognormal, 64, 7)
+    @test SGR.sample_seed(ordinary_ust, 64, 7) != SGR.sample_seed(baseline_gamma, 64, 7)
     identities = SGR.campaign_id.((
         directed_gamma, directed_lognormal, directed_uniform, undirected_gamma))
     @test length(unique(identities)) == 4
@@ -313,4 +324,178 @@ end
     conditional = var(difference) / 2
     disorder = cov(first, second)
     @test isapprox(marginal - disorder, conditional; atol=1e-12)
+end
+
+@testset "temporal square-grid refreshed transitions" begin
+    repeated_site = SG.TemporalIIDEnvironment(
+        0xa101; distribution=:gamma, parameter=0.5)
+    first_weights = SG.temporal_weights!(repeated_site)
+    second_weights = SG.temporal_weights!(repeated_site)
+    @test repeated_site.sampled_weight_vectors == 2
+    @test first_weights != second_weights
+
+    replay = SG.TemporalIIDEnvironment(0xa101; distribution=:gamma, parameter=0.5)
+    @test SG.temporal_weights!(replay) == first_weights
+    @test SG.temporal_weights!(replay) == second_weights
+
+    # Calling the transition rule at the same lattice point cannot consult a
+    # site cache: each call consumes exactly one new directional vector.
+    direction_rng = Xoshiro(0xa102)
+    SG.choose_direction(repeated_site, 0, 0, 8, direction_rng)
+    SG.choose_direction(repeated_site, 0, 0, 8, direction_rng)
+    @test repeated_site.sampled_weight_vectors == 4
+
+    # Exchangeability, rather than a spatial field, fixes each annealed
+    # directional probability at 1/4 for every Gamma shape in the validation sweep.
+    for shape in (0.2, 0.5, 2.0)
+        symmetry = SG.TemporalIIDEnvironment(
+            UInt64(round(Int, 1_000 * shape)); distribution=:gamma, parameter=shape)
+        probabilities = zeros(4)
+        for _ in 1:12_000
+            weights = SG.temporal_weights!(symmetry)
+            probabilities .+= weights ./ sum(weights)
+        end
+        @test maximum(abs.(probabilities ./ 12_000 .- 0.25)) < 0.012
+        @test symmetry.sampled_weight_vectors == 12_000
+    end
+end
+
+@testset "temporal square-grid tree, Temperley, and height" begin
+    L = 8
+    environment = SG.TemporalIIDEnvironment(
+        0xb101; distribution=:gamma, parameter=0.5)
+    tree = SG.sample_full_tree(environment, L, Xoshiro(0xb102))
+    @test SG.validate_tree(tree).valid
+    @test length(tree.parent_direction) == (2L - 1)^2
+    @test environment.sampled_weight_vectors == tree.raw_steps
+    # Temporal IID is deliberately not materializable as a site-indexed field.
+    @test_throws MethodError SG.materialize_environment(environment, L)
+
+    matching = SG.build_temperley_matching(tree)
+    @test SG.validate_matching(matching).valid
+    probes = SG.symmetric_probe_vertices(L, 4)
+    direct_path = [(x, 0) for x in (2 * probes.left.x):(2 * probes.right.x)]
+    @test SG.spatial_height_increment(matching, 4) ==
+          SG.dimer_height_increment_along_path(matching, direct_path)
+end
+
+@testset "temporal square-grid independent replica control" begin
+    separations = [1, 2, 4]
+    first = SG.sample_temporal_spatial_increment_pair(
+        0xc101, 8, separations; distribution=:gamma, parameter=0.5)
+    replay = SG.sample_temporal_spatial_increment_pair(
+        0xc101, 8, separations; distribution=:gamma, parameter=0.5)
+    @test first == replay
+    diagnostics = first.diagnostics
+    @test diagnostics.replica_1_weight_seed != diagnostics.replica_2_weight_seed
+    @test diagnostics.replica_1_direction_seed != diagnostics.replica_2_direction_seed
+    @test diagnostics.replica_1_weight_seed != diagnostics.replica_1_direction_seed
+    @test diagnostics.replica_2_weight_seed != diagnostics.replica_2_direction_seed
+    @test diagnostics.sampled_weight_vectors_1 == diagnostics.raw_steps_1
+    @test diagnostics.sampled_weight_vectors_2 == diagnostics.raw_steps_2
+    @test all(row.difference == row.increment_1 - row.increment_2 for row in first.rows)
+
+    # Replaying per-sample calls is the scheduling-independent unit of work
+    # used by the threaded campaign runner.
+    threaded_identity = [
+        SG.sample_temporal_spatial_increment_pair(
+            UInt64(0xc200 + sample_id), 8, separations;
+            distribution=:gamma, parameter=0.5)
+        for sample_id in 1:4
+    ]
+    @test threaded_identity == [
+        SG.sample_temporal_spatial_increment_pair(
+            UInt64(0xc200 + sample_id), 8, separations;
+            distribution=:gamma, parameter=0.5)
+        for sample_id in 1:4
+    ]
+end
+
+@testset "ordinary UST matched spatial-height pipeline" begin
+    separations = [1, 2, 4]
+    ordinary = SG.sample_ordinary_ust_spatial_increment_pair(0xd101, 8, separations)
+    legacy_baseline = SG.sample_spatial_increment_pair(
+        0xd101, 8, separations; environment_model=:baseline)
+    # Equality establishes that the new explicit mode uses exactly the existing
+    # Wilson -> Temperley -> spatial-height path, not a parallel observable.
+    @test ordinary == legacy_baseline
+    @test ordinary.diagnostics.replica_1_seed != ordinary.diagnostics.replica_2_seed
+    @test all(row.difference == row.increment_1 - row.increment_2 for row in ordinary.rows)
+end
+
+@testset "temporal marginal spatial analysis labels" begin
+    mktempdir() do directory
+        input = joinpath(directory, "batch_temporal.csv")
+        model = "temporal_test"
+        open(input, "w") do io
+            println(io, SGA.HEADER)
+            for order in (16, 24, 32, 48, 64, 96), sample_id in 1:5,
+                    (numerator, denominator) in ((1, 8), (1, 4))
+                separation = round(Int, 2 * order * numerator / denominator)
+                first = sample_id + mod(order, 5)
+                second = 2sample_id - mod(order, 3)
+                println(io, join((
+                    model, order, sample_id, UInt64(order * 100 + sample_id),
+                    numerator, denominator, separation, 0, separation,
+                    first, second, first - second,
+                ), ','))
+            end
+        end
+        output = joinpath(directory, "analysis")
+        TSGA.main([
+            "--results", input,
+            "--model", model,
+            "--output-dir", output,
+            "--bootstrap-reps", "20",
+            "--bootstrap-seed", "999",
+            "--min-order", "16",
+            "--holdout-orders", "2",
+        ])
+        summary = read(joinpath(output, "temporal_ust_marginal_variance_summary.csv"), String)
+        fit = read(joinpath(output, "temporal_marginal_variance_model_comparison.csv"), String)
+        metadata = read(joinpath(output, "analysis_metadata.txt"), String)
+        @test occursin("temporal_marginal_variance", summary)
+        @test occursin("temporal_marginal_variance", fit)
+        @test occursin("independence_control_not_disorder_covariance", metadata)
+    end
+end
+
+@testset "matched temporal/ordinary analysis" begin
+    mktempdir() do directory
+        temporal_input = joinpath(directory, "temporal.csv")
+        ordinary_input = joinpath(directory, "ordinary.csv")
+        for (path, model, shift) in ((temporal_input, "temporal_test", 0),
+                                     (ordinary_input, "ordinary_test", 1))
+            open(path, "w") do io
+                println(io, SGA.HEADER)
+                for order in (16, 24, 32, 48, 64, 96), sample_id in 1:5,
+                        (numerator, denominator) in ((1, 8), (1, 4))
+                    separation = round(Int, 2 * order * numerator / denominator)
+                    first = sample_id + mod(order, 5) + shift
+                    second = 2sample_id - mod(order, 3)
+                    println(io, join((
+                        model, order, sample_id, UInt64(order * 100 + sample_id + shift),
+                        numerator, denominator, separation, 0, separation,
+                        first, second, first - second,
+                    ), ','))
+                end
+            end
+        end
+        output = joinpath(directory, "analysis")
+        TSGA.main([
+            "--temporal-results", temporal_input,
+            "--temporal-model", "temporal_test",
+            "--ordinary-results", ordinary_input,
+            "--ordinary-model", "ordinary_test",
+            "--output-dir", output,
+            "--bootstrap-reps", "20",
+            "--bootstrap-seed", "1001",
+            "--min-order", "16",
+            "--holdout-orders", "2",
+        ])
+        @test isfile(joinpath(output, "ordinary_ust_marginal_variance_model_comparison.csv"))
+        @test isfile(joinpath(output, "temporal_marginal_variance_cutoff_sensitivity.csv"))
+        difference = read(joinpath(output, "temporal_minus_ust_marginal_variance.csv"), String)
+        @test occursin("temporal_minus_ust", difference)
+    end
 end

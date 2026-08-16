@@ -1,0 +1,63 @@
+#!/bin/bash
+#SBATCH --job-name=sqgrid-temporal-ust
+#SBATCH --partition=shared
+#SBATCH --array=1-20%5
+#SBATCH --time=00:30:00
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=16G
+#SBATCH --output=logs/%x-%A_%a.out
+#SBATCH --error=logs/%x-%A_%a.err
+
+# Prepared only: do not submit until the confirmation schedule is approved.
+# Each task owns one deterministic, restart-safe, immutable batch shard.
+set -euo pipefail
+
+JULIA="/apps/developers/compilers/julia/1.10.4/1/default/bin.wrapped/julia"
+
+export JULIA_NUM_THREADS="${SLURM_CPUS_PER_TASK}"
+export OMP_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export BLIS_NUM_THREADS=1
+
+: "${OUTPUT_DIR:?Set OUTPUT_DIR under /nobackup for the selected model result directory}"
+: "${BASE_SEED:?Set one public master seed for both model submissions}"
+: "${CAMPAIGN_MODE:?Set temporal_iid or ordinary_ust}"
+CONFIG="${CONFIG:-aztec/configs/temporal_ust_confirmation.csv}"
+
+[[ "${OUTPUT_DIR}" == /nobackup/* ]] || {
+  echo "OUTPUT_DIR must be under /nobackup on Hamilton8" >&2
+  exit 2
+}
+[[ -f "${CONFIG}" ]] || { echo "missing config: ${CONFIG}" >&2; exit 2; }
+
+case "${CAMPAIGN_MODE}" in
+  temporal_iid)
+    MODEL_ARGS=(--environment-model temporal_iid --distribution gamma --parameter 0.5)
+    ;;
+  ordinary_ust)
+    MODEL_ARGS=(--environment-model ordinary_ust --distribution baseline --parameter 0.5)
+    ;;
+  *)
+    echo "CAMPAIGN_MODE must be temporal_iid or ordinary_ust" >&2
+    exit 2
+    ;;
+esac
+
+cd "${SLURM_SUBMIT_DIR}"
+test -f .hamilton_env/Project.toml || {
+  echo "Run bash hpc/setup_hamilton_environment.sh first" >&2
+  exit 1
+}
+mkdir -p logs "${OUTPUT_DIR}"
+
+echo "campaign_mode=${CAMPAIGN_MODE} task=${SLURM_ARRAY_TASK_ID} base_seed=${BASE_SEED}"
+echo "config=${CONFIG} output_dir=${OUTPUT_DIR} threads=${JULIA_NUM_THREADS}"
+
+srun --cpu-bind=cores "$JULIA" --project=.hamilton_env --startup-file=no \
+  aztec/scripts/run_square_grid_campaign.jl \
+  "${MODEL_ARGS[@]}" \
+  --config "${CONFIG}" \
+  --output-dir "${OUTPUT_DIR}" \
+  --base-seed "${BASE_SEED}" \
+  --task-id "${SLURM_ARRAY_TASK_ID}"
