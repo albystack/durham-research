@@ -1,17 +1,17 @@
 #!/bin/bash
 #SBATCH --job-name=sqgrid-temporal-ust
 #SBATCH --partition=shared
-#SBATCH --array=1-20
-#SBATCH --time=00:30:00
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=16G
+#SBATCH --array=1-150
+#SBATCH --time=00:20:00
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=5G
 #SBATCH --output=logs/%x-%A_%a.out
 #SBATCH --error=logs/%x-%A_%a.err
 
-# Prepared only: do not submit until the thread/RSS benchmark and account
-# discovery have set an appropriate submission-time array cap.  Override this
-# directive at submission, e.g. `sbatch --array=1-20%N ...`, rather than
-# embedding an arbitrary %5 throttle.  Each task owns one immutable batch.
+# Production defaults are benchmarked for temporal_iid.  Submit ordinary_ust
+# with `--array=1-79`; it uses fewer deterministic batches.  No %N cap is
+# embedded because the current shared QoS has no per-user job cap and broad
+# one-core placement maximizes useful work per CPU-second.
 set -euo pipefail
 
 JULIA="/apps/developers/compilers/julia/1.10.4/1/default/bin.wrapped/julia"
@@ -25,26 +25,28 @@ export BLIS_NUM_THREADS=1
 : "${OUTPUT_DIR:?Set OUTPUT_DIR under /nobackup for the selected model result directory}"
 : "${BASE_SEED:?Set one public master seed for both model submissions}"
 : "${CAMPAIGN_MODE:?Set temporal_iid or ordinary_ust}"
-CONFIG="${CONFIG:-aztec/configs/temporal_ust_confirmation.csv}"
+CONFIG="${CONFIG:-}"
 
 [[ "${OUTPUT_DIR}" == /nobackup/* ]] || {
   echo "OUTPUT_DIR must be under /nobackup on Hamilton8" >&2
   exit 2
 }
-[[ -f "${CONFIG}" ]] || { echo "missing config: ${CONFIG}" >&2; exit 2; }
-
 case "${CAMPAIGN_MODE}" in
   temporal_iid)
     MODEL_ARGS=(--environment-model temporal_iid --distribution gamma --parameter 0.5)
+    [[ -n "${CONFIG}" ]] || CONFIG="aztec/configs/temporal_ust_confirmation_temporal.csv"
     ;;
   ordinary_ust)
     MODEL_ARGS=(--environment-model ordinary_ust --distribution baseline --parameter 0.5)
+    [[ -n "${CONFIG}" ]] || CONFIG="aztec/configs/temporal_ust_confirmation_ordinary_ust.csv"
     ;;
   *)
     echo "CAMPAIGN_MODE must be temporal_iid or ordinary_ust" >&2
     exit 2
     ;;
 esac
+
+[[ -f "${CONFIG}" ]] || { echo "missing config: ${CONFIG}" >&2; exit 2; }
 
 cd "${SLURM_SUBMIT_DIR}"
 test -f .hamilton_env/Project.toml || {
