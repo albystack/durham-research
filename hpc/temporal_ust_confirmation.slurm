@@ -1,15 +1,17 @@
 #!/bin/bash
 #SBATCH --job-name=sqgrid-temporal-ust
 #SBATCH --partition=shared
-#SBATCH --array=1-20%5
+#SBATCH --array=1-20
 #SBATCH --time=00:30:00
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
 #SBATCH --output=logs/%x-%A_%a.out
 #SBATCH --error=logs/%x-%A_%a.err
 
-# Prepared only: do not submit until the confirmation schedule is approved.
-# Each task owns one deterministic, restart-safe, immutable batch shard.
+# Prepared only: do not submit until the thread/RSS benchmark and account
+# discovery have set an appropriate submission-time array cap.  Override this
+# directive at submission, e.g. `sbatch --array=1-20%N ...`, rather than
+# embedding an arbitrary %5 throttle.  Each task owns one immutable batch.
 set -euo pipefail
 
 JULIA="/apps/developers/compilers/julia/1.10.4/1/default/bin.wrapped/julia"
@@ -50,6 +52,30 @@ test -f .hamilton_env/Project.toml || {
   exit 1
 }
 mkdir -p logs "${OUTPUT_DIR}"
+
+# A job-specific sidecar supplements the runner's immutable batch and
+# execution files.  It never shares a mutable filename with another array
+# element or submission.
+PROVENANCE_DIR="${OUTPUT_DIR}/hpc_provenance"
+mkdir -p "${PROVENANCE_DIR}"
+PROVENANCE_PATH="${PROVENANCE_DIR}/job_${SLURM_ARRAY_JOB_ID}_task_${SLURM_ARRAY_TASK_ID}.txt"
+PROVENANCE_TMP="${PROVENANCE_PATH}.$$.tmp"
+{
+  echo "git_commit=$(git rev-parse HEAD)"
+  echo "slurm_job_id=${SLURM_JOB_ID}"
+  echo "slurm_array_job_id=${SLURM_ARRAY_JOB_ID}"
+  echo "slurm_array_task_id=${SLURM_ARRAY_TASK_ID}"
+  echo "hostname=$(hostname)"
+  echo "allocated_cpus=${SLURM_CPUS_PER_TASK}"
+  echo "slurm_mem_per_node=${SLURM_MEM_PER_NODE:-not_exported}"
+  echo "julia_threads=${JULIA_NUM_THREADS}"
+  echo "julia_version=$(${JULIA} --version)"
+  echo "campaign_mode=${CAMPAIGN_MODE}"
+  echo "base_seed=${BASE_SEED}"
+  echo "config=${CONFIG}"
+  sha256sum "${CONFIG}"
+} > "${PROVENANCE_TMP}"
+mv "${PROVENANCE_TMP}" "${PROVENANCE_PATH}"
 
 echo "campaign_mode=${CAMPAIGN_MODE} task=${SLURM_ARRAY_TASK_ID} base_seed=${BASE_SEED}"
 echo "config=${CONFIG} output_dir=${OUTPUT_DIR} threads=${JULIA_NUM_THREADS}"
