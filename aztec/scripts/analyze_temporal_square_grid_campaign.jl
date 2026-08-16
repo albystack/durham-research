@@ -12,7 +12,7 @@ end
 using Printf
 using Random
 
-const Core = TemporalSpatialAnalysisCore
+const SpatialCore = TemporalSpatialAnalysisCore
 const TEMPORAL_ESTIMATOR = "temporal_marginal_variance"
 const ORDINARY_ESTIMATOR = "ordinary_ust_marginal_variance"
 
@@ -47,10 +47,10 @@ function parse_arguments(arguments)
     !isempty(options["results"]) && (options["temporal-results"] = options["results"])
     !isempty(options["model"]) && (options["temporal-model"] = options["model"])
     return (
-        temporal_paths=Core.parse_paths(options["temporal-results"]),
+        temporal_paths=SpatialCore.parse_paths(options["temporal-results"]),
         temporal_model=options["temporal-model"],
         ordinary_paths=isempty(options["ordinary-results"]) ? nothing :
-                       Core.parse_paths(options["ordinary-results"]),
+                       SpatialCore.parse_paths(options["ordinary-results"]),
         ordinary_model=options["ordinary-model"],
         output_dir=abspath(options["output-dir"]),
         bootstrap_reps=parse(Int, options["bootstrap-reps"]),
@@ -65,8 +65,8 @@ function summarise(data, repetitions, rng)
     draws = Dict{Tuple{Int,Int,Int},NamedTuple}()
     for (key, values) in data.groups
         length(values) >= 2 || error("each spatial group needs at least two samples")
-        points[key] = Core.paired_statistics(values)
-        draws[key] = Core.bootstrap_group(rng, values, repetitions)
+        points[key] = SpatialCore.paired_statistics(values)
+        draws[key] = SpatialCore.bootstrap_group(rng, values, repetitions)
     end
     return (points=points, draws=draws)
 end
@@ -80,11 +80,11 @@ function fit_row(data, points, draws, fraction, min_order, repetitions, holdout_
     length(keys_for_fraction) >= holdout_orders + 3 || error("too few fitted orders at fraction $fraction")
     x = log.([Float64(data.separations[key]) for key in keys_for_fraction])
     y = [points[key].marginal for key in keys_for_fraction]
-    comparison = Core.fit_comparison(x, y, holdout_orders)
-    bootstrap = Core.bootstrap_fit(Dict(key => draws[key] for key in keys_for_fraction),
+    comparison = SpatialCore.fit_comparison(x, y, holdout_orders)
+    bootstrap = SpatialCore.bootstrap_fit(Dict(key => draws[key] for key in keys_for_fraction),
                                    keys_for_fraction, data.separations, repetitions,
                                    holdout_orders, :marginal)
-    coefficient_ci, bic_ci = Core.interval(bootstrap.coefficient), Core.interval(bootstrap.delta_bic)
+    coefficient_ci, bic_ci = SpatialCore.interval(bootstrap.coefficient), SpatialCore.interval(bootstrap.delta_bic)
     return (
         fraction_num=fraction[1], fraction_den=fraction[2],
         min_order=first(keys_for_fraction)[3], max_order=last(keys_for_fraction)[3],
@@ -104,7 +104,7 @@ function write_summary(path, datasets)
         for (label, estimator, data, summary) in datasets
             for key in sort(collect(keys(data.groups)); by=key -> (key[1] / key[2], key[3]))
                 point, draw = summary.points[key], summary.draws[key]
-                variance_ci, covariance_ci, difference_ci = Core.interval(draw.marginal), Core.interval(draw.disorder), Core.interval(draw.conditional)
+                variance_ci, covariance_ci, difference_ci = SpatialCore.interval(draw.marginal), SpatialCore.interval(draw.disorder), SpatialCore.interval(draw.conditional)
                 @printf(io, "%s,%s,%d,%d,%d,%d,%d,%.10g,%.10g,%.10g,%.10g,%.10g,%.10g,%.10g,%.10g,%.10g\n",
                     label, estimator, key..., data.separations[key], length(data.groups[key]),
                     point.marginal, variance_ci.low, variance_ci.high, point.disorder,
@@ -130,7 +130,7 @@ function pooled_fit(data, summary, repetitions, min_order, holdout_orders, rng)
     orders = sort(unique(key[3] for key in keys(data.groups) if key[3] >= min_order))
     length(orders) >= holdout_orders + 3 || error("too few orders for pooled fit")
     values = Dict(key => summary.points[key].marginal for key in keys(data.groups) if key[3] >= min_order)
-    comparison = Core.pooled_comparison(data, orders, values, holdout_orders)
+    comparison = SpatialCore.pooled_comparison(data, orders, values, holdout_orders)
     coefficient_draws, bic_draws = Vector{Float64}(undef, repetitions), Vector{Float64}(undef, repetitions)
     for repetition in 1:repetitions
         boot_values = Dict{Tuple{Int,Int,Int},Float64}()
@@ -140,13 +140,13 @@ function pooled_fit(data, summary, repetitions, min_order, holdout_orders, rng)
             indices = rand(rng, 1:count, count)
             for fraction in data.fractions
                 key = (fraction..., order)
-                boot_values[key] = Core.paired_statistics(data.groups[key], indices).marginal
+                boot_values[key] = SpatialCore.paired_statistics(data.groups[key], indices).marginal
             end
         end
-        boot = Core.pooled_comparison(data, orders, boot_values, holdout_orders)
+        boot = SpatialCore.pooled_comparison(data, orders, boot_values, holdout_orders)
         coefficient_draws[repetition], bic_draws[repetition] = boot.common_coefficient, boot.delta_bic
     end
-    coefficient_ci, bic_ci = Core.interval(coefficient_draws), Core.interval(bic_draws)
+    coefficient_ci, bic_ci = SpatialCore.interval(coefficient_draws), SpatialCore.interval(bic_draws)
     return (min_order=first(orders), max_order=last(orders), fit_points=length(orders) * length(data.fractions),
             common_log2_coefficient=comparison.common_coefficient,
             coefficient_low=coefficient_ci.low, coefficient_high=coefficient_ci.high,
@@ -183,7 +183,7 @@ function write_differences(path, temporal_data, temporal_summary, ordinary_data,
         for key in sort(collect(keys(temporal_data.groups)); by=key -> (key[1] / key[2], key[3]))
             point = temporal_summary.points[key].marginal - ordinary_summary.points[key].marginal
             draws = temporal_summary.draws[key].marginal .- ordinary_summary.draws[key].marginal
-            ci = Core.interval(draws)
+            ci = SpatialCore.interval(draws)
             @printf(io, "%d,%d,%d,%d,%.10g,%.10g,%.10g\n", key..., temporal_data.separations[key], point, ci.low, ci.high)
         end
     end
@@ -194,12 +194,12 @@ function main(arguments)
     isnothing(parsed) && return
     parsed.bootstrap_reps > 0 || error("bootstrap repetitions must be positive")
     parsed.holdout_orders > 0 || error("holdout orders must be positive")
-    temporal_data = Core.load_results(parsed.temporal_paths, parsed.temporal_model)
+    temporal_data = SpatialCore.load_results(parsed.temporal_paths, parsed.temporal_model)
     temporal_summary = summarise(temporal_data, parsed.bootstrap_reps, Xoshiro(parsed.bootstrap_seed))
     datasets = [(parsed.temporal_model, TEMPORAL_ESTIMATOR, temporal_data, temporal_summary)]
     ordinary_data = ordinary_summary = nothing
     if !isnothing(parsed.ordinary_paths)
-        ordinary_data = Core.load_results(parsed.ordinary_paths, parsed.ordinary_model)
+        ordinary_data = SpatialCore.load_results(parsed.ordinary_paths, parsed.ordinary_model)
         ordinary_summary = summarise(ordinary_data, parsed.bootstrap_reps, Xoshiro(parsed.bootstrap_seed ⊻ 0x6f7264696e617279))
         push!(datasets, (parsed.ordinary_model, ORDINARY_ESTIMATOR, ordinary_data, ordinary_summary))
     end
