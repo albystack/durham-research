@@ -16,6 +16,43 @@ Keep source and small logs under `/home/fvkl37`. Put large batch output under
 `/nobackup/fvkl37` and copy retained results back to the Mac because
 `/nobackup` is not the backed-up source repository.
 
+## Direct weighted-dimer Glauber pilot
+
+This is the independent square-grid dimer sampler requested in Sunil's latest
+email. It uses the supplied fixed height boundary, frozen i.i.d. mean-one edge
+weights, and exact random-face heat-bath dynamics. Its `accelerated` option
+skips self-loops while preserving the distribution at fixed attempted-update
+times; it is not the biased active-site jump chain.
+
+Prepare the Julia environment, then begin with the (L=2) calibration.  This
+is the only initial size where every frozen weighted environment can be checked
+against exact enumeration.  Do **not** submit the broader size pilot until this
+calibration has passed review.
+
+```bash
+bash hpc/setup_hamilton_environment.sh
+mkdir -p logs /nobackup/fvkl37/glauber_dimer
+
+sbatch --array=1-2%2 --export=ALL,CONFIG=aztec/configs/glauber_square_grid_L2_calibration.csv,OUTPUT_DIR=/nobackup/fvkl37/glauber_dimer/L2_constant_calibration,BASE_SEED=2026082101,DISTRIBUTION=constant \
+  hpc/glauber_square_grid_pilot.slurm
+
+sbatch --array=1-2%2 --export=ALL,CONFIG=aztec/configs/glauber_square_grid_L2_calibration.csv,OUTPUT_DIR=/nobackup/fvkl37/glauber_dimer/L2_gamma_k05_calibration,BASE_SEED=2026082102,DISTRIBUTION=gamma,PARAMETER=0.5 \
+  hpc/glauber_square_grid_pilot.slurm
+```
+
+After all eight array elements in one arm finish, generate the diagnostic
+summary (including the exact (L=2) check):
+
+```bash
+sbatch --export=ALL,PILOT_DIR=/nobackup/fvkl37/glauber_dimer/L2_gamma_k05_calibration,ANALYSIS_DIR=/nobackup/fvkl37/glauber_dimer/L2_gamma_k05_calibration_analysis \
+  hpc/analyze_glauber_square_grid_pilot.slurm
+```
+
+The analysis deliberately creates `REVIEW_REQUIRED.txt`, rather than a
+production approval. Inspect start gaps, ESS, exact (L=2) agreement, raw
+traces, and Slurm accounting before choosing the production burn-in and
+sampling schedule.
+
 ## Prepare Julia 1.10.4
 
 The retained `aztec/Manifest.toml` was generated with Julia 1.12.6. Preserve it and create a separate Hamilton environment:

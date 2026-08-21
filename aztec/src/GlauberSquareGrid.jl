@@ -27,14 +27,24 @@ export EdgeWeights,
        local_edge_weights,
        heatbath_update!,
        run_updates!,
+       AcceleratedChain,
+       accelerated_chain,
+       run_accelerated_updates!,
        center_height,
        enumerate_height_configurations,
        matching_weight,
+       matching_log_weight,
+       tempered_edge_weights,
+       replica_exchange_log_ratio,
+       parallel_tempering_swap!,
+       run_parallel_tempering_updates!,
+       sample_center_height_chain_parallel_tempering,
        exact_center_distribution,
        detailed_balance_residual,
        integrated_autocorrelation_time,
        effective_sample_size,
        sample_center_height_chain,
+       sample_center_height_chain_accelerated,
        compare_extremal_starts,
        sample_center_height_pair
 
@@ -295,6 +305,150 @@ function run_updates!(rng::AbstractRNG, height::Matrix{Int}, weights::EdgeWeight
     return (attempts=Int(attempts), flippable=flippable, changed=changed)
 end
 
+"Fenwick-tree update for exact rejection-free Glauber event selection."
+function fenwick_add!(tree::Vector{Float64}, index::Int, delta::Float64)
+    while index < length(tree)
+        tree[index] += delta
+        index += index & -index
+    end
+    return tree
+end
+
+"Find the first one-based rate index whose Fenwick prefix exceeds `target`."
+function fenwick_find(tree::Vector{Float64}, target::Float64)
+    target >= 0 || throw(ArgumentError("Fenwick target must be nonnegative"))
+    index = 0
+    bit = 1
+    while bit << 1 < length(tree)
+        bit <<= 1
+    end
+    while bit != 0
+        candidate = index + bit
+        if candidate < length(tree) && tree[candidate] <= target
+            index = candidate
+            target -= tree[candidate]
+        end
+        bit >>= 1
+    end
+    return min(index + 1, length(tree) - 1)
+end
+
+"""
+Mutable cache for an exact rejection-free realization of random-face Glauber
+dynamics.  `rates[f]` is the probability that a literal heat-bath attempt at
+face `f` changes the state, conditional on choosing that face.
+"""
+mutable struct AcceleratedChain
+    height::Matrix{Int}
+    weights::EdgeWeights
+    side::Int
+    rates::Vector{Float64}
+    fenwick::Vector{Float64}
+    total_rate::Float64
+end
+
+@inline face_count(chain::AcceleratedChain) = (chain.side - 1)^2
+@inline face_index(side::Int, i::Int, j::Int) = (i - 2) * (side - 1) + j - 1
+@inline function face_coordinates(side::Int, index::Int)
+    quotient, remainder = divrem(index - 1, side - 1)
+    return quotient + 2, remainder + 2
+end
+
+function local_change_rate(height::Matrix{Int}, weights::EdgeWeights, i::Int, j::Int)
+    configurations = local_configurations(height, i, j)
+    isnothing(configurations) && return 0.0
+    a, b, c, d = local_edge_weights(weights, i, j)
+    probability_ac = (a * c) / (a * c + b * d)
+    return height[i, j] == configurations.ac ? 1 - probability_ac : probability_ac
+end
+
+function refresh_face_rate!(chain::AcceleratedChain, i::Int, j::Int)
+    2 <= i <= chain.side && 2 <= j <= chain.side || return chain
+    index = face_index(chain.side, i, j)
+    old_rate = chain.rates[index]
+    new_rate = local_change_rate(chain.height, chain.weights, i, j)
+    delta = new_rate - old_rate
+    delta == 0 && return chain
+    chain.rates[index] = new_rate
+    fenwick_add!(chain.fenwick, index, delta)
+    chain.total_rate += delta
+    return chain
+end
+
+"Create an accelerated cache from one valid initial height configuration."
+function accelerated_chain(height::Matrix{Int}, weights::EdgeWeights)
+    side = size(height, 1) - 1
+    iseven(side) && side >= 2 || throw(ArgumentError("height side must be positive and even"))
+    L = side ÷ 2
+    check_weights_for_L(weights, L)
+    validate_height_configuration(height, L).valid || throw(ArgumentError(
+        "accelerated chain requires a valid height configuration"))
+    rates = zeros(Float64, (side - 1)^2)
+    fenwick = zeros(Float64, length(rates) + 1)
+    chain = AcceleratedChain(height, weights, side, rates, fenwick, 0.0)
+    for i in 2:side, j in 2:side
+        refresh_face_rate!(chain, i, j)
+    end
+    return chain
+end
+
+"Draw the number of literal random-face attempts through the next state change."
+function geometric_wait(rng::AbstractRNG, probability::Float64)
+    0 < probability <= 1 || throw(ArgumentError("geometric probability must lie in (0,1]"))
+    probability == 1 && return 1
+    uniform_draw = rand(rng)
+    while uniform_draw == 0
+        uniform_draw = rand(rng)
+    end
+    return floor(Int, log(uniform_draw) / log1p(-probability)) + 1
+end
+
+"Perform one guaranteed state-changing event selected at its exact conditional rate."
+function accelerated_event!(rng::AbstractRNG, chain::AcceleratedChain)
+    chain.total_rate > 0 || return false
+    # `rand` is strictly below one, so the final positive-rate face remains selectable.
+    index = fenwick_find(chain.fenwick, rand(rng) * chain.total_rate)
+    i, j = face_coordinates(chain.side, index)
+    configurations = local_configurations(chain.height, i, j)
+    isnothing(configurations) && error("stale accelerated face cache at ($i,$j)")
+    previous = chain.height[i, j]
+    chain.height[i, j] = previous == configurations.ac ? configurations.bd : configurations.ac
+    # Only this face and its four neighbours depend on the changed height.
+    refresh_face_rate!(chain, i, j)
+    refresh_face_rate!(chain, i - 1, j)
+    refresh_face_rate!(chain, i + 1, j)
+    refresh_face_rate!(chain, i, j - 1)
+    refresh_face_rate!(chain, i, j + 1)
+    return true
+end
+
+"""
+    run_accelerated_updates!(rng, chain, attempts)
+
+Advance exactly `attempts` *literal random-face update times* while skipping
+only self-loops.  Thus this has the same transition law at fixed attempted
+times as `run_updates!`, unlike an unweighted active-site jump chain.
+"""
+function run_accelerated_updates!(rng::AbstractRNG, chain::AcceleratedChain, attempts::Integer)
+    attempts >= 0 || throw(ArgumentError("attempts must be nonnegative"))
+    remaining = Int(attempts)
+    changed = 0
+    while remaining > 0 && chain.total_rate > 0
+        probability = chain.total_rate / face_count(chain)
+        wait = geometric_wait(rng, probability)
+        if wait > remaining
+            remaining = 0
+            break
+        end
+        remaining -= wait
+        accelerated_event!(rng, chain) || error("nonpositive accelerated event rate")
+        changed += 1
+    end
+    return (attempts=Int(attempts), changed=changed,
+            changed_rate=changed / max(Int(attempts), 1),
+            total_rate=chain.total_rate)
+end
+
 "Height of the central face in the supplied boundary convention."
 function center_height(height::AbstractMatrix{<:Integer})
     side = size(height, 1) - 1
@@ -366,6 +520,207 @@ function matching_weight(height::AbstractMatrix{<:Integer}, weights::EdgeWeights
         product_weight *= weights.horizontal[i, j]
     end
     return product_weight
+end
+
+"Logarithm of `matching_weight`, avoiding underflow for strong disorder."
+function matching_log_weight(height::AbstractMatrix{<:Integer}, weights::EdgeWeights)
+    side = size(height, 1) - 1
+    iseven(side) || throw(ArgumentError("height side must be even"))
+    L = side ÷ 2
+    check_weights_for_L(weights, L)
+    validate_height_configuration(height, L).valid || throw(ArgumentError(
+        "height is not a valid dimer configuration"))
+    log_weight = 0.0
+    for i in 1:side, j in 1:(side + 1)
+        (2 <= i || 2 <= i + 1) && 2 <= j <= side || continue
+        is_dimer_difference(height[i + 1, j] - height[i, j]) || continue
+        log_weight += log(weights.vertical[i, j])
+    end
+    for i in 1:(side + 1), j in 1:side
+        2 <= i <= side && (2 <= j || 2 <= j + 1) || continue
+        is_dimer_difference(height[i, j + 1] - height[i, j]) || continue
+        log_weight += log(weights.horizontal[i, j])
+    end
+    return log_weight
+end
+
+"Weights for the Gibbs law proportional to `matching_weight(height, weights)^beta`."
+function tempered_edge_weights(weights::EdgeWeights, beta::Real)
+    isfinite(beta) && beta >= 0 || throw(ArgumentError("beta must be finite and nonnegative"))
+    exponent = Float64(beta)
+    return EdgeWeights(weights.vertical .^ exponent, weights.horizontal .^ exponent)
+end
+
+"Log Metropolis ratio for swapping states between two inverse-temperature replicas."
+function replica_exchange_log_ratio(
+    left_height::AbstractMatrix{<:Integer},
+    left_beta::Real,
+    right_height::AbstractMatrix{<:Integer},
+    right_beta::Real,
+    base_weights::EdgeWeights,
+)
+    isfinite(left_beta) && isfinite(right_beta) || throw(ArgumentError("betas must be finite"))
+    return (Float64(left_beta) - Float64(right_beta)) *
+           (matching_log_weight(right_height, base_weights) -
+            matching_log_weight(left_height, base_weights))
+end
+
+"Rebuild cached event rates after an accepted replica exchange."
+function rebuild_accelerated_cache!(chain::AcceleratedChain)
+    rebuilt = accelerated_chain(chain.height, chain.weights)
+    chain.rates .= rebuilt.rates
+    chain.fenwick .= rebuilt.fenwick
+    chain.total_rate = rebuilt.total_rate
+    return chain
+end
+
+"""
+    parallel_tempering_swap!(rng, left, left_beta, right, right_beta, base_weights)
+
+Attempt an adjacent replica exchange.  Each replica retains its own tempered
+Glauber kernel; the Metropolis acceptance rule preserves their joint product
+law, hence the `beta=1` replica remains an exact sample from the requested
+weighted-dimer Gibbs distribution.
+"""
+function parallel_tempering_swap!(
+    rng::AbstractRNG,
+    left::AcceleratedChain,
+    left_beta::Real,
+    right::AcceleratedChain,
+    right_beta::Real,
+    base_weights::EdgeWeights,
+)
+    size(left.height) == size(right.height) || throw(ArgumentError(
+        "replica heights must have the same dimensions"))
+    log_ratio = replica_exchange_log_ratio(
+        left.height, left_beta, right.height, right_beta, base_weights)
+    accepted = log(rand(rng)) <= min(0.0, log_ratio)
+    if accepted
+        temporary = copy(left.height)
+        left.height .= right.height
+        right.height .= temporary
+        rebuild_accelerated_cache!(left)
+        rebuild_accelerated_cache!(right)
+    end
+    return (accepted=accepted, log_acceptance_ratio=log_ratio)
+end
+
+function validate_tempering_betas(betas)
+    values = Float64.(collect(betas))
+    length(values) >= 2 || throw(ArgumentError("parallel tempering needs at least two replicas"))
+    issorted(values) || throw(ArgumentError("tempering betas must be sorted"))
+    all(beta -> 0 <= beta <= 1, values) || throw(ArgumentError(
+        "tempering betas must lie in [0, 1]"))
+    values[end] == 1.0 || throw(ArgumentError("the target replica must have beta=1"))
+    return values
+end
+
+"""
+    run_parallel_tempering_updates!(rng, chains, betas, base_weights, attempts;
+                                    swap_interval_attempts)
+
+Advance every tempered replica by the same number of literal attempted-update
+times, with alternating adjacent replica exchanges.  The last (`beta=1`)
+replica is the only one used for the physical observable.
+"""
+function run_parallel_tempering_updates!(
+    rng::AbstractRNG,
+    chains::AbstractVector{<:AcceleratedChain},
+    betas,
+    base_weights::EdgeWeights,
+    attempts::Integer;
+    swap_interval_attempts::Integer,
+)
+    attempts >= 0 || throw(ArgumentError("attempts must be nonnegative"))
+    swap_interval_attempts > 0 || throw(ArgumentError(
+        "swap_interval_attempts must be positive"))
+    values = validate_tempering_betas(betas)
+    length(chains) == length(values) || throw(ArgumentError(
+        "one accelerated chain is required per beta"))
+    remaining = Int(attempts)
+    swap_round = 0
+    accepted_swaps = 0
+    attempted_swaps = 0
+    target_changed = 0
+    while remaining > 0
+        block = min(remaining, Int(swap_interval_attempts))
+        for (index, chain) in enumerate(chains)
+            report = run_accelerated_updates!(rng, chain, block)
+            index == length(chains) && (target_changed += report.changed)
+        end
+        first_index = iseven(swap_round) ? 1 : 2
+        for index in first_index:2:(length(chains) - 1)
+            report = parallel_tempering_swap!(rng, chains[index], values[index],
+                                               chains[index + 1], values[index + 1],
+                                               base_weights)
+            attempted_swaps += 1
+            accepted_swaps += report.accepted
+        end
+        swap_round += 1
+        remaining -= block
+    end
+    return (attempts=Int(attempts), target_changed=target_changed,
+            target_changed_rate=target_changed / max(Int(attempts), 1),
+            attempted_swaps=attempted_swaps, accepted_swaps=accepted_swaps)
+end
+
+"""
+Sample central heights from the `beta=1` replica of an exact parallel-tempering
+chain.  Auxiliary replicas alter mixing only; their tempered laws and the
+exchange kernel leave the requested `beta=1` weighted-dimer law invariant.
+"""
+function sample_center_height_chain_parallel_tempering(
+    rng::AbstractRNG,
+    L::Integer,
+    base_weights::EdgeWeights;
+    start::Symbol=:max,
+    betas=collect(0.0:0.2:1.0),
+    burn_in_attempts::Integer,
+    thin_attempts::Integer,
+    samples::Integer,
+    swap_interval_attempts::Integer=1_000,
+)
+    L > 0 || throw(ArgumentError("L must be positive"))
+    burn_in_attempts >= 0 || throw(ArgumentError("burn_in_attempts must be nonnegative"))
+    thin_attempts > 0 || throw(ArgumentError("thin_attempts must be positive"))
+    samples > 0 || throw(ArgumentError("samples must be positive"))
+    check_weights_for_L(base_weights, L)
+    values = validate_tempering_betas(betas)
+    initial = start === :max ? max_height_configuration(L) :
+              start === :min ? min_height_configuration(L) :
+              throw(ArgumentError("start must be :max or :min"))
+    chains = [accelerated_chain(copy(initial), tempered_edge_weights(base_weights, beta))
+              for beta in values]
+    burn_in = run_parallel_tempering_updates!(rng, chains, values, base_weights,
+                                               burn_in_attempts;
+                                               swap_interval_attempts=swap_interval_attempts)
+    observed = Vector{Int}(undef, samples)
+    target_changed = 0
+    accepted_swaps = burn_in.accepted_swaps
+    attempted_swaps = burn_in.attempted_swaps
+    for index in eachindex(observed)
+        report = run_parallel_tempering_updates!(rng, chains, values, base_weights,
+                                                  thin_attempts;
+                                                  swap_interval_attempts=swap_interval_attempts)
+        observed[index] = center_height(chains[end].height)
+        target_changed += report.target_changed
+        accepted_swaps += report.accepted_swaps
+        attempted_swaps += report.attempted_swaps
+    end
+    return (
+        heights=observed,
+        mean=mean(observed),
+        variance=length(observed) > 1 ? var(observed; corrected=true) : 0.0,
+        diagnostics=(
+            integrated_autocorrelation_time=integrated_autocorrelation_time(observed),
+            effective_sample_size=effective_sample_size(observed),
+            target_changed_rate=target_changed / (samples * thin_attempts),
+            swap_acceptance_rate=accepted_swaps / max(attempted_swaps, 1),
+            attempted_swaps=attempted_swaps,
+        ),
+        final_height=chains[end].height,
+        burn_in=burn_in,
+    )
 end
 
 "Exact tiny-grid centre-height probabilities under the weighted dimer Gibbs law."
@@ -480,6 +835,52 @@ function sample_center_height_chain(
         final_height=height,
         burn_in=burn_in,
         sampling=(attempts=Int(samples * thin_attempts), flippable=flippable, changed=changed),
+    )
+end
+
+"""
+As `sample_center_height_chain`, using the exact rejection-free accelerator.
+The output is sampled at the same literal attempted-update schedule, so it can
+be compared directly with the reference random-face chain.
+"""
+function sample_center_height_chain_accelerated(
+    rng::AbstractRNG,
+    L::Integer,
+    weights::EdgeWeights;
+    start::Symbol=:max,
+    burn_in_attempts::Integer,
+    thin_attempts::Integer,
+    samples::Integer,
+)
+    L > 0 || throw(ArgumentError("L must be positive"))
+    burn_in_attempts >= 0 || throw(ArgumentError("burn_in_attempts must be nonnegative"))
+    thin_attempts > 0 || throw(ArgumentError("thin_attempts must be positive"))
+    samples > 0 || throw(ArgumentError("samples must be positive"))
+    height = start === :max ? max_height_configuration(L) :
+             start === :min ? min_height_configuration(L) :
+             throw(ArgumentError("start must be :max or :min"))
+    chain = accelerated_chain(height, weights)
+    burn_in = run_accelerated_updates!(rng, chain, burn_in_attempts)
+    observed = Vector{Int}(undef, samples)
+    changed = 0
+    for index in eachindex(observed)
+        report = run_accelerated_updates!(rng, chain, thin_attempts)
+        observed[index] = center_height(chain.height)
+        changed += report.changed
+    end
+    return (
+        heights=observed,
+        mean=mean(observed),
+        variance=length(observed) > 1 ? var(observed; corrected=true) : 0.0,
+        diagnostics=(
+            integrated_autocorrelation_time=integrated_autocorrelation_time(observed),
+            effective_sample_size=effective_sample_size(observed),
+            changed_rate=changed / (samples * thin_attempts),
+            final_total_change_rate=chain.total_rate / face_count(chain),
+        ),
+        final_height=chain.height,
+        burn_in=burn_in,
+        sampling=(attempts=Int(samples * thin_attempts), changed=changed),
     )
 end
 

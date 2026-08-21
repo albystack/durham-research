@@ -1,0 +1,4 @@
+L,first_environment_id,environments,batch_size,burn_in_attempts,thin_attempts,trace_samples
+3,1,8,4,10000000,200,1000
+4,1,8,4,30000000,400,1000
+6,1,8,4,200000000,1000,1000
