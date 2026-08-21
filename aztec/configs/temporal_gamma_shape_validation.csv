@@ -1,0 +1,4 @@
+order,first_sample_id,samples,batch_size
+64,1,128,128
+128,1,96,96
+256,1,64,64

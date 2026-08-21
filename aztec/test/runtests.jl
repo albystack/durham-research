@@ -331,3 +331,7 @@ end
         for row in uniform_first
     )
 end
+
+# The square-grid extension is kept in a separate file so its model-specific
+# validation remains easy to audit independently of the Aztec sampler.
+include("square_grid_runtests.jl")

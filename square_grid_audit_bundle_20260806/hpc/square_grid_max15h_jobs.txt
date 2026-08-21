@@ -1,0 +1,10 @@
+baseline_a=18223964
+baseline_b=18223965
+directed_a=18223966
+directed_b=18223967
+task_count=1552
+samples_per_model=38600
+old_analysis_job=18223968
+analysis_job=18229005
+parallel_analysis_job=18229005
+analysis_mode=parallel_four_cutoffs

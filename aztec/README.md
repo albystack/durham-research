@@ -228,3 +228,41 @@ aztec/
 
 See [`configs/README.md`](configs/README.md), [`data/README.md`](data/README.md),
 and [`results/README.md`](results/README.md) for artifact-level documentation.
+
+## Square-grid paired Temperley experiment
+
+The repository now also contains an exact square-grid spanning-tree/dimer
+pipeline. It preserves the original directed site-i.i.d. random environment,
+adds a separate undirected-conductance comparison, samples complete weighted
+spanning trees with Wilson's algorithm, constructs the complementary dual tree,
+and obtains the generalized Temperley perfect matching.
+
+The spatial observable is an exact dimer-height increment across a fixed
+central horizontal cut. See [`docs/SQUARE_GRID_MODEL.md`](docs/SQUARE_GRID_MODEL.md)
+for the graph, outer-face, matching, height, and randomness conventions.
+
+Tiny local smoke run:
+
+```bash
+JULIA_NUM_THREADS=4 julia --project=aztec \
+  aztec/scripts/run_square_grid_campaign.jl \
+  --environment-model baseline \
+  --config aztec/configs/square_grid_smoke.csv \
+  --output-dir aztec/output/square_grid_baseline_smoke \
+  --base-seed 20260810
+
+JULIA_NUM_THREADS=4 julia --project=aztec \
+  aztec/scripts/run_square_grid_campaign.jl \
+  --environment-model directed_site_iid \
+  --distribution gamma --parameter 0.5 \
+  --config aztec/configs/square_grid_smoke.csv \
+  --output-dir aztec/output/square_grid_directed_smoke \
+  --base-seed 20260811
+```
+
+The smoke schedule has only two sizes and is intentionally not fitted. The
+batch schema is compatible with `analyze_spatial_campaign.jl`; analyse the
+five-size pilot with the Hamilton wrapper `hpc/analyze_square_grid.slurm` after
+both baseline and directed arrays finish.
+
+Hamilton Slurm wrappers and transfer instructions are in `hpc/README.md`.

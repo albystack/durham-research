@@ -1177,4 +1177,8 @@ function write_svg(
     return path
 end
 
+# Square-grid spanning-tree / Temperley-dimer extension.
+include("SquareGrid.jl")
+export SquareGrid
+
 end

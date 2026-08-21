@@ -27,6 +27,8 @@ both be globally unique.
   central-row increments at separations `L/32`, `L/16`, `L/8`, and `L/4`.
   The Gamma campaign shares one environment between replicas; the uniform
   campaign is the no-disorder control.
+- `aztec_gamma_parameter_pilot.csv` is the three-task safety pilot used before
+  launching an additional Gamma-parameter campaign on Hamilton.
 
 ## Fast checks
 
@@ -35,3 +37,23 @@ The original `*_smoke.csv` schedules use matching orders 4, 8, and 12.
 quadratic-in-log fit and held-out prediction can also be tested. The
 `*_benchmark.csv` schedules use deliberately distant sample IDs and are for
 timing and memory measurements only; do not merge them into production data.
+
+## Square-grid schedules
+
+- `square_grid_smoke.csv`: two tiny sizes for CLI and Hamilton validation.
+- `square_grid_pilot.csv`: 50 resumable tasks across `L=16,32,64,128,256` with 570 environments per model.
+  Run it separately for the baseline and directed Gamma environments.
+- `square_grid_robustness_pilot.csv`: six-size validation run for each new
+  disorder law before production.
+- `square_grid_robustness.csv`: nine sizes through `L=2048`, 38,600
+  environments per disorder law, and 899 atomic tasks. Batch sizes use all
+  four worker threads while keeping the largest tasks short. It is designed to
+  reuse the completed 38,600-environment baseline while comparing directed
+  Gamma `k=1`, directed mean-one lognormal `sigma=sqrt(log(3))`, directed
+  `Uniform(0,2)`, and undirected Gamma `k=0.5` without pooling identities.
+- `square_grid_high_l_pilot.csv`: one memory/runtime probe at each of
+  `L=3072,4096,5120,6144` before releasing expensive extensions.
+- `square_grid_high_l_extension.csv`: 850 independent high-size environments
+  per law across `L=2560,3072,4096`.
+- `square_grid_ultra_l_extension.csv`: 120 exploratory environments per law at
+  `L=5120,6144`; these are held-out stress tests, not precision estimates.

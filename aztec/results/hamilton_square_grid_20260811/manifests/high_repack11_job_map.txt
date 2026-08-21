@@ -1,0 +1,9 @@
+created_at=2026-08-09T19:50:31+01:00
+superseded_boosters=18249843 18249845 18249847 18249849 18249851
+superseded_releases=18249844 18249846 18249848 18249850 18249852
+group_size=11|allocation_memory=242G|worker_memory=22G
+original=18243074|tasks=693|groups=63|booster=18250662|release=18250663|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/original_18243074_tasks_repack11.txt
+original=18243076|tasks=850|groups=78|booster=18250664|release=18250665|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/original_18243076_tasks.txt
+original=18243078|tasks=850|groups=78|booster=18250666|release=18250667|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/original_18243078_tasks.txt
+original=18243080|tasks=850|groups=78|booster=18250668|release=18250669|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/original_18243080_tasks.txt
+original=18243082|tasks=850|groups=78|booster=18250670|release=18250671|manifest=/home/fvkl37/hamilton-booster-20260809/manifests/original_18243082_tasks.txt

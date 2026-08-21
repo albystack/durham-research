@@ -1,0 +1,15 @@
+created_at=2026-08-09T17:12:00+01:00
+smoke_jobs=18249791,18249792
+original=18243073|kind=square_grid|tasks=120|group_size=5|groups=24|booster=18249831|release=18249832
+original=18243075|kind=square_grid|tasks=120|group_size=5|groups=24|booster=18249833|release=18249834
+original=18243077|kind=square_grid|tasks=120|group_size=5|groups=24|booster=18249835|release=18249836
+original=18243079|kind=square_grid|tasks=120|group_size=5|groups=24|booster=18249837|release=18249838
+original=18243081|kind=square_grid|tasks=120|group_size=5|groups=24|booster=18249839|release=18249840
+original=18243083|kind=square_grid|tasks=120|group_size=5|groups=24|booster=18249841|release=18249842
+original=18243074|kind=square_grid|tasks=695|group_size=8|groups=87|booster=18249843|release=18249844
+original=18243076|kind=square_grid|tasks=850|group_size=8|groups=107|booster=18249845|release=18249846
+original=18243078|kind=square_grid|tasks=850|group_size=8|groups=107|booster=18249847|release=18249848
+original=18243080|kind=square_grid|tasks=850|group_size=8|groups=107|booster=18249849|release=18249850
+original=18243082|kind=square_grid|tasks=850|group_size=8|groups=107|booster=18249851|release=18249852
+original=18243433|kind=aztec|tasks=71|group_size=24|groups=3|booster=18249853|release=18249854
+original=18243434|kind=aztec|tasks=355|group_size=24|groups=15|booster=18249855|release=18249856

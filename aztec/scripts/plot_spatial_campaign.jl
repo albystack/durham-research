@@ -6,11 +6,12 @@ function parse_arguments(arguments)
     options = Dict(
         "analysis-dir" => joinpath(@__DIR__, "..", "output", "spatial_analysis"),
         "output-dir" => joinpath(@__DIR__, "..", "output", "spatial_analysis"),
+        "geometry-label" => "Aztec diamond",
     )
     index = 1
     while index <= length(arguments)
         if arguments[index] in ("-h", "--help")
-            println("Usage: plot_spatial_campaign.jl [--analysis-dir PATH] [--output-dir PATH]")
+            println("Usage: plot_spatial_campaign.jl [--analysis-dir PATH] [--output-dir PATH] [--geometry-label TEXT]")
             return nothing
         end
         key = replace(arguments[index], "--" => "")
@@ -19,7 +20,11 @@ function parse_arguments(arguments)
         options[key] = arguments[index + 1]
         index += 2
     end
-    return (analysis_dir=abspath(options["analysis-dir"]), output_dir=abspath(options["output-dir"]))
+    return (
+        analysis_dir=abspath(options["analysis-dir"]),
+        output_dir=abspath(options["output-dir"]),
+        geometry_label=options["geometry-label"],
+    )
 end
 
 function read_summary(path)
@@ -46,12 +51,15 @@ function read_predictions(path)
     lines = readlines(path)
     for line in lines[2:end]
         fields = split(line, ',')
+        has_role = length(fields) == 10
         push!(rows, (
             model=fields[1], fraction_num=parse(Int, fields[2]),
             fraction_den=parse(Int, fields[3]), component=fields[4],
             order=parse(Int, fields[5]), separation=parse(Int, fields[6]),
-            observed=parse(Float64, fields[7]), log_fit=parse(Float64, fields[8]),
-            quadratic_fit=parse(Float64, fields[9]),
+            fit_role=has_role ? fields[7] : "training",
+            observed=parse(Float64, fields[has_role ? 8 : 7]),
+            log_fit=parse(Float64, fields[has_role ? 9 : 8]),
+            quadratic_fit=parse(Float64, fields[has_role ? 10 : 9]),
         ))
     end
     return rows
@@ -114,13 +122,18 @@ function draw_panel(io, x0, y0, width, height, title, data, predictions, compone
     end
     println(io, "<line x1=\"$(x0+left)\" y1=\"$(y0+top)\" x2=\"$(x0+left)\" y2=\"$(y0+top+plot_height)\" stroke=\"black\"/>")
     println(io, "<line x1=\"$(x0+left)\" y1=\"$(y0+top+plot_height)\" x2=\"$(x0+left+plot_width)\" y2=\"$(y0+top+plot_height)\" stroke=\"black\"/>")
+    roles = Dict(row.order => row.fit_role for row in predictions)
     for row in data
         x = xp(log(row.separation))
         low = yp(getproperty(row, Symbol(String(component) * "_low")))
         high = yp(getproperty(row, Symbol(String(component) * "_high")))
         y = yp(getproperty(row, component))
-        println(io, "<line x1=\"$x\" y1=\"$low\" x2=\"$x\" y2=\"$high\" stroke=\"#222222\"/>")
-        println(io, "<circle cx=\"$x\" cy=\"$y\" r=\"3.5\" fill=\"#222222\"/>")
+        role = get(roles, row.order, "excluded")
+        color = role == "excluded" ? "#aaaaaa" : "#222222"
+        fill = role == "heldout" ? "white" : color
+        radius = role == "heldout" ? 4.5 : 3.5
+        println(io, "<line x1=\"$x\" y1=\"$low\" x2=\"$x\" y2=\"$high\" stroke=\"$color\"/>")
+        println(io, "<circle cx=\"$x\" cy=\"$y\" r=\"$radius\" fill=\"$fill\" stroke=\"$color\" stroke-width=\"1.5\"/>")
     end
     for (field, color, dash) in ((:log_fit, "#2864dc", ""), (:quadratic_fit, "#e68613", "7,4"))
         points = join(("$(xp(log(row.separation))),$(yp(getproperty(row, field)))" for row in predictions), " ")
@@ -149,15 +162,16 @@ function write_four_panel(path, summary, predictions; model, component, title)
                 if row.model == model && row.component == String(component) &&
                    (row.fraction_num, row.fraction_den) == fraction
             ]; by=row -> row.order)
-            draw_panel(io, x0, y0, 540, 365, "separation = $(fraction[1])/$(fraction[2]) of L", data, curves, component)
+            draw_panel(io, x0, y0, 540, 365, "separation = $(fraction[1])/$(fraction[2]) of full side 2L", data, curves, component)
         end
         println(io, "<line x1=\"420\" y1=\"875\" x2=\"450\" y2=\"875\" stroke=\"#2864dc\" stroke-width=\"2.2\"/><text x=\"458\" y=\"879\" font-family=\"Arial\" font-size=\"12\">a + b log r</text>")
         println(io, "<line x1=\"590\" y1=\"875\" x2=\"620\" y2=\"875\" stroke=\"#e68613\" stroke-width=\"2.2\" stroke-dasharray=\"7,4\"/><text x=\"628\" y=\"879\" font-family=\"Arial\" font-size=\"12\">a + b log r + c(log r)²</text>")
+        println(io, "<circle cx=\"900\" cy=\"875\" r=\"4\" fill=\"#222222\"/><text x=\"910\" y=\"879\" font-family=\"Arial\" font-size=\"12\">training</text><circle cx=\"980\" cy=\"875\" r=\"4.5\" fill=\"white\" stroke=\"#222222\"/><text x=\"990\" y=\"879\" font-family=\"Arial\" font-size=\"12\">held out</text><circle cx=\"1070\" cy=\"875\" r=\"4\" fill=\"#aaaaaa\"/><text x=\"1080\" y=\"879\" font-family=\"Arial\" font-size=\"12\">excluded</text>")
         println(io, "</svg>")
     end
 end
 
-function write_decomposition(path, summary)
+function write_decomposition(path, summary; geometry_label="model")
     fraction = (1, 4)
     gamma = sort([row for row in summary if row.model == "gamma" && (row.fraction_num, row.fraction_den) == fraction]; by=row -> row.order)
     uniform = sort([row for row in summary if row.model == "uniform" && (row.fraction_num, row.fraction_den) == fraction]; by=row -> row.order)
@@ -170,7 +184,7 @@ function write_decomposition(path, summary)
     xp(r) = 100 + (log(r) - min_x) / (max_x - min_x) * 1030
     yp(y) = 70 + (max_y - y) / max_y * 520
     open(path, "w") do io
-        svg_header(io, "Spatial variance decomposition at separation L/4", "Gamma thermal and disorder terms compared with a uniform control."; width=1200, height=700)
+        svg_header(io, "Spatial variance decomposition at separation (2L)/4", "$geometry_label conditional and disorder terms compared with a baseline control."; width=1200, height=700)
         for tick in 0:5
             y = tick * max_y / 5
             println(io, "<line x1=\"100\" y1=\"$(yp(y))\" x2=\"1130\" y2=\"$(yp(y))\" stroke=\"#e2e2e2\"/>")
@@ -178,10 +192,10 @@ function write_decomposition(path, summary)
         end
         println(io, "<line x1=\"100\" y1=\"70\" x2=\"100\" y2=\"590\" stroke=\"black\"/><line x1=\"100\" y1=\"590\" x2=\"1130\" y2=\"590\" stroke=\"black\"/>")
         series = (
-            (rows=gamma, field=:marginal, color="#222222", label="Gamma total"),
-            (rows=gamma, field=:conditional, color="#2864dc", label="Gamma conditional"),
-            (rows=gamma, field=:disorder, color="#e68613", label="Gamma disorder covariance"),
-            (rows=uniform, field=:marginal, color="#228b22", label="Uniform control"),
+            (rows=gamma, field=:marginal, color="#222222", label="Disordered total"),
+            (rows=gamma, field=:conditional, color="#2864dc", label="Disordered conditional"),
+            (rows=gamma, field=:disorder, color="#e68613", label="Disorder covariance"),
+            (rows=uniform, field=:marginal, color="#228b22", label="Baseline control"),
         )
         for item in series
             points = join(("$(xp(row.separation)),$(yp(getproperty(row, item.field)))" for row in item.rows), " ")
@@ -205,16 +219,17 @@ function write_pooled_coefficients(path, rows)
         if (row.model == "gamma" && row.component in ("disorder", "conditional")) ||
            (row.model == "uniform" && row.component == "marginal")
     ]
-    minimum_x = min(-0.25, minimum(row.low for row in selected))
-    maximum_x = max(0.25, maximum(row.high for row in selected))
-    padding = 0.12 * (maximum_x - minimum_x)
+    minimum_x = min(0.0, minimum(row.low for row in selected))
+    maximum_x = max(0.0, maximum(row.high for row in selected))
+    span = maximum_x - minimum_x
+    padding = max(0.12 * span, 1e-3)
     minimum_x -= padding
     maximum_x += padding
     x_position(value) = 250 + (value - minimum_x) / (maximum_x - minimum_x) * 870
     labels = (
-        (model="gamma", component="disorder", text="Gamma disorder covariance"),
-        (model="gamma", component="conditional", text="Gamma conditional component"),
-        (model="uniform", component="marginal", text="Uniform marginal control"),
+        (model="gamma", component="disorder", text="Disorder covariance"),
+        (model="gamma", component="conditional", text="Disordered conditional"),
+        (model="uniform", component="marginal", text="No-disorder control"),
     )
     open(path, "w") do io
         svg_header(
@@ -236,14 +251,15 @@ function write_pooled_coefficients(path, rows)
         for (label_index, label) in enumerate(labels)
             base_y = 125 + (label_index - 1) * 125
             println(io, "<text x=\"230\" y=\"$(base_y+5)\" text-anchor=\"end\" font-family=\"Arial\" font-size=\"15\">$(label.text)</text>")
-            for (method_index, method) in enumerate(("unweighted", "weighted"))
+            methods = ("unweighted", "weighted", "block_gls")
+            for (method_index, method) in enumerate(methods)
                 row = only([
                     value for value in selected
                     if value.model == label.model && value.component == label.component &&
                        value.method == method
                 ])
-                y = base_y + (method_index == 1 ? -15 : 15)
-                color = method == "unweighted" ? "#2864dc" : "#e68613"
+                y = base_y + (-24, 0, 24)[method_index]
+                color = ("#2864dc", "#e68613", "#228b22")[method_index]
                 println(io, "<line x1=\"$(x_position(row.low))\" y1=\"$y\" x2=\"$(x_position(row.high))\" y2=\"$y\" stroke=\"$color\" stroke-width=\"3\"/>")
                 println(io, "<line x1=\"$(x_position(row.low))\" y1=\"$(y-6)\" x2=\"$(x_position(row.low))\" y2=\"$(y+6)\" stroke=\"$color\"/>")
                 println(io, "<line x1=\"$(x_position(row.high))\" y1=\"$(y-6)\" x2=\"$(x_position(row.high))\" y2=\"$(y+6)\" stroke=\"$color\"/>")
@@ -253,6 +269,7 @@ function write_pooled_coefficients(path, rows)
         println(io, "<text x=\"685\" y=\"475\" text-anchor=\"middle\" font-family=\"Arial\" font-size=\"15\">coefficient c in a + b log(r) + c(log(r))²</text>")
         println(io, "<circle cx=\"470\" cy=\"502\" r=\"5\" fill=\"#2864dc\"/><text x=\"482\" y=\"507\" font-family=\"Arial\" font-size=\"12\">unweighted</text>")
         println(io, "<circle cx=\"610\" cy=\"502\" r=\"5\" fill=\"#e68613\"/><text x=\"622\" y=\"507\" font-family=\"Arial\" font-size=\"12\">inverse-variance weighted</text>")
+        println(io, "<circle cx=\"820\" cy=\"502\" r=\"5\" fill=\"#228b22\"/><text x=\"832\" y=\"507\" font-family=\"Arial\" font-size=\"12\">block GLS</text>")
         println(io, "</svg>")
     end
 end
@@ -274,7 +291,10 @@ function main(arguments)
     isnothing(parsed) && return
     summary = read_summary(joinpath(parsed.analysis_dir, "spatial_summary.csv"))
     predictions = read_predictions(joinpath(parsed.analysis_dir, "spatial_fit_curves.csv"))
-    pooled = read_pooled(joinpath(parsed.analysis_dir, "spatial_pooled_model_comparison.csv"))
+    pooled = vcat(
+        read_pooled(joinpath(parsed.analysis_dir, "spatial_pooled_model_comparison.csv")),
+        read_pooled(joinpath(parsed.analysis_dir, "spatial_pooled_gls_comparison.csv")),
+    )
     mkpath(parsed.output_dir)
     gamma_path = joinpath(parsed.output_dir, "gamma_disorder_spatial_fits.svg")
     uniform_path = joinpath(parsed.output_dir, "uniform_control_spatial_fits.svg")
@@ -286,7 +306,7 @@ function main(arguments)
         predictions;
         model="gamma",
         component=:disorder,
-        title="Gamma disorder-induced spatial height fluctuations",
+        title="$(parsed.geometry_label): disorder-induced spatial height fluctuations",
     )
     write_four_panel(
         uniform_path,
@@ -294,9 +314,9 @@ function main(arguments)
         predictions;
         model="uniform",
         component=:marginal,
-        title="Uniform Aztec-diamond spatial height control",
+        title="$(parsed.geometry_label): no-disorder spatial height control",
     )
-    write_decomposition(decomposition_path, summary)
+    write_decomposition(decomposition_path, summary; geometry_label=parsed.geometry_label)
     write_pooled_coefficients(pooled_path, pooled)
     maybe_write_png(gamma_path)
     maybe_write_png(uniform_path)
