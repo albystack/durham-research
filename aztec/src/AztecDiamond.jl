@@ -1181,4 +1181,8 @@ end
 include("SquareGrid.jl")
 export SquareGrid
 
+# Direct square-grid weighted-dimer Glauber reference implementation.
+include("GlauberSquareGrid.jl")
+export GlauberSquareGrid
+
 end

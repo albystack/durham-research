@@ -71,6 +71,23 @@ The held original arrays were moved in place to `shared` as well, so their
 post-booster validation pass no longer drains through the one-node recovery
 bottleneck.
 
+### 11 August final completion
+
+The square-grid extension is complete.  All 19 size-aware recovery arrays,
+eight release jobs, 12 original validation arrays, and 15 dependent analysis
+jobs finished with exit code zero.  The last analysis output was written at
+13:59:36 BST on 11 August.  The final high-order production tree contains the
+expected 5,820 batch, 5,820 diagnostic, and 5,820 execution-provenance files;
+the standard robustness tree contains 3,596 of each, and neither tree contains
+a residual `.tmp` file.
+
+The complete 180-file analysis tree and recovery manifests are preserved
+locally under `aztec/results/hamilton_square_grid_20260811/`.  Its consolidated
+covariance-aware comparison finds no robust positive log-squared disorder
+coefficient across the five structured square-grid laws and three fit cutoffs.
+See the package `README.md` and `EMAIL_TO_SUNIL.md` for the checked scientific
+summary and email-ready handoff.
+
 ## Status commands
 
 ```sh

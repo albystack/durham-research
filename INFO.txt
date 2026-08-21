@@ -1,0 +1,133 @@
+================================================================================
+REPOSITORY OVERVIEW: Gamma-disordered Aztec Diamonds and Square-Grid Dimers
+================================================================================
+
+PURPOSE
+-------
+This repository contains reproducible Julia simulations to study central-height
+fluctuations in Gamma-disordered Aztec diamond tilings and related square-grid
+dimer systems. The research compares ordinary logarithmic variance growth with
+super-rough squared-logarithmic predictions, and uses paired double-dimer
+sampling to isolate disorder-induced fluctuations from conditional tiling noise.
+
+RESEARCH PROBLEM
+----------------
+The key question is: how do random disorder effects influence height fluctuations
+in tiling models? Specifically, the project tests whether the variance grows as:
+
+  (1) Ordinary logarithm:          ~ log L
+  (2) Super-rough squared-logarithm: ~ (log L)^2
+
+The Gamma-disordered Aztec diamond provides a canonical model where edge weights
+follow independent Gamma distributions (alpha=0.2, beta=0.25), allowing direct
+measurement of disorder-induced variance through double-dimer analysis.
+
+PRIMARY EXPERIMENTS
+-------------------
+
+1. AZTEC DIAMOND (Main project - aztec/ folder)
+   - 35,536 independent single-height samples through order L=1,300
+   - 28,304 paired environments with two conditionally-independent tilings
+   - Double-dimer analysis separates:
+     * Conditional tiling noise (Var(H1-H2)/2)
+     * Disorder contribution (Cov(H1,H2))
+   - Spatial height-difference covariances at multiple distances
+   - 10,000-replicate within-size bootstrap analyses
+
+2. SQUARE-GRID DIMERS (Recent extension - Stage C-G patch)
+   - Temperley random-bond disorder model on square lattices
+   - Five distinct disorder laws
+   - Sizes up to L=6144
+   - Tests whether ordinary log suffices (vs squared-log prediction)
+   - Disorder model uses spanning-tree/Temperley structure
+
+DATA & RESULTS
+--------------
+- aztec/data/: Raw experiment data
+- aztec/results/: Retained analyses, checksums, and figures
+- aztec/output/: Temporary batch outputs (gitignored)
+- Sample results in hamilton_square_grid_20260811/:
+  * 14 of 15 confidence intervals contain zero
+  * 14 of 15 BIC comparisons favour ordinary logarithmic growth
+  * Paired covariance shows suggestive but noisy upward curvature
+
+TECHNICAL DETAILS
+-----------------
+- Language: Pure Julia (1.10+, no external packages)
+- Tilings: Aztec diamonds (2Lx2L binary matrix) and square grids
+- Sampling: Pfaffian/Wilson tree methods with resumable atomic batches
+- Heights: Central face heights computed via deterministic column integration
+- Reproducibility: Deterministic per-sample seeds, full validation suite
+
+CODE STRUCTURE
+--------------
+aztec/
+  src/AztecDiamond.jl    - Core Aztec tiling and height logic
+  src/SquareGrid.jl      - Square-grid Wilson tree and Temperley ordering
+  scripts/               - Campaign drivers (height, double-dimer, square-grid)
+  scripts/analyze_*.jl   - Reanalysis and figure generation
+  test/                  - Validation including recurrence checks, tiling geometry
+  configs/               - CSV configuration files for experiments
+  docs/                  - Model descriptions and theoretical background
+
+hpc/
+  setup_hamilton.sh      - Environment configuration for Durham Hamilton 8
+  *.slurm                - Job submission templates for smoke/pilot/analysis
+  README.md              - HPC workflow documentation
+
+QUICK START
+-----------
+Run tests:
+  julia --project=aztec -e 'using Pkg; Pkg.test()'
+
+Reanalyse single-height data:
+  julia --project=aztec aztec/scripts/analyze_height_campaign.jl
+
+Reanalyse double-dimer pairs:
+  julia --project=aztec aztec/scripts/analyze_double_dimer_campaign.jl
+
+Run a small experiment locally:
+  JULIA_NUM_THREADS=4 julia --project=aztec \
+    aztec/scripts/run_height_campaign.jl \
+    --config aztec/configs/gamma_height_smoke.csv \
+    --output-dir aztec/output/height_smoke
+
+HPC WORKFLOW (Durham Hamilton 8)
+--------------------------------
+First execution validates Julia environment:
+  bash hpc/setup_hamilton_environment.sh
+
+Submit jobs:
+  sbatch hpc/square_grid_smoke.slurm
+  sbatch hpc/square_grid_pilot.slurm
+
+Check results:
+  squeue -u "$USER"
+  cat logs/sqgrid-smoke-*.out
+
+Key constraints:
+- Source code and logs: /home/fvkl37 (10 GB quota)
+- Large batch output: /nobackup/fvkl37 (600 GB, copy results back to Mac)
+- Julia module: julia/1.10.4 on Hamilton
+
+PUBLICATIONS & REFERENCES
+--------------------------
+- Duits, M. and Van Peski, D. (2025). "The Gamma-disordered Aztec diamond"
+  arXiv:2512.03033
+- Height fluctuation theory builds on super-roughness and KPZ universality
+- Analysis methodology: finite-size scaling with bootstrap confidence intervals
+
+VALIDATION & QUALITY ASSURANCE
+-------------------------------
+- Hand-computed recurrence values in tests
+- Bit-for-bit agreement between sampling implementations
+- Full geometric validation at small orders (L ≤ 9)
+- Independent Python mirror implementation for square-grid verification
+- 100 independently sampled trees checked per size
+- Deterministic reproducibility with seeded random number generation
+
+================================================================================
+For detailed model information, see aztec/README.md
+For analysis results and discussion, see aztec/results/analysis_report.md
+For square-grid specifics, see aztec/docs/SQUARE_GRID_MODEL.md
+================================================================================

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520">
+<title>Common log-squared coefficient across four separations</title><desc>Environment-clustered pooled coefficient with 95 percent bootstrap intervals.</desc>
+<rect width="1200" height="520" fill="white"/>
+<text x="600.0" y="34" text-anchor="middle" font-family="Arial" font-size="22" font-weight="bold">Common log-squared coefficient across four separations</text>
+<line x1="656.3219973632015" y1="85" x2="656.3219973632015" y2="410" stroke="#555555" stroke-width="1.5" stroke-dasharray="5,4"/>
+<line x1="250.0" y1="410" x2="250.0" y2="417" stroke="black"/>
+<text x="250.0" y="437" text-anchor="middle" font-family="Arial" font-size="12">-0.068</text>
+<line x1="424.0" y1="410" x2="424.0" y2="417" stroke="black"/>
+<text x="424.0" y="437" text-anchor="middle" font-family="Arial" font-size="12">-0.039</text>
+<line x1="598.0" y1="410" x2="598.0" y2="417" stroke="black"/>
+<text x="598.0" y="437" text-anchor="middle" font-family="Arial" font-size="12">-0.0098</text>
+<line x1="772.0000000000001" y1="410" x2="772.0000000000001" y2="417" stroke="black"/>
+<text x="772.0000000000001" y="437" text-anchor="middle" font-family="Arial" font-size="12">0.019</text>
+<line x1="946.0" y1="410" x2="946.0" y2="417" stroke="black"/>
+<text x="946.0" y="437" text-anchor="middle" font-family="Arial" font-size="12">0.049</text>
+<line x1="1120.0" y1="410" x2="1120.0" y2="417" stroke="black"/>
+<text x="1120.0" y="437" text-anchor="middle" font-family="Arial" font-size="12">0.078</text>
+<line x1="250" y1="410" x2="1120" y2="410" stroke="black"/>
+<text x="230" y="130" text-anchor="end" font-family="Arial" font-size="15">Disorder covariance</text>
+<line x1="334.1935483870968" y1="101" x2="815.6628769651137" y2="101" stroke="#2864dc" stroke-width="3"/>
+<line x1="334.1935483870968" y1="95" x2="334.1935483870968" y2="107" stroke="#2864dc"/>
+<line x1="815.6628769651137" y1="95" x2="815.6628769651137" y2="107" stroke="#2864dc"/>
+<circle cx="576.6137443980085" cy="101" r="6" fill="#2864dc"/>
+<line x1="404.51490320385733" y1="125" x2="631.6143322435057" y2="125" stroke="#e68613" stroke-width="3"/>
+<line x1="404.51490320385733" y1="119" x2="404.51490320385733" y2="131" stroke="#e68613"/>
+<line x1="631.6143322435057" y1="119" x2="631.6143322435057" y2="131" stroke="#e68613"/>
+<circle cx="521.6358884598852" cy="125" r="6" fill="#e68613"/>
+<line x1="393.4927463682884" y1="149" x2="620.1047360943469" y2="149" stroke="#228b22" stroke-width="3"/>
+<line x1="393.4927463682884" y1="143" x2="393.4927463682884" y2="155" stroke="#228b22"/>
+<line x1="620.1047360943469" y1="143" x2="620.1047360943469" y2="155" stroke="#228b22"/>
+<circle cx="508.96165493270036" cy="149" r="6" fill="#228b22"/>
+<text x="230" y="255" text-anchor="end" font-family="Arial" font-size="15">Disordered conditional</text>
+<line x1="428.73239503184357" y1="226" x2="1035.8064516129034" y2="226" stroke="#2864dc" stroke-width="3"/>
+<line x1="428.73239503184357" y1="220" x2="428.73239503184357" y2="232" stroke="#2864dc"/>
+<line x1="1035.8064516129034" y1="220" x2="1035.8064516129034" y2="232" stroke="#2864dc"/>
+<circle cx="763.3751957723722" cy="226" r="6" fill="#2864dc"/>
+<line x1="565.7686388893633" y1="250" x2="833.5118080845967" y2="250" stroke="#e68613" stroke-width="3"/>
+<line x1="565.7686388893633" y1="244" x2="565.7686388893633" y2="256" stroke="#e68613"/>
+<line x1="833.5118080845967" y1="244" x2="833.5118080845967" y2="256" stroke="#e68613"/>
+<circle cx="709.8390812903446" cy="250" r="6" fill="#e68613"/>
+<line x1="576.5795983096375" y1="274" x2="838.8680569321206" y2="274" stroke="#228b22" stroke-width="3"/>
+<line x1="576.5795983096375" y1="268" x2="576.5795983096375" y2="280" stroke="#228b22"/>
+<line x1="838.8680569321206" y1="268" x2="838.8680569321206" y2="280" stroke="#228b22"/>
+<circle cx="719.1957095320937" cy="274" r="6" fill="#228b22"/>
+<text x="230" y="380" text-anchor="end" font-family="Arial" font-size="15">No-disorder control</text>
+<line x1="416.055272322178" y1="351" x2="982.4116451049135" y2="351" stroke="#2864dc" stroke-width="3"/>
+<line x1="416.055272322178" y1="345" x2="416.055272322178" y2="357" stroke="#2864dc"/>
+<line x1="982.4116451049135" y1="345" x2="982.4116451049135" y2="357" stroke="#2864dc"/>
+<circle cx="739.2363288387064" cy="351" r="6" fill="#2864dc"/>
+<line x1="507.80214152072494" y1="375" x2="729.2863959441099" y2="375" stroke="#e68613" stroke-width="3"/>
+<line x1="507.80214152072494" y1="369" x2="507.80214152072494" y2="381" stroke="#e68613"/>
+<line x1="729.2863959441099" y1="369" x2="729.2863959441099" y2="381" stroke="#e68613"/>
+<circle cx="632.6489085628458" cy="375" r="6" fill="#e68613"/>
+<line x1="513.6162047329929" y1="399" x2="734.1776862255232" y2="399" stroke="#228b22" stroke-width="3"/>
+<line x1="513.6162047329929" y1="393" x2="513.6162047329929" y2="405" stroke="#228b22"/>
+<line x1="734.1776862255232" y1="393" x2="734.1776862255232" y2="405" stroke="#228b22"/>
+<circle cx="639.9393890654212" cy="399" r="6" fill="#228b22"/>
+<text x="685" y="475" text-anchor="middle" font-family="Arial" font-size="15">coefficient c in a + b log(r) + c(log(r))²</text>
+<circle cx="470" cy="502" r="5" fill="#2864dc"/><text x="482" y="507" font-family="Arial" font-size="12">unweighted</text>
+<circle cx="610" cy="502" r="5" fill="#e68613"/><text x="622" y="507" font-family="Arial" font-size="12">inverse-variance weighted</text>
+<circle cx="820" cy="502" r="5" fill="#228b22"/><text x="832" y="507" font-family="Arial" font-size="12">block GLS</text>
+</svg>

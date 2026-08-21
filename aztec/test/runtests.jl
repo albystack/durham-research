@@ -3,6 +3,8 @@ using Random
 using Statistics
 using AztecDiamond
 
+include("glauber_square_grid_runtests.jl")
+
 # The tests are ordered from generic shuffling, through the paper-specific
 # Gamma recurrence, to production wrappers.  Small orders permit full geometric
 # validation; production runs use the same code paths at larger orders.
