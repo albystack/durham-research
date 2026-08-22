@@ -620,7 +620,9 @@ end
                                     swap_interval_attempts)
 
 Advance every tempered replica by the same number of literal attempted-update
-times, with alternating adjacent replica exchanges.  The last (`beta=1`)
+times, with alternating adjacent replica exchanges.  Pass the returned
+`swap_round` and `attempts_since_swap` into the next call when splitting one
+chain across burn-in or retained-sample intervals.  The last (`beta=1`)
 replica is the only one used for the physical observable.
 """
 function run_parallel_tempering_updates!(
@@ -630,38 +632,52 @@ function run_parallel_tempering_updates!(
     base_weights::EdgeWeights,
     attempts::Integer;
     swap_interval_attempts::Integer,
+    swap_round_offset::Integer=0,
+    attempts_since_swap::Integer=0,
 )
     attempts >= 0 || throw(ArgumentError("attempts must be nonnegative"))
     swap_interval_attempts > 0 || throw(ArgumentError(
         "swap_interval_attempts must be positive"))
+    swap_round_offset >= 0 || throw(ArgumentError("swap_round_offset must be nonnegative"))
+    0 <= attempts_since_swap < swap_interval_attempts || throw(ArgumentError(
+        "attempts_since_swap must lie in [0, swap_interval_attempts)"))
     values = validate_tempering_betas(betas)
     length(chains) == length(values) || throw(ArgumentError(
         "one accelerated chain is required per beta"))
     remaining = Int(attempts)
-    swap_round = 0
-    accepted_swaps = 0
-    attempted_swaps = 0
+    swap_round = Int(swap_round_offset)
+    since_swap = Int(attempts_since_swap)
+    accepted_swaps_by_pair = zeros(Int, length(chains) - 1)
+    attempted_swaps_by_pair = zeros(Int, length(chains) - 1)
     target_changed = 0
     while remaining > 0
-        block = min(remaining, Int(swap_interval_attempts))
+        block = min(remaining, Int(swap_interval_attempts) - since_swap)
         for (index, chain) in enumerate(chains)
             report = run_accelerated_updates!(rng, chain, block)
             index == length(chains) && (target_changed += report.changed)
         end
-        first_index = iseven(swap_round) ? 1 : 2
-        for index in first_index:2:(length(chains) - 1)
-            report = parallel_tempering_swap!(rng, chains[index], values[index],
-                                               chains[index + 1], values[index + 1],
-                                               base_weights)
-            attempted_swaps += 1
-            accepted_swaps += report.accepted
-        end
-        swap_round += 1
+        since_swap += block
         remaining -= block
+        if since_swap == swap_interval_attempts
+            first_index = iseven(swap_round) ? 1 : 2
+            for index in first_index:2:(length(chains) - 1)
+                report = parallel_tempering_swap!(rng, chains[index], values[index],
+                                                   chains[index + 1], values[index + 1],
+                                                   base_weights)
+                attempted_swaps_by_pair[index] += 1
+                accepted_swaps_by_pair[index] += report.accepted
+            end
+            swap_round += 1
+            since_swap = 0
+        end
     end
     return (attempts=Int(attempts), target_changed=target_changed,
             target_changed_rate=target_changed / max(Int(attempts), 1),
-            attempted_swaps=attempted_swaps, accepted_swaps=accepted_swaps)
+            attempted_swaps=sum(attempted_swaps_by_pair),
+            accepted_swaps=sum(accepted_swaps_by_pair),
+            attempted_swaps_by_pair=attempted_swaps_by_pair,
+            accepted_swaps_by_pair=accepted_swaps_by_pair,
+            swap_round=swap_round, attempts_since_swap=since_swap)
 end
 
 """
@@ -696,17 +712,30 @@ function sample_center_height_chain_parallel_tempering(
                                                swap_interval_attempts=swap_interval_attempts)
     observed = Vector{Int}(undef, samples)
     target_changed = 0
-    accepted_swaps = burn_in.accepted_swaps
-    attempted_swaps = burn_in.attempted_swaps
+    accepted_swaps_by_pair = copy(burn_in.accepted_swaps_by_pair)
+    attempted_swaps_by_pair = copy(burn_in.attempted_swaps_by_pair)
+    swap_round = burn_in.swap_round
+    attempts_since_swap = burn_in.attempts_since_swap
     for index in eachindex(observed)
         report = run_parallel_tempering_updates!(rng, chains, values, base_weights,
                                                   thin_attempts;
-                                                  swap_interval_attempts=swap_interval_attempts)
+                                                  swap_interval_attempts=swap_interval_attempts,
+                                                  swap_round_offset=swap_round,
+                                                  attempts_since_swap=attempts_since_swap)
         observed[index] = center_height(chains[end].height)
         target_changed += report.target_changed
-        accepted_swaps += report.accepted_swaps
-        attempted_swaps += report.attempted_swaps
+        accepted_swaps_by_pair .+= report.accepted_swaps_by_pair
+        attempted_swaps_by_pair .+= report.attempted_swaps_by_pair
+        swap_round = report.swap_round
+        attempts_since_swap = report.attempts_since_swap
     end
+    accepted_swaps = sum(accepted_swaps_by_pair)
+    attempted_swaps = sum(attempted_swaps_by_pair)
+    pair_acceptance_rates = [attempted == 0 ? NaN : accepted / attempted
+                             for (accepted, attempted) in
+                             zip(accepted_swaps_by_pair, attempted_swaps_by_pair)]
+    minimum_pair_swap_acceptance_rate = any(isnan, pair_acceptance_rates) ? NaN :
+                                        minimum(pair_acceptance_rates)
     return (
         heights=observed,
         mean=mean(observed),
@@ -717,6 +746,12 @@ function sample_center_height_chain_parallel_tempering(
             target_changed_rate=target_changed / (samples * thin_attempts),
             swap_acceptance_rate=accepted_swaps / max(attempted_swaps, 1),
             attempted_swaps=attempted_swaps,
+            attempted_swaps_by_pair=attempted_swaps_by_pair,
+            accepted_swaps_by_pair=accepted_swaps_by_pair,
+            pair_swap_acceptance_rates=pair_acceptance_rates,
+            minimum_pair_swap_acceptance_rate=minimum_pair_swap_acceptance_rate,
+            target_exchange_attempts=attempted_swaps_by_pair[end],
+            target_exchange_acceptance_rate=pair_acceptance_rates[end],
         ),
         final_height=chains[end].height,
         burn_in=burn_in,

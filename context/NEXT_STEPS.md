@@ -85,22 +85,112 @@ The model is:
 
 This is intended as an independent check that does not rely on the
 spanning-tree correspondence.  The reference implementation uses the supplied
-tileable height boundary and literal random-face updates; it does **not** yet
-use an active-site acceleration, whose invariant distribution would need a
-separate rejection-free argument.
+tileable height boundary.  Its event-driven accelerator exactly skips
+self-loops while preserving literal attempted-update time; it has been checked
+against the literal kernel on small cases.
 
 Completed first milestone:
 - deterministic reference sampler in `aztec/src/GlauberSquareGrid.jl`;
 - exact enumeration, dimer-height invariants, and detailed-balance tests at
   tiny sizes;
-- paired same-environment chains and trace diagnostics.
+- paired same-environment chains and trace diagnostics;
+- exact parallel tempering in the unchanged frozen environment, with the
+  physical observable retained only at `beta=1`;
+- a persistent exchange clock and alternating-pair schedule, including a
+  regression test that ensures the `beta=1` neighbour is attempted when trace
+  spacing is shorter than the exchange interval;
+- local calibrated pilots at `L=2,3,4,6`: maximum standardized extremal-start
+  gaps `1.53--2.02`, minimum chain ESS `28.9`, and minimum adjacent-pair swap
+  acceptance at least `0.227` for the Gamma(shape=0.5) ladder;
+- direct `L=2` comparison to exact enumeration, with total-variation distance
+  at most `0.00551` across eight frozen Gamma environments;
+- all-one control ladder, with maximum standardized extremal-start gap at most
+  `2.19` and minimum chain ESS `178`.
 
-Next gate before any size-scaling or Hamilton work:
-- calibrate burn-in, thinning, autocorrelation/ESS, and agreement from the
-  extremal starts over a small sequence of sizes;
-- retain raw traces and all seeds;
-- include the all-one control and at least one mean-one Gamma environment;
-- compare sampled tiny-grid distributions directly to exact enumeration.
+A fresh-seed local repetition showed that the first calibrated schedule was not
+uniformly reliable: one `L=2` environment had exact total-variation distance
+`0.0682`, and one `L=6` environment had standardized extremal-start gap `4.11`.
+A focused 10x stress run of those same environments reduced these diagnostics
+to `0.00997`/`0.44` at `L=2` and `0.11` absolute/`0.82` standardized start gap
+at `L=6`.  The longer schedule is therefore the current pilot candidate, not
+a validated production schedule.
+
+Hamilton job `18546215` then ran the longer schedule with independent base seed
+`2026082107`.  All eight tasks completed.  Across `L=2,3,4,6`, maximum
+standardized extremal-start gaps were `1.95, 1.30, 1.57, 1.54`; minimum chain
+ESS values were `1163, 131, 265, 147`; and the largest `L=2` exact
+total-variation distance was `0.00533`.  All adjacent beta pairs were attempted,
+with acceptance `0.2275--0.9594`; the target-adjacent pair acceptance was
+`0.7485--0.9594`.
+
+Next gate before any production size-scaling:
+- run a four-environment `L=8` pilot with the same frozen-environment pairing
+  and a conservative longer schedule;
+- retain raw traces, seeds, per-pair exchange diagnostics, and resource use;
+- require agreement from extremal starts and acceptable ESS/exchange flow at
+  `L=8`, lengthening or densifying the beta ladder if diagnostics deteriorate;
+- do not treat the current eight-environment-per-size Hamilton results as an
+  equilibration proof or a production certificate.
+
+Owner authorization update, 21 August 2026:
+- Alberto explicitly authorized production without further supervisor review
+  because Sunil was leaving on vacation and marked the former `AGENTS.md` gate
+  outdated;
+- the `L=8` pilot remains running as an additional diagnostic rather than a
+  prerequisite that silently changes the production estimand;
+- production must retain the central-height trace, two independent chains per
+  frozen environment, deterministic seeds, full exchange diagnostics, atomic
+  batches, and environment-blocked analysis;
+- unvalidated larger sizes remain a scientific risk and must be staged with
+  conservative schedules and monitored rather than represented as proven mixed.
+
+Production submission, 21 August 2026:
+- core Gamma(shape=0.5, scale=2) job `18546281`, base seed `2026082201`:
+  `L=2,4,6,8,10,12`, 64--192 environments per size, 576 restart-safe tasks;
+- frontier Gamma job `18546369`, the same base seed: `L=16,20`, 64 and 32
+  environments, 96 isolated one-environment tasks;
+- all-one control job `18546370`, base seed `2026082202`: `L=4,6,8,10,12,16`,
+  32--64 environments, 240 tasks;
+- production Gamma uses 21 inverse temperatures from 0 to 1, while the control
+  uses the exact accelerated target kernel; every environment retains two
+  independent extremal-start chains and 2,000 central-height values per chain;
+- total concurrent allocation is capped at 256 one-core tasks and every task
+  has a 13.5-hour limit;
+- production analysis is environment-blocked in
+  `aztec/scripts/analyze_glauber_square_grid_production.jl`.
+
+Production completion and analysis, 22 August 2026:
+- all 912 production tasks completed with exit code `0:0`; the output roots
+  contain the expected 2,739 atomic files, no temporary files, and no non-empty
+  error logs;
+- the final data contain 960 Gamma environments and 352 all-one controls, with
+  two 2,000-draw chains per environment;
+- deterministic environment-block bootstraps and nested
+  `a+b log(L)` versus `a+b log(L)+c(log(L))^2` comparisons are implemented in
+  `aztec/scripts/analyze_glauber_square_grid_scaling.jl`;
+- over the full Gamma range `L=2--20`, unweighted estimates of `c` are
+  `-0.048 [-0.320,0.227]` for the conditional component,
+  `0.108 [-0.545,0.794]` for the disorder component, and
+  `0.060 [-0.721,0.822]` for the total component; all point-estimate BIC
+  differences favor ordinary log, and ordinary log has lower leave-one-size-out
+  RMSE;
+- inverse-bootstrap-variance fits, lower-size cutoffs, and removal of
+  environments with standardized extremal-start gap above 4 do not produce a
+  robust positive coefficient;
+- the all-one disorder covariance remains numerically near zero, providing the
+  intended negative control.
+
+Current decision:
+- do not interpret the direct Glauber campaign as positive super-rough
+  evidence and do not launch more production automatically;
+- retain the all-environment analysis as primary and the start-gap-filtered
+  result only as a diagnostic sensitivity analysis;
+- before any larger-size replication, add replica-label flow or round-trip
+  diagnostics and address the `beta=0--0.05` bottleneck (pooled acceptance
+  `0.062` at `L=20`); the present target-adjacent exchange rate is healthy, but
+  it does not by itself certify traversal of the full ladder;
+- present the current result as a finite-size null with a mixing caveat when
+  the project is next reviewed.
 
 ## P3 — Cross-model consistency
 

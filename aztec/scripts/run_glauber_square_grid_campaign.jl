@@ -1,11 +1,11 @@
 #!/usr/bin/env julia
 
 """
-Restart-safe pilot runner for the direct square-grid weighted-dimer Glauber
-sampler.  Every environment owns two independent chains and one atomic output
-batch.  In `pilot` mode the chains start from the maximal and minimal height
-configurations; production sampling is intentionally not enabled here until
-the pilot's mixing evidence has been reviewed.
+Restart-safe runner for direct square-grid weighted-dimer Glauber pilot and
+production campaigns.  Every frozen environment owns two independent chains
+started from the extremal configurations and one atomic output batch.  The
+same raw traces support both start-agreement diagnostics and environment-level
+variance decomposition without treating MCMC draws as independent environments.
 """
 
 using AztecDiamond
@@ -22,11 +22,13 @@ const DIAGNOSTIC_HEADER =
     "campaign_id,phase,L,environment_id,environment_seed,replica,start," *
     "replica_seed,mean,variance,integrated_autocorrelation_time," *
     "effective_sample_size,changed_rate,final_total_change_rate," *
-    "burn_in_attempts,thin_attempts,trace_samples"
+    "burn_in_attempts,thin_attempts,trace_samples,swap_acceptance_rate," *
+    "target_exchange_acceptance_rate,attempted_swaps_by_pair," *
+    "accepted_swaps_by_pair"
 
 function print_help()
     println("""
-    Run a resumable direct square-grid dimer Glauber pilot.
+    Run a resumable direct square-grid dimer Glauber campaign.
 
     Usage:
       julia --project=aztec aztec/scripts/run_glauber_square_grid_campaign.jl [options]
@@ -34,6 +36,7 @@ function print_help()
     Options:
       --config PATH              pilot CSV; see aztec/configs/glauber_square_grid_pilot.csv
       --output-dir PATH          directory for atomic raw batches and metadata
+      --phase NAME               pilot or production (default: pilot)
       --distribution NAME        constant, gamma, lognormal, or uniform (default: gamma)
       --parameter FLOAT          Gamma shape or lognormal sigma (default: 0.5)
       --base-seed UINT           public deterministic campaign seed
@@ -44,9 +47,9 @@ function print_help()
       --list-tasks               print task table and exit
       -h, --help                 show this help
 
-    The pilot always compares independent chains from the maximum and minimum
-    height configurations in one frozen edge environment.  It is not a
-    production size-scaling runner.
+    Both phases retain independent chains from maximum and minimum height
+    configurations in one frozen edge environment.  Production outputs are
+    analysed only at the independent-environment level.
     """)
 end
 
@@ -55,6 +58,7 @@ function parse_arguments(arguments)
     options = Dict(
         "config" => joinpath(@__DIR__, "..", "configs", "glauber_square_grid_pilot.csv"),
         "output-dir" => joinpath(@__DIR__, "..", "output", "glauber_square_grid_pilot"),
+        "phase" => "pilot",
         "distribution" => "gamma",
         "parameter" => "0.5",
         "base-seed" => "20260821",
@@ -84,6 +88,8 @@ function parse_arguments(arguments)
         "--distribution must be constant, gamma, lognormal, or uniform")
     parameter = parse(Float64, options["parameter"])
     parameter > 0 || error("--parameter must be positive")
+    phase = Symbol(lowercase(options["phase"]))
+    phase in (:pilot, :production) || error("--phase must be pilot or production")
     algorithm = Symbol(lowercase(options["algorithm"]))
     algorithm in (:accelerated, :literal, :tempered) || error(
         "--algorithm must be accelerated, literal, or tempered")
@@ -100,6 +106,7 @@ function parse_arguments(arguments)
         help=false,
         config=abspath(options["config"]),
         output_dir=abspath(options["output-dir"]),
+        phase=phase,
         distribution=distribution,
         parameter=parameter,
         base_seed=parse(UInt64, options["base-seed"]),
@@ -183,7 +190,7 @@ function derive_seeds(base_seed::UInt64, L::Int, environment_id::Int)
 end
 
 parameter_token(value::Float64) = replace(@sprintf("%.12g", value), "-" => "m", "." => "p")
-campaign_id(parsed) = "glauber_square_grid__$(parsed.distribution)__p_$(parameter_token(parsed.parameter))"
+campaign_id(parsed) = "glauber_square_grid_$(parsed.phase)__$(parsed.distribution)__p_$(parameter_token(parsed.parameter))"
 
 function weights_for_environment(parsed, L, seed)
     parsed.distribution === :constant && return constant_edge_weights(L)
@@ -210,7 +217,7 @@ end
 
 function trace_rows(parsed, task, environment_id, seeds, replica, start, result)
     return [(
-        campaign_id=campaign_id(parsed), phase="pilot", L=task.L,
+        campaign_id=campaign_id(parsed), phase=String(parsed.phase), L=task.L,
         environment_id=environment_id, environment_seed=seeds.environment,
         replica=replica, start=String(start),
         replica_seed=replica === 1 ? seeds.maximum : seeds.minimum,
@@ -224,10 +231,20 @@ function diagnostic_row(parsed, task, environment_id, seeds, replica, start, res
     changed_rate = parsed.algorithm === :tempered ?
                    result.diagnostics.target_changed_rate : result.diagnostics.changed_rate
     auxiliary_rate = parsed.algorithm === :tempered ?
-                     result.diagnostics.swap_acceptance_rate :
+                     result.diagnostics.minimum_pair_swap_acceptance_rate :
                      get(result.diagnostics, :final_total_change_rate, NaN)
+    swap_acceptance_rate = parsed.algorithm === :tempered ?
+                           result.diagnostics.swap_acceptance_rate : NaN
+    target_exchange_acceptance_rate = parsed.algorithm === :tempered ?
+                                      result.diagnostics.target_exchange_acceptance_rate : NaN
+    attempted_swaps_by_pair = parsed.algorithm === :tempered ?
+                              join(result.diagnostics.attempted_swaps_by_pair, ';') :
+                              "not_applicable"
+    accepted_swaps_by_pair = parsed.algorithm === :tempered ?
+                             join(result.diagnostics.accepted_swaps_by_pair, ';') :
+                             "not_applicable"
     return (
-        campaign_id=campaign_id(parsed), phase="pilot", L=task.L,
+        campaign_id=campaign_id(parsed), phase=String(parsed.phase), L=task.L,
         environment_id=environment_id, environment_seed=seeds.environment,
         replica=replica, start=String(start),
         replica_seed=replica === 1 ? seeds.maximum : seeds.minimum,
@@ -238,6 +255,10 @@ function diagnostic_row(parsed, task, environment_id, seeds, replica, start, res
         final_total_change_rate=auxiliary_rate,
         burn_in_attempts=task.burn_in_attempts, thin_attempts=task.thin_attempts,
         trace_samples=task.trace_samples,
+        swap_acceptance_rate=swap_acceptance_rate,
+        target_exchange_acceptance_rate=target_exchange_acceptance_rate,
+        attempted_swaps_by_pair=attempted_swaps_by_pair,
+        accepted_swaps_by_pair=accepted_swaps_by_pair,
     )
 end
 
@@ -289,7 +310,11 @@ function write_batch(paths, traces, diagnostics)
                               row.mean, row.variance, row.integrated_autocorrelation_time,
                               row.effective_sample_size, row.changed_rate,
                               row.final_total_change_rate, row.burn_in_attempts,
-                              row.thin_attempts, row.trace_samples), ','))
+                              row.thin_attempts, row.trace_samples,
+                              row.swap_acceptance_rate,
+                              row.target_exchange_acceptance_rate,
+                              row.attempted_swaps_by_pair,
+                              row.accepted_swaps_by_pair), ','))
         end
     end
 end
@@ -304,15 +329,15 @@ function metadata_text(parsed, rows, tasks)
                            row.burn_in_attempts, row.thin_attempts, row.trace_samples), ':')
                      for row in rows), ',')
     return join([
-        "schema_version=1",
+        "schema_version=3",
         "campaign_id=$(campaign_id(parsed))",
-        "phase=pilot",
+        "phase=$(parsed.phase)",
         "geometry=square_grid_direct_weighted_dimer",
         "observable=central_face_height_trace",
         "boundary=Sunil_supplied_tileable_extremal_height_boundary",
         "kernel=literal_random_face_heat_bath",
         "accelerator=$(parsed.algorithm)",
-        "accelerator_note=$(parsed.algorithm === :accelerated ? "exactly skips self-loops at fixed attempted-update time" : parsed.algorithm === :tempered ? "parallel tempering with exact beta=1 target; final_total_change_rate column stores swap acceptance" : "literal random-face updates")",
+        "accelerator_note=$(parsed.algorithm === :accelerated ? "exactly skips self-loops at fixed attempted-update time" : parsed.algorithm === :tempered ? "parallel tempering with exact beta=1 target; full adjacent-pair exchange counts are retained" : "literal random-face updates")",
         "tempering_betas=$(join(parsed.tempering_betas, ','))",
         "tempering_swap_interval_attempts=$(parsed.swap_interval_attempts)",
         "pairing=two independent chains in one frozen edge environment; starts=max,min",
@@ -384,8 +409,9 @@ function run_task(parsed, task)
         println(io, "threads=$(nthreads())")
         println(io, "julia_version=$(VERSION)")
     end
-    @printf("completed Glauber pilot L=%d task=%d environments=%d:%d in %.2fs\n",
-            task.L, task.task_id, task.first_id, task.last_id, time() - started)
+    @printf("completed Glauber %s L=%d task=%d environments=%d:%d in %.2fs\n",
+            String(parsed.phase), task.L, task.task_id, task.first_id, task.last_id,
+            time() - started)
 end
 
 function main(arguments)

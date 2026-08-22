@@ -113,6 +113,10 @@ This supports the interpretation that the \((\log L)^2\) term, when present, bel
 - Aztec central-height variance alone: not a convincing \(p=2\) diagnostic;
 - two-tiling height difference alone: ordinary-log-like;
 - square-grid structured Temperley paired experiments: no robust positive quadratic-log coefficient.
+- direct square-grid frozen-edge Glauber production: no robust positive
+  quadratic-log coefficient in the conditional, disorder, or total
+  central-height components over `L=2--20`; the `L=16,20` conclusion remains
+  conditional on unresolved extremal-start and hot-end replica-flow diagnostics.
 
 ## Current supervisor-directed priority
 
@@ -128,11 +132,30 @@ edge weights `(a,b,c,d)`: top/bottom with probability `ac/(ac+bd)`, and
 right/left with probability `bd/(ac+bd)`.  Begin with exact tiny-grid checks
 and a mixing pilot; do not launch a production campaign before those checks.
 
+The `L<=6` calibrated pilot checks passed locally and on Hamilton.  On
+21 August 2026 Alberto explicitly authorized production without waiting for
+further supervisor review because Sunil was leaving on vacation.  Production
+keeps the same frozen-edge model and central-height observable.  Two
+conditionally independent chains per environment are retained so the primary
+annealed central-height variance can also be decomposed into conditional and
+disorder components without changing the estimand.
+
+That production campaign completed on 22 August 2026 with 960 Gamma
+environments and 352 all-one controls.  Environment-blocked bootstrap fits do
+not support a positive nested `(log L)^2` term.  This is finite-size numerical
+evidence rather than a mixing certificate: standardized extremal-start gaps
+deteriorate at `L=16,20`, and the lowest-beta exchange pair is a measurable
+round-trip bottleneck at `L=20`.
+
 ## Critical ambiguity to resolve before a large new run
 
 The newer disorder-covariance observable relies on two samples sharing a well-defined random environment, whereas the "refresh weights at every step" experiment removes a fixed spatial environment. Do **not** silently invent a pairing convention.
 
-Before implementing a production experiment, determine from the existing code/analysis exactly what quantity is meant by "the different observable that you found" in the latest instruction. If the intended shared randomness/estimand is not unambiguously recoverable, stop before a large run and surface the ambiguity.
+For the direct Glauber route, the production estimand is the variance of the
+central-face height over frozen environments and equilibrium dimer samples.
+The shared-environment pairing is explicit: each environment owns two
+conditionally independent chains.  Individual MCMC draws are not independent
+environment blocks.
 
 ## Statistical principles already established
 

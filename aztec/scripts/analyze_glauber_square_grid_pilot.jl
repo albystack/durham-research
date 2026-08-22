@@ -7,11 +7,14 @@ using AztecDiamond.GlauberSquareGrid
 using Random
 using Statistics
 
-const DIAGNOSTIC_HEADER =
+const DIAGNOSTIC_HEADER_V1 =
     "campaign_id,phase,L,environment_id,environment_seed,replica,start," *
     "replica_seed,mean,variance,integrated_autocorrelation_time," *
     "effective_sample_size,changed_rate,final_total_change_rate," *
     "burn_in_attempts,thin_attempts,trace_samples"
+const DIAGNOSTIC_HEADER = DIAGNOSTIC_HEADER_V1 *
+    ",swap_acceptance_rate,target_exchange_acceptance_rate," *
+    "attempted_swaps_by_pair,accepted_swaps_by_pair"
 
 const TRACE_HEADER =
     "campaign_id,phase,L,environment_id,environment_seed,replica,start," *
@@ -55,10 +58,13 @@ function load_diagnostics(root)
     rows = NamedTuple[]
     for path in files_with_prefix(root, "diagnostic_")
         lines = readlines(path)
-        strip(first(lines)) == DIAGNOSTIC_HEADER || error("unexpected diagnostic header: $path")
+        header = strip(first(lines))
+        expected_fields = header == DIAGNOSTIC_HEADER ? 21 :
+                          header == DIAGNOSTIC_HEADER_V1 ? 17 :
+                          error("unexpected diagnostic header: $path")
         for line in lines[2:end]
             fields = split(strip(line), ',')
-            length(fields) == 17 || error("malformed diagnostic row: $path")
+            length(fields) == expected_fields || error("malformed diagnostic row: $path")
             push!(rows, (
                 L=parse(Int, fields[3]), environment_id=parse(Int, fields[4]),
                 environment_seed=parse(UInt64, fields[5]), replica=parse(Int, fields[6]),

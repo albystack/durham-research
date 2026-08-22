@@ -1,5 +1,41 @@
 const GSG = AztecDiamond.GlauberSquareGrid
 
+include(joinpath(@__DIR__, "..", "scripts", "analyze_glauber_square_grid_scaling.jl"))
+const GPSA = GlauberProductionScaling
+
+@testset "Glauber production environment-blocked scaling" begin
+    rows = [
+        (replica_1_mean=value, replica_2_mean=2value,
+         conditional_variance=3.0) for value in 1.0:3.0
+    ]
+    estimate = GPSA.component_statistics(rows)
+    @test estimate.conditional == 3.0
+    @test estimate.disorder == 2.0
+    @test estimate.total == 5.0
+
+    sizes = [2, 4, 6, 8, 12, 16]
+    x = log.(Float64.(sizes))
+    exactly_quadratic = 1 .+ 0.4 .* x .+ 0.75 .* x .^ 2
+    comparison = GPSA.fit_comparison(x, exactly_quadratic)
+    @test isapprox(comparison.quadratic.coefficients[3], 0.75; atol=1e-11)
+    @test comparison.delta_bic > 0
+    @test comparison.quadratic_loocv_rmse < 1e-10
+
+    exactly_log = 2 .+ 1.25 .* x
+    null_comparison = GPSA.fit_comparison(x, exactly_log)
+    @test abs(null_comparison.quadratic.coefficients[3]) < 1e-11
+    @test null_comparison.delta_bic < 0
+    @test null_comparison.log_loocv_rmse < 1e-10
+
+    paired = [
+        (replica_1_mean=Float64(index), replica_2_mean=Float64(index),
+         conditional_variance=Float64(index)) for index in 1:8
+    ]
+    draws = GPSA.bootstrap_size_draws(Xoshiro(1234), Dict(4 => paired), 20)[4]
+    @test length(draws.total) == 20
+    @test all(draws.total .== draws.conditional .+ draws.disorder)
+end
+
 @testset "square-grid Glauber height reference" begin
     @testset "extremal height boundaries encode valid dimer matchings" begin
         for L in 1:4
@@ -98,6 +134,30 @@ const GSG = AztecDiamond.GlauberSquareGrid
         @test GSG.validate_height_configuration(left_chain.height, 2).valid
         @test GSG.validate_height_configuration(right_chain.height, 2).valid
 
+        # The exchange clock and alternating-pair parity must survive calls that
+        # are shorter than the exchange interval.  Otherwise the beta=1 pair is
+        # never attempted when each retained-sample call resets the schedule.
+        betas = [0.0, 0.5, 1.0]
+        chains = [GSG.accelerated_chain(GSG.max_height_configuration(2),
+                                        GSG.tempered_edge_weights(weights, value))
+                  for value in betas]
+        before_boundary = GSG.run_parallel_tempering_updates!(
+            Xoshiro(100_005), chains, betas, weights, 2;
+            swap_interval_attempts=5)
+        @test before_boundary.attempted_swaps_by_pair == [0, 0]
+        @test before_boundary.attempts_since_swap == 2
+        first_parity = GSG.run_parallel_tempering_updates!(
+            Xoshiro(100_005), chains, betas, weights, 3;
+            swap_interval_attempts=5, swap_round_offset=before_boundary.swap_round,
+            attempts_since_swap=before_boundary.attempts_since_swap)
+        @test first_parity.attempted_swaps_by_pair == [1, 0]
+        second_parity = GSG.run_parallel_tempering_updates!(
+            Xoshiro(100_005), chains, betas, weights, 5;
+            swap_interval_attempts=5, swap_round_offset=first_parity.swap_round,
+            attempts_since_swap=first_parity.attempts_since_swap)
+        @test second_parity.attempted_swaps_by_pair == [0, 1]
+        @test second_parity.attempts_since_swap == 0
+
         tempered_first = GSG.sample_center_height_chain_parallel_tempering(
             Xoshiro(100_006), 2, weights; start=:max, betas=[0.0, 0.5, 1.0],
             burn_in_attempts=100, thin_attempts=10, samples=20,
@@ -108,6 +168,8 @@ const GSG = AztecDiamond.GlauberSquareGrid
             swap_interval_attempts=5)
         @test tempered_first.heights == tempered_second.heights
         @test 0 <= tempered_first.diagnostics.swap_acceptance_rate <= 1
+        @test all(>(0), tempered_first.diagnostics.attempted_swaps_by_pair)
+        @test tempered_first.diagnostics.target_exchange_attempts > 0
         @test GSG.validate_height_configuration(tempered_first.final_height, 2).valid
     end
 

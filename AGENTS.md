@@ -19,5 +19,8 @@ Rules:
 - Pilot before launching large/HPC campaigns.
 - Inspect only files relevant to the current task; avoid repo-wide wandering.
 - Before editing, give a plan of at most 6 bullets. Afterward report only files changed, tests run, and scientific assumptions/risks.
-- Do not start square-grid Glauber/spin-flip production work until further supervisor guidance is supplied.
+- Square-grid Glauber production was explicitly authorized by Alberto on
+  21 August 2026 without further supervisor review. Preserve the validated
+  frozen-environment model, paired independent chains, central-height
+  observable, equilibration diagnostics, and staged/restart-safe execution.
 - Do not use AI to draft journal manuscript prose; the supervisor explicitly ruled this out for the write-up stage.
