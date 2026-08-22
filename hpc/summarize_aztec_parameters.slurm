@@ -9,7 +9,8 @@
 
 set -euo pipefail
 JULIA="/apps/developers/compilers/julia/1.10.4/1/default/bin.wrapped/julia"
-root="/nobackup/fvkl37/aztec_gamma_parameters_20260808"
+: "${AZTEC_PARAMETER_ROOT:?Set AZTEC_PARAMETER_ROOT to the completed campaign root}"
+root="${AZTEC_PARAMETER_ROOT}"
 
 cd "${SLURM_SUBMIT_DIR}"
 mkdir -p logs "${root}/analysis/comparison"

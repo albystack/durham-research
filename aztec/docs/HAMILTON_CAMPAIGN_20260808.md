@@ -1,9 +1,9 @@
 # Hamilton campaign: 8 August 2026
 
-Remote repository:
-`/home/fvkl37/durham-research-square-grid/research`
+Remote repository convention:
+`/home/$USER/research/repo`
 
-Large outputs are written under `/nobackup/fvkl37` rather than the home quota.
+Large outputs are written under `/nobackup/$USER` rather than the home quota.
 All production arrays are gated by successful pilot jobs, and all analyses use
 joint environment bootstrapping with the covariance-aware block-GLS fit.
 
@@ -56,15 +56,17 @@ allocations after real-data smoke jobs `18249791` and `18249792` passed.  The
 ultra-size jobs use five workers per node.  The high-size jobs use eleven after
 production job `18243074` established a 17.41 GB maximum RSS.  Exact task
 manifests, SHA-256 files, superseded scheduler IDs, and active scheduler IDs are
-recorded under `/home/fvkl37/hamilton-booster-20260809/manifests` on Hamilton;
-the launch and recovery procedure is documented in `hpc/PACKED_CAMPAIGNS.md`.
+recorded under the campaign's private Hamilton manifest directory;
+the launch and recovery procedure is documented in
+`archive/hpc_recovery_202608/PACKED_CAMPAIGNS.md`.
 
 On 11 August, the remaining held work was moved from the one-node `long`
 partition to the 119-node `shared` pool.  It was also split by lattice size so
 that measured memory envelopes permit 5, 7, 12, 20, and 30 workers per node at
 orders 6,144, 5,120, 4,096, 3,072, and 2,560 respectively.  The migration left
 the running job `18249837_14` untouched and replaced only held work.  Its
-audited launcher is `hpc/repack_hamilton_size_aware_20260811.sh`; the active
+audited launcher is archived as
+`archive/hpc_recovery_202608/repack_hamilton_size_aware_20260811.sh`; the active
 remote IDs and checksummed manifests are recorded in
 `size_aware_shared_job_map_20260811.txt` under the Hamilton manifest directory.
 The held original arrays were moved in place to `shared` as well, so their
@@ -85,18 +87,18 @@ The complete 180-file analysis tree and recovery manifests are preserved
 locally under `aztec/results/hamilton_square_grid_20260811/`.  Its consolidated
 covariance-aware comparison finds no robust positive log-squared disorder
 coefficient across the five structured square-grid laws and three fit cutoffs.
-See the package `README.md` and `EMAIL_TO_SUNIL.md` for the checked scientific
-summary and email-ready handoff.
+See the package `README.md` and the retained summary tables for the checked
+scientific interpretation.
 
 ## Status commands
 
 ```sh
-ssh fvkl37@hamilton8.dur.ac.uk
-squeue -u fvkl37
+ssh "$USER"@hamilton8.dur.ac.uk
+squeue -u "$USER"
 sacct -j JOB_ID --format=JobID,State,Elapsed,MaxRSS,ExitCode
 ```
 
 The square-grid output roots are
-`/nobackup/fvkl37/square_grid_robustness_20260808` and
-`/nobackup/fvkl37/square_grid_high_l_20260808`. The Aztec output root is
-`/nobackup/fvkl37/aztec_gamma_parameters_20260808`.
+`/nobackup/$USER/square_grid_robustness_20260808` and
+`/nobackup/$USER/square_grid_high_l_20260808`. The Aztec output root is
+`/nobackup/$USER/aztec_gamma_parameters_20260808`.

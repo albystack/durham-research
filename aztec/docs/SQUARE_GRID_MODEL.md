@@ -1,6 +1,6 @@
 # Square-grid paired Temperley-dimer model
 
-Status: implementation contract for the square-grid experiment requested by Professor Sunil Chhita.
+Status: implementation contract for the square-grid spanning-tree/Temperley experiment.
 
 ## Scientific objective
 

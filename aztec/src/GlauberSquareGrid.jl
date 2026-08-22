@@ -2,7 +2,8 @@
 Reference Glauber dynamics for weighted domino tilings of an even square grid.
 
 The state is a height matrix on the faces of a `2L × 2L` dimer region, with
-the fixed boundary convention used in Sunil's supplied `glaubertwo.jl`.
+the tileable boundary convention preserved in
+`aztec/reference/glauber_reference.jl`.
 Across a dimer edge the height difference has absolute value three; across an
 unoccupied edge it has absolute value one.  A local height update is therefore
 exactly a flip of two opposite dimers around one square face.
@@ -228,7 +229,7 @@ function validate_height_configuration(height::AbstractMatrix{<:Integer}, L::Int
     return (valid=true, reason="ok", dimer_edges=dimer_edge_incidence ÷ 2)
 end
 
-"Return the local edge weights `(a,b,c,d)` in Sunil's clockwise top-first order."
+"Return local edge weights `(a,b,c,d)` in clockwise top-first order."
 function local_edge_weights(weights::EdgeWeights, i::Int, j::Int)
     return (
         weights.vertical[i - 1, j],     # top

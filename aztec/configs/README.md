@@ -57,3 +57,25 @@ timing and memory measurements only; do not merge them into production data.
   per law across `L=2560,3072,4096`.
 - `square_grid_ultra_l_extension.csv`: 120 exploratory environments per law at
   `L=5120,6144`; these are held-out stress tests, not precision estimates.
+
+## Direct Glauber schedules
+
+- `glauber_square_grid_L2_calibration.csv`: exact-enumeration calibration at
+  the smallest nontrivial size.
+- `glauber_square_grid_mixing_ladder_*.csv`: successive ladder and run-length
+  pilots; retained to document failed as well as successful calibration.
+- `glauber_square_grid_tempered_pilot.csv` and
+  `glauber_square_grid_tempered_stress.csv`: corrected parallel-tempering
+  pilots at `L<=6`.
+- `glauber_square_grid_tempered_L8_pilot.csv`: four-environment extension of
+  the validated small-size schedule.
+- `glauber_square_grid_production_smoke.csv`: tiny end-to-end check of the
+  production schema and wrapper.
+- `glauber_square_grid_production_core.csv`: Gamma production at `L=2--12`.
+- `glauber_square_grid_production_frontier.csv`: isolated Gamma production at
+  `L=16,20`, kept separate because of cost and mixing risk.
+- `glauber_square_grid_production_control.csv`: all-one negative control.
+
+Direct Glauber configs specify one environment per restart-safe task. Every
+environment retains two independent extremal-start chains and their full
+diagnostic records.

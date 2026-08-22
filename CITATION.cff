@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this software or its retained numerical results, please cite the repository."
+title: "Random-environment dimer and spanning-tree simulations"
+type: software
+authors:
+  - family-names: Rescigno
+    given-names: Alberto
+version: 0.1.0
+date-released: 2026-08-22

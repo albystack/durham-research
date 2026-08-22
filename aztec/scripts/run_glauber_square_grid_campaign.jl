@@ -334,7 +334,7 @@ function metadata_text(parsed, rows, tasks)
         "phase=$(parsed.phase)",
         "geometry=square_grid_direct_weighted_dimer",
         "observable=central_face_height_trace",
-        "boundary=Sunil_supplied_tileable_extremal_height_boundary",
+        "boundary=tileable_extremal_height_boundary_v1",
         "kernel=literal_random_face_heat_bath",
         "accelerator=$(parsed.algorithm)",
         "accelerator_note=$(parsed.algorithm === :accelerated ? "exactly skips self-loops at fixed attempted-update time" : parsed.algorithm === :tempered ? "parallel tempering with exact beta=1 target; full adjacent-pair exchange counts are retained" : "literal random-face updates")",

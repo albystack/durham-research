@@ -18,6 +18,19 @@ negative value favours the ordinary-log curve.
 - [`model_comparison_by_cutoff.csv`](model_comparison_by_cutoff.csv) collects
   cutoff sensitivity for the single height, double difference, paired
   covariance, and independent-data remainder.
+- `hamilton_20260809/` contains the cross-parameter Aztec spatial comparison.
+- `hamilton_square_grid_20260811/` contains the five-law structured
+  square-grid comparison, its sensitivity windows, vector figures, and audited
+  scheduler provenance.
+- [`glauber_square_grid_20260822/`](glauber_square_grid_20260822/) contains the
+  direct frozen-edge production components, diagnostics, scaling comparisons,
+  and interpretation.
+
+The newer direct Glauber production traces remain in external project storage
+because they are substantially larger than the retained Git datasets. Their
+environment-blocked estimates and scientific conclusions are recorded in
+[`../../docs/RESULTS.md`](../../docs/RESULTS.md), with reproduction commands in
+[`../../docs/REPRODUCIBILITY.md`](../../docs/REPRODUCIBILITY.md).
 
 The fit reports are plain `key=value` files so that plotting and downstream
 analysis can read them without external packages. CSV tables retain more

@@ -1,9 +1,10 @@
-# Gamma-disordered Aztec-diamond simulations
+# Dimer and spanning-tree simulation package
 
-This Julia project samples weighted Aztec-diamond tilings, records a central
-face height, runs shared-environment double-dimer experiments, and compares
-finite-size variance-growth models. It is self-contained and uses only Julia
-standard libraries.
+This Julia project samples weighted Aztec-diamond tilings, square-grid
+spanning-tree/Temperley dimers, and direct weighted-dimer Glauber dynamics. It
+records central or spatial height observables, keeps shared-environment replica
+pairing explicit, and compares finite-size variance-growth models. The package
+is self-contained and uses only Julia standard libraries.
 
 ## Model and observables
 
@@ -215,19 +216,22 @@ is available in [`docs/IMPLEMENTATION.md`](docs/IMPLEMENTATION.md).
 
 ```text
 aztec/
-├── src/AztecDiamond.jl       sampler, height, validation, rendering
-├── test/runtests.jl          unit and mathematical-reference tests
-├── docs/IMPLEMENTATION.md    detailed code and data-flow walkthrough
-├── scripts/                  campaign, merge, analysis, and plot CLIs
-├── configs/                  documented sample schedules
-├── data/                     retained observations and checksums
-├── results/                  final tables, figures, and analysis report
-├── output/                   ignored resumable/scratch output
-└── mathematica/              optional legacy matrix renderer
+├── src/                       three tested model modules
+├── test/                      exact, regression, and workflow tests
+├── docs/                      model and implementation contracts
+├── scripts/                   campaign, merge, analysis, and plot CLIs
+├── configs/                   documented sample schedules
+├── data/                      retained observations and checksums
+├── results/                   final tables, figures, and analysis reports
+├── reference/                 historical prototype code, not production
+├── output/                    ignored resumable/scratch output
+└── mathematica/               optional legacy matrix renderer
 ```
 
-See [`configs/README.md`](configs/README.md), [`data/README.md`](data/README.md),
-and [`results/README.md`](results/README.md) for artifact-level documentation.
+See [`src/README.md`](src/README.md), [`scripts/README.md`](scripts/README.md),
+[`configs/README.md`](configs/README.md), [`data/README.md`](data/README.md),
+[`results/README.md`](results/README.md), and [`test/README.md`](test/README.md)
+for artifact-level documentation.
 
 ## Square-grid paired Temperley experiment
 
@@ -266,3 +270,50 @@ five-size pilot with the Hamilton wrapper `hpc/analyze_square_grid.slurm` after
 both baseline and directed arrays finish.
 
 Hamilton Slurm wrappers and transfer instructions are in `hpc/README.md`.
+
+## Direct square-grid weighted-dimer dynamics
+
+`src/GlauberSquareGrid.jl` provides an independent square-grid route that does
+not use the spanning-tree correspondence. One environment freezes independent
+positive mean-one edge weights. A uniformly chosen face is updated with the
+exact local heat bath, and two conditionally independent chains start from the
+extremal height configurations.
+
+The production path supports literal random-face updates, an exact
+self-loop-skipping accelerator, and parallel tempering. Only the `beta=1`
+replica contributes to the physical central-height trace.
+
+Run a tiny production-path smoke test:
+
+```bash
+julia --project=aztec aztec/scripts/run_glauber_square_grid_campaign.jl \
+  --config aztec/configs/glauber_square_grid_production_smoke.csv \
+  --output-dir aztec/output/glauber_production_smoke \
+  --phase production \
+  --distribution gamma \
+  --parameter 0.5 \
+  --base-seed 2026082203 \
+  --algorithm tempered \
+  --tempering-betas 0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0 \
+  --task-id 1
+```
+
+Production analysis is deliberately two-stage. First convert raw MCMC traces
+to one independent row per frozen environment, then fit size scaling from the
+environment-block tables:
+
+```bash
+julia --project=aztec aztec/scripts/analyze_glauber_square_grid_production.jl \
+  --production-dir aztec/output/glauber_production \
+  --analysis-dir aztec/output/glauber_environment_blocks
+
+julia --project=aztec aztec/scripts/analyze_glauber_square_grid_scaling.jl \
+  --gamma-blocks aztec/output/gamma_core_blocks.csv,aztec/output/gamma_frontier_blocks.csv \
+  --control-blocks aztec/output/control_blocks.csv \
+  --output-dir aztec/output/glauber_scaling
+```
+
+The second command reports conditional, disorder, and total components,
+environment-bootstrap intervals, nested quadratic-log fits, cutoff and
+weighting sensitivity, leave-one-size-out prediction error, and start-state
+diagnostics.

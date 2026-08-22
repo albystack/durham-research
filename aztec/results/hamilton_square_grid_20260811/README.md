@@ -123,8 +123,7 @@ not an asymptotic proof.
 - `summary/spatial_gls_campaign_comparison.csv`: consolidated 90-row block-GLS
   table (five laws x three cutoffs x two datasets x three components).
 - `summary/spatial_gls_campaign_comparison.md`: compact primary 15-row table.
-- `EMAIL_TO_SUNIL.txt`: the brief, copy-ready email draft.
-- `EMAIL_TO_SUNIL.md`: the longer email draft with additional numerical detail.
 - `manifests/`: task lists, scheduler job maps, and checksums from the recovery.
-- `CHECKSUMS.sha256`: SHA-256 inventory for the 248 files in this local
-  handoff package (excluding the checksum inventory itself).
+- `CHECKSUMS.sha256`: SHA-256 inventory for the 246 files in this local
+  result package as originally downloaded (excluding the checksum inventory
+  itself). Obsolete correspondence entries are intentionally not retained.

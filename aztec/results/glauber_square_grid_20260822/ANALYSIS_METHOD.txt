@@ -1,0 +1,9 @@
+Independent bootstrap block: one frozen edge-weight environment within one L.
+Paired replica means and conditional variance remain in the same block.
+Primary data filter: all environments.
+Diagnostic sensitivity only: standardized extremal-start gap <= 4.0.
+Nested models: a+b*log(L) versus a+b*log(L)+c*log(L)^2.
+Positive delta BIC favors the quadratic extension.
+Prediction metric: leave-one-size-out RMSE; lower is better.
+Weighted sensitivity uses fixed inverse environment-bootstrap variance weights.
+Bootstrap repetitions: 5000. Seed: 20260822.
