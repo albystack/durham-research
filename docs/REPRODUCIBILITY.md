@@ -61,6 +61,26 @@ The first command converts raw traces into one row per independent frozen
 environment. The second resamples those rows within lattice size and compares
 `a+b*log(L)` against `a+b*log(L)+c*log(L)^2` over prespecified cutoffs.
 
+The mixing-independent replay of the 960 Gamma environments uses the same
+environment seeds:
+
+```bash
+julia --project=aztec aztec/scripts/run_glauber_kasteleyn_campaign.jl \
+  --config aztec/configs/glauber_square_grid_kasteleyn_replay.csv \
+  --output-dir aztec/output/glauber_square_grid_kasteleyn_replay_20260822 \
+  --distribution gamma --parameter 0.5 --base-seed 2026082201
+
+julia --project=aztec aztec/scripts/analyze_glauber_kasteleyn_campaign.jl \
+  --input-root aztec/output/glauber_square_grid_kasteleyn_replay_20260822 \
+  --output-dir aztec/output/glauber_square_grid_kasteleyn_analysis_20260822 \
+  --mcmc-blocks aztec/data/glauber_square_grid_20260822/gamma_core_environment_blocks.csv,aztec/data/glauber_square_grid_20260822/gamma_frontier_environment_blocks.csv \
+  --bootstrap-reps 5000 --bootstrap-seed 20260823 --cutoffs 2,4,6,8
+```
+
+The Kasteleyn runner records solve and real-projection residuals for every
+environment and automatically retries at 256-bit precision when the Float64
+solve residual exceeds its acceptance threshold.
+
 ## Reproduction checklist
 
 Before citing a result, verify:

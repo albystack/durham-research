@@ -1,10 +1,11 @@
 # Dimer and spanning-tree simulation package
 
 This Julia project samples weighted Aztec-diamond tilings, square-grid
-spanning-tree/Temperley dimers, and direct weighted-dimer Glauber dynamics. It
-records central or spatial height observables, keeps shared-environment replica
-pairing explicit, and compares finite-size variance-growth models. The package
-is self-contained and uses only Julia standard libraries.
+spanning-tree/Temperley dimers, and direct weighted square-grid dimers. It
+supports both Glauber dynamics and finite-volume Kasteleyn moments, records
+central or spatial height observables, keeps shared-environment pairing
+explicit, and compares finite-size variance-growth models. The package is
+self-contained and uses only Julia standard libraries.
 
 ## Model and observables
 
@@ -317,3 +318,23 @@ The second command reports conditional, disorder, and total components,
 environment-bootstrap intervals, nested quadratic-log fits, cutoff and
 weighting sensitivity, leave-one-size-out prediction error, and start-state
 diagnostics.
+
+For observables expressible as a finite dual-path height difference, the
+Kasteleyn path computes the conditional mean and variance directly. This
+removes sampling and mixing error while preserving the frozen-edge model and
+environment seeds:
+
+```bash
+julia --project=aztec aztec/scripts/run_glauber_kasteleyn_campaign.jl \
+  --config aztec/configs/glauber_square_grid_kasteleyn_pilot.csv \
+  --output-dir aztec/output/glauber_kasteleyn_pilot \
+  --distribution gamma --parameter 0.5 --base-seed 2026082201
+
+julia --project=aztec aztec/scripts/analyze_glauber_kasteleyn_campaign.jl \
+  --input-root aztec/output/glauber_kasteleyn_pilot \
+  --output-dir aztec/output/glauber_kasteleyn_pilot_analysis \
+  --bootstrap-reps 200 --bootstrap-seed 20260823 --cutoffs 2
+```
+
+The retained full 960-environment replay and exact commands are documented in
+[`data/glauber_square_grid_kasteleyn_20260822/`](data/glauber_square_grid_kasteleyn_20260822/).

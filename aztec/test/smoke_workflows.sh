@@ -208,4 +208,28 @@ test -s "$square_directed/campaign_manifest.toml"
 test -s "$square_baseline/L_0016/execution_0001.txt"
 test -s "$square_directed/L_0016/execution_0001.txt"
 
+kasteleyn_root="$smoke_root/kasteleyn"
+julia --project=aztec --startup-file=no \
+  aztec/scripts/run_glauber_kasteleyn_campaign.jl \
+  --config aztec/configs/glauber_square_grid_kasteleyn_pilot.csv \
+  --output-dir "$kasteleyn_root" \
+  --distribution gamma \
+  --parameter 0.5 \
+  --base-seed 2026082201 \
+  --task-id 1
+
+# Re-running an identical determinantal task must validate and skip its batch.
+julia --project=aztec --startup-file=no \
+  aztec/scripts/run_glauber_kasteleyn_campaign.jl \
+  --config aztec/configs/glauber_square_grid_kasteleyn_pilot.csv \
+  --output-dir "$kasteleyn_root" \
+  --distribution gamma \
+  --parameter 0.5 \
+  --base-seed 2026082201 \
+  --task-id 1
+
+test -s "$kasteleyn_root/campaign_metadata.txt"
+test -s "$kasteleyn_root/L_0002/batch_0001.csv"
+test -s "$kasteleyn_root/L_0002/execution_0001.txt"
+
 echo "All Aztec and square-grid command-line smoke workflows passed."

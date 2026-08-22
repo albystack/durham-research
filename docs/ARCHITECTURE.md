@@ -24,7 +24,8 @@ submodule of `AztecDiamond`.
 [`aztec/src/GlauberSquareGrid.jl`](../aztec/src/GlauberSquareGrid.jl)
 implements direct weighted-dimer height-function dynamics. It contains the
 literal random-face heat bath, an exact self-loop-skipping accelerator, exact
-small-system enumeration, and parallel tempering in a frozen edge environment.
+small-system enumeration, parallel tempering in a frozen edge environment,
+and finite-volume Kasteleyn moments for arbitrary valid dual height paths.
 
 ## Command-line layers
 
@@ -47,6 +48,11 @@ plot_*.jl          --> deterministic SVG/PNG figures
 Campaign runners own seed derivation and restart validation. Analysis scripts
 never infer missing pairing information: the environment identifier and both
 replicas must be present in the input schema.
+
+The determinantal square-grid runner follows the same seed and atomic-batch
+contract, but records one conditional mean and variance per environment. Its
+analysis combines the mean-of-conditional-variances and the variance of
+conditional means, so no synthetic replica samples are introduced.
 
 ## Output layers
 

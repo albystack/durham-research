@@ -15,6 +15,7 @@ stationary samples without a separate rejection-free proof.
 """
 module GlauberSquareGrid
 
+using LinearAlgebra
 using Random
 using Statistics
 
@@ -35,6 +36,9 @@ export EdgeWeights,
        enumerate_height_configurations,
        matching_weight,
        matching_log_weight,
+       kasteleyn_matrix,
+       height_difference_moments_kasteleyn,
+       center_height_moments_kasteleyn,
        tempered_edge_weights,
        replica_exchange_log_ratio,
        parallel_tempering_swap!,
@@ -543,6 +547,260 @@ function matching_log_weight(height::AbstractMatrix{<:Integer}, weights::EdgeWei
         log_weight += log(weights.horizontal[i, j])
     end
     return log_weight
+end
+
+"Infer `L` from a complete square-grid edge environment and validate its shape."
+function edge_weight_order(weights::EdgeWeights)
+    side = size(weights.vertical, 1)
+    iseven(side) && side >= 2 || throw(ArgumentError(
+        "vertical weights must describe a positive even-sided square"))
+    L = side ÷ 2
+    check_weights_for_L(weights, L)
+    return L
+end
+
+"""
+    kasteleyn_matrix(weights)
+
+Construct the finite bipartite Kasteleyn matrix for the same `2L × 2L`
+weighted square-grid dimer model used by the Glauber sampler. Rows index
+checkerboard-even primal vertices and columns index checkerboard-odd vertices.
+Horizontal primal edges are real and vertical primal edges carry phase `im`.
+
+The absolute determinant is the weighted dimer partition function. This dense
+reference construction is intended for validation and moderate sizes; a sparse
+nested-dissection implementation is required before much larger grids.
+"""
+function kasteleyn_matrix(
+    weights::EdgeWeights;
+    number_type::Type{T}=Float64,
+) where {T<:AbstractFloat}
+    L = edge_weight_order(weights)
+    side = 2L
+    black_vertices = [(row, column) for row in 1:side for column in 1:side
+                      if iseven(row + column)]
+    white_vertices = [(row, column) for row in 1:side for column in 1:side
+                      if isodd(row + column)]
+    black_index = Dict(vertex => index for (index, vertex) in enumerate(black_vertices))
+    white_index = Dict(vertex => index for (index, vertex) in enumerate(white_vertices))
+    matrix = zeros(Complex{T}, length(black_vertices), length(white_vertices))
+
+    for ((row, column), row_index) in black_index
+        if column > 1
+            matrix[row_index, white_index[(row, column - 1)]] =
+                T(weights.vertical[row, column])
+        end
+        if column < side
+            matrix[row_index, white_index[(row, column + 1)]] =
+                T(weights.vertical[row, column + 1])
+        end
+        if row > 1
+            matrix[row_index, white_index[(row - 1, column)]] =
+                complex(zero(T), T(weights.horizontal[row, column]))
+        end
+        if row < side
+            matrix[row_index, white_index[(row + 1, column)]] =
+                complex(zero(T), T(weights.horizontal[row + 1, column]))
+        end
+    end
+    return (
+        matrix=matrix,
+        black_vertices=black_vertices,
+        white_vertices=white_vertices,
+        black_index=black_index,
+        white_index=white_index,
+    )
+end
+
+height_point(point::CartesianIndex{2}) = Tuple(point)
+function height_point(point::Tuple{<:Integer,<:Integer})
+    return (Int(point[1]), Int(point[2]))
+end
+height_point(point) = throw(ArgumentError(
+    "height paths must contain CartesianIndex{2} values or integer pairs"))
+
+"Map one directed dual-height step to its crossed undirected primal edge."
+function crossed_primal_edge(first_point, second_point, side::Int)
+    first_row, first_column = first_point
+    second_row, second_column = second_point
+    row_step = second_row - first_row
+    column_step = second_column - first_column
+    abs(row_step) + abs(column_step) == 1 || throw(ArgumentError(
+        "successive height-path points must be nearest neighbours"))
+
+    if row_step != 0
+        row = min(first_row, second_row)
+        column = first_column
+        1 <= row <= side && 2 <= column <= side || throw(ArgumentError(
+            "height path crosses an exterior edge outside the dimer graph"))
+        return ((row, column - 1), (row, column))
+    end
+
+    row = first_row
+    column = min(first_column, second_column)
+    2 <= row <= side && 1 <= column <= side || throw(ArgumentError(
+        "height path crosses an exterior edge outside the dimer graph"))
+    return ((row - 1, column), (row, column))
+end
+
+"""
+    height_difference_moments_kasteleyn(weights, path)
+
+Compute the finite-volume conditional mean and variance of
+`height[path[end]] - height[path[1]]` from Kasteleyn edge correlations. Path
+coordinates are one-based entries of the `(2L+1) × (2L+1)` height matrix and
+successive entries must be nearest neighbours.
+
+The result is deterministic for a frozen environment. Its numerical
+diagnostics expose the selected linear-solve residual and imaginary residuals
+that should vanish in the real occupation probabilities and covariances.
+"""
+function height_difference_moments_kasteleyn(
+    weights::EdgeWeights,
+    path;
+    number_type::Type{T}=Float64,
+) where {T<:AbstractFloat}
+    L = edge_weight_order(weights)
+    side = 2L
+    points = height_point.(collect(path))
+    length(points) >= 2 || throw(ArgumentError("height path needs at least two points"))
+    all(point -> 1 <= point[1] <= side + 1 && 1 <= point[2] <= side + 1,
+        points) || throw(BoundsError((side + 1, side + 1), points))
+
+    reference = max_height_configuration(L)
+    system = kasteleyn_matrix(weights; number_type=number_type)
+    coefficients = Dict{Tuple{Int,Int},Int}()
+    reference_increment = 0
+
+    for (first_point, second_point) in zip(points[1:(end - 1)], points[2:end])
+        first_row, first_column = first_point
+        second_row, second_column = second_point
+        primal_first, primal_second = crossed_primal_edge(first_point, second_point, side)
+        reference_difference = reference[second_row, second_column] -
+                               reference[first_row, first_column]
+        abs(reference_difference) in (1, 3) || error(
+            "reference height has an illegal path increment")
+        unoccupied_sign = abs(reference_difference) == 1 ? reference_difference :
+                          -reference_difference ÷ 3
+        reference_increment += unoccupied_sign
+
+        black = iseven(sum(primal_first)) ? primal_first : primal_second
+        white = black == primal_first ? primal_second : primal_first
+        key = (system.black_index[black], system.white_index[white])
+        coefficients[key] = get(coefficients, key, 0) - 4unoccupied_sign
+    end
+
+    filter!(pair -> !iszero(last(pair)), coefficients)
+    edge_keys = sort!(collect(keys(coefficients)))
+    edge_coefficients = T[coefficients[key] for key in edge_keys]
+    matrix_order = size(system.matrix, 1)
+    factorization = lu(system.matrix)
+    log_partition, partition_phase = logabsdet(factorization)
+
+    if isempty(edge_keys)
+        return (
+            mean=T(reference_increment),
+            variance=zero(T),
+            reference_increment=reference_increment,
+            crossed_edges=0,
+            matrix_order=matrix_order,
+            log_partition=log_partition,
+            partition_phase=partition_phase,
+            edge_probabilities=T[],
+            relative_solve_residual=zero(T),
+            maximum_probability_imaginary_residual=zero(T),
+            maximum_covariance_imaginary_residual=zero(T),
+        )
+    end
+
+    black_columns = sort!(unique(first(key) for key in edge_keys))
+    black_column_index = Dict(index => column for (column, index) in enumerate(black_columns))
+    right_hand_side = zeros(Complex{T}, matrix_order, length(black_columns))
+    for (column, black) in enumerate(black_columns)
+        right_hand_side[black, column] = 1
+    end
+    selected_inverse = factorization \ right_hand_side
+    relative_solve_residual = norm(system.matrix * selected_inverse - right_hand_side) /
+                              max(norm(right_hand_side), eps(T))
+
+    edge_count = length(edge_keys)
+    kernel = Matrix{Complex{T}}(undef, edge_count, edge_count)
+    for first_edge in 1:edge_count, second_edge in 1:edge_count
+        black, white = edge_keys[first_edge]
+        second_black = first(edge_keys[second_edge])
+        kernel[first_edge, second_edge] = system.matrix[black, white] *
+            selected_inverse[white, black_column_index[second_black]]
+    end
+
+    complex_probabilities = diag(kernel)
+    maximum_probability_imaginary_residual = maximum(abs, imag.(complex_probabilities))
+    numerical_tolerance = max(T(100) * eps(T) * matrix_order, sqrt(eps(T)))
+    maximum_probability_imaginary_residual <= numerical_tolerance || error(
+        "Kasteleyn occupation probabilities have a material imaginary residual")
+    probabilities = real.(complex_probabilities)
+    all(probability -> -numerical_tolerance <= probability <= 1 + numerical_tolerance,
+        probabilities) || error(
+        "Kasteleyn occupation probability lies outside [0,1]")
+    probabilities = clamp.(probabilities, zero(T), one(T))
+
+    covariance = Matrix{T}(undef, edge_count, edge_count)
+    maximum_covariance_imaginary_residual = zero(T)
+    for first_edge in 1:edge_count, second_edge in 1:edge_count
+        complex_value = if first_edge == second_edge
+            complex_probabilities[first_edge] * (1 - complex_probabilities[first_edge])
+        else
+            -kernel[first_edge, second_edge] * kernel[second_edge, first_edge]
+        end
+        maximum_covariance_imaginary_residual = max(
+            maximum_covariance_imaginary_residual, abs(imag(complex_value)))
+        covariance[first_edge, second_edge] = real(complex_value)
+    end
+    maximum_covariance_imaginary_residual <= numerical_tolerance || error(
+        "Kasteleyn occupation covariances have a material imaginary residual")
+
+    mean_difference = reference_increment + dot(edge_coefficients, probabilities)
+    variance = dot(edge_coefficients, covariance * edge_coefficients)
+    variance_tolerance = numerical_tolerance * max(one(T), sum(abs2, edge_coefficients))
+    variance >= -variance_tolerance || error(
+        "Kasteleyn height variance is materially negative")
+
+    return (
+        mean=mean_difference,
+        variance=max(variance, zero(T)),
+        reference_increment=reference_increment,
+        crossed_edges=edge_count,
+        matrix_order=matrix_order,
+        log_partition=log_partition,
+        partition_phase=partition_phase,
+        edge_probabilities=probabilities,
+        relative_solve_residual=relative_solve_residual,
+        maximum_probability_imaginary_residual=maximum_probability_imaginary_residual,
+        maximum_covariance_imaginary_residual=maximum_covariance_imaginary_residual,
+    )
+end
+
+"""
+    center_height_moments_kasteleyn(weights)
+
+Compute the conditional mean and variance of the same central-face height used
+by the Glauber campaigns, without Markov-chain sampling. The calculation uses
+a straight dual path from the fixed top boundary to the central face.
+"""
+function center_height_moments_kasteleyn(
+    weights::EdgeWeights;
+    number_type::Type{T}=Float64,
+) where {T<:AbstractFloat}
+    L = edge_weight_order(weights)
+    center_column = L + 1
+    path = [(row, center_column) for row in 1:(L + 1)]
+    difference = height_difference_moments_kasteleyn(
+        weights, path; number_type=number_type)
+    boundary_height = max_height_configuration(L)[1, center_column]
+    return merge(difference, (
+        mean=boundary_height + difference.mean,
+        boundary_height=boundary_height,
+        path=path,
+    ))
 end
 
 "Weights for the Gibbs law proportional to `matching_weight(height, weights)^beta`."

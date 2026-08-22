@@ -1,0 +1,9 @@
+Independent block: one frozen edge-weight environment within one L.
+Conditional moments: finite dense Kasteleyn factorization; no MCMC draws.
+Disorder component: sample variance of exact conditional means.
+Total component: mean exact conditional variance plus disorder component.
+Bootstrap: whole environments within size; 5000 repetitions.
+Bootstrap seed: 20260823.
+Nested models: a+b*log(L) versus a+b*log(L)+c*log(L)^2.
+Positive delta BIC favors the quadratic extension.
+MCMC comparison, when supplied, joins identical L and environment seeds.

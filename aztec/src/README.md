@@ -8,8 +8,10 @@ The active package is intentionally split by mathematical construction.
   complementary dual trees, generalized Temperley matchings, and spatial
   height increments.
 - [`GlauberSquareGrid.jl`](GlauberSquareGrid.jl) contains direct square-grid
-  dimer heat-bath dynamics, exact enumeration, event-driven acceleration, and
-  replica exchange.
+  dimer heat-bath dynamics, exact enumeration, event-driven acceleration,
+  replica exchange, and dense finite-volume Kasteleyn moments. The Kasteleyn
+  path solves only the inverse columns needed by a height path and supports a
+  high-precision fallback for poorly conditioned environments.
 
 Public functions use explicit random-number generators. Reference and
 optimized paths are kept separate wherever exact comparison is possible.

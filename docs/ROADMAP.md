@@ -5,92 +5,83 @@ results and historical pilots belong in [`RESULTS.md`](RESULTS.md).
 
 ## Current conclusion
 
-The direct frozen-edge square-grid Glauber campaign does not provide robust
-evidence for a positive \((\log L)^2\) coefficient over \(L=2\)–20. The
-all-one control behaves correctly and the variance decomposition closes, but
-the largest sizes have unresolved mixing diagnostics.
+A finite bipartite Kasteleyn calculation has replayed all 960 frozen Gamma
+environments from the direct square-grid campaign. It reproduces exact tiny
+enumeration and confirms the central-height component estimates without an
+MCMC mixing assumption. No component has a robust positive
+\((\log L)^2\) coefficient over \(L=2\)–20.
 
-The next objective is therefore **frontier validation**, not a larger general
-production campaign.
+The next objective is therefore a **like-for-like spatial-height experiment**,
+not more central-height MCMC production.
 
-## P0 — Freeze and audit the completed campaign
+## Completed — Determinantal central-height validation
 
-- Preserve the raw core, frontier, and control roots without manual edits.
-- Record campaign configs, base seeds, code revision, file counts, and SHA-256
-  manifests.
-- Retain all-environment estimates as the primary analysis.
-- Label start-gap filtering as sensitivity analysis only.
-- Recompute a conservative core-only \(L=2\)–12 fit that does not depend on the
-  unresolved frontier mixing.
+- The dense Kasteleyn orientation and height-path formula match complete
+  weighted `L=1,2` enumeration.
+- The environment namespace matches the MCMC production seeds.
+- All 960 Gamma environments have deterministic conditional means and
+  variances with recorded numerical diagnostics.
+- The MCMC and determinantal aggregate conclusions agree.
 
-Completion gate: a fresh checkout plus the external raw roots can regenerate
-the environment-block and scaling tables without undocumented steps.
+Retained data and results are under
+`aztec/data/glauber_square_grid_kasteleyn_20260822/` and
+`aztec/results/glauber_square_grid_kasteleyn_20260822/`.
 
-## P1 — Measure replica flow directly
+## P1 — Validate spatial height increments
 
-Extend the parallel-tempering diagnostics without changing the target model:
+Use `height_difference_moments_kasteleyn` for the same relative separations as
+the Aztec paired experiment:
 
-- attach a persistent label to each replica;
-- record temperature-index occupancy and transitions;
-- count completed cold-to-hot-to-cold round trips;
-- retain adjacent-pair attempts and acceptances;
-- report label-flow diagnostics separately for both independent chains.
+- \(r/L = 1/32,1/16,1/8,1/4\) where the finite grid permits them;
+- conditional variance from Kasteleyn covariances;
+- disorder variance from environment-to-environment conditional means;
+- an all-one negative control;
+- several paths with the same endpoints to test height path-independence.
 
-Validate the instrumentation on tiny exactly enumerable systems. The added
-bookkeeping must not affect configurations, acceptance decisions, seeds, or
-the \(\beta=1\) observable.
+Completion gate: every spatial mean and covariance agrees with exhaustive
+enumeration on tiny grids and is path-independent within numerical tolerance.
 
-## P2 — Repair the hot-end exchange bottleneck
+## P2 — Dense-method size and conditioning pilot
 
-At \(L=20\), pooled acceptance for the \(\beta=0\leftrightarrow0.05\) pair is
-approximately 0.062, while target-adjacent exchange is healthy. Use a pilot to
-construct a denser ladder near \(\beta=0\), keeping:
+Benchmark geometrically spaced sizes with the same Gamma law and the all-one
+control. Record factorization time, memory, residuals, high-precision fallback
+rate, and the number of independent environments achievable per size.
 
-- the same frozen i.i.d. mean-one edge environment;
-- the same local heat-bath rule;
-- the same \(\beta=1\) target distribution;
-- the same two-chain extremal-start comparison;
-- deterministic, recorded seeds.
+Do not choose production sizes until this benchmark identifies where dense
+factorization ceases to be practical or numerically reliable.
 
-Do not optimize the ladder by changing the disorder law, central-height
-observable, pairing, or estimand.
+## P3 — Sparse or nested-dissection implementation
 
-## P3 — Fresh-seed frontier pilot
+If the dense pilot cannot reach a useful spatial scaling window, replace the
+dense factorization with a sparse selected-inverse or nested-dissection method.
+Validate it against the dense implementation on shared environments before
+using it for new sizes.
 
-Run a small, restart-safe validation campaign at \(L=16,20\) only. Predeclare
-the schedule and diagnostic gate before inspecting the estimates.
+## P4 — Fresh-seed spatial production
 
-Required evidence:
+Only after P1–P3 pass, predeclare sizes, environment counts, fitting windows,
+bootstrap seed, and numerical-failure policy. Analyze the fresh-seed campaign
+independently before combining it with any pilot.
 
-- replica flow across the full ladder rather than only local target exchange;
-- no common signed extremal-start bias;
-- adequate chain ESS for the retained central-height trace;
-- stable conditional, disorder, and total components across the two starts;
-- agreement with exact/reference behaviour wherever a smaller analogue is
-  available;
-- no errors, incomplete batches, or missing provenance.
+## P5 — Disorder-strength scan
 
-If the pilot fails, lengthen or redesign the ladder and repeat the pilot. Do
-not compensate by pooling more poorly mixed environments.
+After the primary Gamma spatial experiment is frozen, compare predeclared
+mean-one Gamma shapes and the all-one control. Keep each law as a separate
+estimand and report the same cutoff and weighting sensitivities.
 
-## P4 — Independent frontier replication
+## Optional MCMC cross-validation
 
-Only after the P3 gate passes, repeat \(L=16,20\) with a fresh campaign seed.
-Analyze it independently before combining anything with the completed run.
+Replica-flow instrumentation and a repaired temperature ladder remain useful
+for observables that cannot be reduced to Kasteleyn correlations. They are no
+longer prerequisites for the `L<=20` central-height conclusion.
 
-- If the replication agrees, update the full-range scaling comparison and
-  report the improved mixing evidence.
-- If it differs materially, exclude the original frontier from the primary
-  analysis and retain \(L\le12\) as the defensible range.
+## Cross-model comparison
 
-## P5 — Cross-model comparison
-
-Once the direct square-grid frontier is validated, compare Aztec and
-square-grid results through one common schema:
+Compare Aztec and square-grid spatial results through one common schema:
 
 ```text
-model, geometry, L, disorder law, environment seed, replica seeds,
-observable, conditional component, disorder component, diagnostics
+model, geometry, L, disorder law, environment seed,
+observable, conditional component, disorder component, numerical diagnostics
 ```
 
 Use the same environment-blocked fitting implementation and report:
@@ -104,7 +95,8 @@ Use the same environment-blocked fitting implementation and report:
 - negative controls.
 
 The comparison must distinguish genuine geometry/model differences from
-finite-size effects and from differences in how disorder is represented.
+finite-size effects, boundary effects, and differences in how disorder is
+represented.
 
 ## Release checklist
 

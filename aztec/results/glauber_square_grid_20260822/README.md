@@ -25,8 +25,11 @@ The largest standardized extremal-start gaps are 6.28 at `L=16` and 7.76 at
 `L=20`, while target-adjacent exchange remains healthy. Full replica round
 trips were not recorded, so the larger-size result is not a mixing certificate.
 
-The defensible interpretation is a **finite-size null result with a frontier
-mixing caveat**, not a proof of asymptotic ordinary-log behaviour.
+Taken alone, the MCMC campaign is a **finite-size null result with a frontier
+mixing caveat**, not a proof of asymptotic ordinary-log behaviour. The later
+finite-volume Kasteleyn replay resolves that caveat for this central-height
+observable and preserves the null conclusion; see
+[`../glauber_square_grid_kasteleyn_20260822/`](../glauber_square_grid_kasteleyn_20260822/).
 
 ## Files
 

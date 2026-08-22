@@ -25,10 +25,14 @@ negative value favours the ordinary-log curve.
 - [`glauber_square_grid_20260822/`](glauber_square_grid_20260822/) contains the
   direct frozen-edge production components, diagnostics, scaling comparisons,
   and interpretation.
+- [`glauber_square_grid_kasteleyn_20260822/`](glauber_square_grid_kasteleyn_20260822/)
+  contains the exact 960-environment replay, MCMC comparison, and
+  mixing-independent scaling analysis.
 
-The newer direct Glauber production traces remain in external project storage
+The raw direct Glauber production traces remain in external project storage
 because they are substantially larger than the retained Git datasets. Their
-environment-blocked estimates and scientific conclusions are recorded in
+environment blocks and the exact Kasteleyn moments needed for the central-
+height comparison are retained here. Scientific conclusions are recorded in
 [`../../docs/RESULTS.md`](../../docs/RESULTS.md), with reproduction commands in
 [`../../docs/REPRODUCIBILITY.md`](../../docs/REPRODUCIBILITY.md).
 

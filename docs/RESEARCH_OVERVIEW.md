@@ -113,10 +113,10 @@ This supports the interpretation that the \((\log L)^2\) term, when present, bel
 - Aztec central-height variance alone: not a convincing \(p=2\) diagnostic;
 - two-tiling height difference alone: ordinary-log-like;
 - square-grid structured Temperley paired experiments: no robust positive quadratic-log coefficient.
-- direct square-grid frozen-edge Glauber production: no robust positive
-  quadratic-log coefficient in the conditional, disorder, or total
-  central-height components over `L=2--20`; the `L=16,20` conclusion remains
-  conditional on unresolved extremal-start and hot-end replica-flow diagnostics.
+- direct square-grid frozen-edge dimers: no robust positive quadratic-log
+  coefficient in the conditional, disorder, or total central-height
+  components over `L=2--20`. A finite-volume Kasteleyn replay of all 960 Gamma
+  environments confirms this independently of MCMC mixing.
 
 ## Direct weighted-dimer direction
 
@@ -139,21 +139,23 @@ annealed central-height variance can also be decomposed into conditional and
 disorder components without changing the estimand.
 
 That production campaign completed on 22 August 2026 with 960 Gamma
-environments and 352 all-one controls.  Environment-blocked bootstrap fits do
-not support a positive nested `(log L)^2` term.  This is finite-size numerical
-evidence rather than a mixing certificate: standardized extremal-start gaps
-deteriorate at `L=16,20`, and the lowest-beta exchange pair is a measurable
-round-trip bottleneck at `L=20`.
+environments and 352 all-one controls. Environment-blocked bootstrap fits do
+not support a positive nested `(log L)^2` term. Some individual MCMC estimates
+showed mixing concerns at `L=16,20`, so the same 960 Gamma environments were
+subsequently replayed with a finite-volume Kasteleyn calculation. The exact
+conditional moments preserve the aggregate null conclusion without a
+Markov-chain mixing assumption.
 
 ## Critical ambiguity to resolve before a large new run
 
 The newer disorder-covariance observable relies on two samples sharing a well-defined random environment, whereas the "refresh weights at every step" experiment removes a fixed spatial environment. Do **not** silently invent a pairing convention.
 
-For the direct Glauber route, the production estimand is the variance of the
+For the direct weighted-dimer route, the production estimand is the variance of the
 central-face height over frozen environments and equilibrium dimer samples.
 The shared-environment pairing is explicit: each environment owns two
 conditionally independent chains.  Individual MCMC draws are not independent
-environment blocks.
+environment blocks. For the determinantal replay, the same decomposition is
+computed directly from each environment's exact conditional mean and variance.
 
 ## Statistical principles already established
 

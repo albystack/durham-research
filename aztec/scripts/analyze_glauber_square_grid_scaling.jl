@@ -99,6 +99,8 @@ function load_environment_blocks(paths)
                 replica_2_mean=parse(Float64, fields[6]),
                 mean_height=parse(Float64, fields[7]),
                 conditional_variance=parse(Float64, fields[8]),
+                replica_1_variance=parse(Float64, fields[9]),
+                replica_2_variance=parse(Float64, fields[10]),
                 replica_1_ess=parse(Float64, fields[11]),
                 replica_2_ess=parse(Float64, fields[12]),
                 start_gap=parse(Float64, fields[13]),

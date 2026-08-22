@@ -34,7 +34,7 @@ The resulting directory is machine-local and ignored by Git.
 |---|---|
 | Aztec spatial increments | `aztec_spatial_smoke.slurm`, `aztec_spatial_parameter.slurm`, `analyze_aztec_parameter.slurm` |
 | Temperley square-grid experiments | `square_grid_smoke.slurm`, `square_grid_pilot.slurm`, `square_grid_robustness.slurm`, `square_grid_high_l.slurm`, `analyze_square_grid.slurm` |
-| Direct square-grid Glauber dynamics | `glauber_square_grid_pilot.slurm`, `analyze_glauber_square_grid_pilot.slurm`, `glauber_square_grid_production.slurm` |
+| Direct square-grid dimers | `glauber_square_grid_pilot.slurm`, `analyze_glauber_square_grid_pilot.slurm`, `glauber_square_grid_production.slurm`, `glauber_square_grid_kasteleyn.slurm` |
 | Refreshed-transition checks | `temporal_square_grid_pilot.slurm`, `temporal_ust_confirmation.slurm`, `temporal_ust_thread_benchmark.slurm` |
 | Historical packed recovery | `../archive/hpc_recovery_202608/` |
 
@@ -99,6 +99,30 @@ Production configs are split by scientific role:
 
 Keeping the frontier separate prevents a timeout or failed mixing diagnostic
 from invalidating the core campaign.
+
+### Determinantal replay
+
+For height differences along a finite dual path, the Kasteleyn runner computes
+conditional moments without MCMC. List the replay tasks and submit only after
+the pilot passes on the target Julia installation:
+
+```bash
+/apps/developers/compilers/julia/1.10.4/1/default/bin.wrapped/julia \
+  --project=.hamilton_env --startup-file=no \
+  aztec/scripts/run_glauber_kasteleyn_campaign.jl \
+  --config aztec/configs/glauber_square_grid_kasteleyn_replay.csv \
+  --output-dir /nobackup/$USER/glauber_kasteleyn_replay \
+  --distribution gamma --parameter 0.5 --base-seed 2026082201 \
+  --list-tasks
+
+sbatch --array=1-100%8 \
+  --export=ALL,CONFIG=aztec/configs/glauber_square_grid_kasteleyn_replay.csv,OUTPUT_DIR=/nobackup/$USER/glauber_kasteleyn_replay,BASE_SEED=2026082201,DISTRIBUTION=gamma,PARAMETER=0.5 \
+  hpc/glauber_square_grid_kasteleyn.slurm
+```
+
+The current `L<=20` replay takes seconds on a workstation; the Slurm wrapper
+exists for deterministic cluster reproduction and future benchmarked sizes,
+not as justification to bypass the pilot gate.
 
 ## Analysis
 

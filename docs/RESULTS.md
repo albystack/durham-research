@@ -389,11 +389,62 @@ common start direction.  Minimum chain ESS remains `88.8` and `95.5`.
 Adjacent-pair exchange is monotone across the ladder: at `L=20`, pooled
 acceptance is `0.062` for `beta=0--0.05` but `0.637` for `beta=0.95--1.00`.
 The target replica therefore exchanges locally, but full round trips were not
-recorded and cannot be certified.  The production result is consequently a
-finite-size null with a larger-size mixing caveat, not a proof of asymptotic
-ordinary-log behaviour.
+recorded and cannot be certified. The production result was consequently
+recorded as a finite-size null with a larger-size mixing caveat. The
+independent determinantal replay below resolves that caveat for the retained
+central-height observable.
 
-## 11. What is established vs not established
+## 11. Determinantal square-grid replay — August 2026
+
+The direct square-grid dimer model is finite, planar, and bipartite. A dense
+Kasteleyn matrix with real horizontal entries and imaginary vertical entries
+was added for the finite-volume edge-correlation calculation. The central
+height is a signed sum of occupations along a dual path, so its conditional
+mean and variance follow from selected entries of the inverse matrix.
+
+Validation:
+
+- weighted partition functions, central means, and central variances agree
+  with complete `L=1,2` enumeration to approximately `1e-12`;
+- the uniform `L=2` determinant gives the known 36 tilings;
+- the runner reuses the exact environment-seed namespace of the MCMC campaign;
+- all 960 Gamma production environments were replayed;
+- one ill-conditioned `L=12` environment used an automatic 256-bit fallback;
+- the maximum retained solve residual was `7.39e-12`, with zero imaginary
+  residual in the real probability and covariance outputs.
+
+The exact component estimates at the frontier were:
+
+| L | environments | conditional | disorder | total |
+|---:|---:|---:|---:|---:|
+| 16 | 64 | 2.241 | 2.421 | 4.662 |
+| 20 | 32 | 2.057 | 3.066 | 5.124 |
+
+For the unweighted full range `L=2--20`:
+
+| component | c | 95% environment-bootstrap interval | delta BIC | LOOCV RMSE log / quadratic |
+|:--|--:|:--|--:|:--|
+| conditional | -0.145 | [-0.379, 0.090] | 2.454 | 0.179 / 0.145 |
+| disorder | 0.130 | [-0.552, 0.785] | -0.625 | 0.241 / 0.283 |
+| total | -0.015 | [-0.801, 0.714] | -2.046 | 0.145 / 0.251 |
+
+The conditional quadratic model receives modest BIC and prediction support,
+but its coefficient is negative and its interval contains zero. No component
+therefore supplies evidence for a positive super-rough term. Individual MCMC
+environment estimates sometimes differ materially from the determinantal
+values, but the aggregate component and scaling conclusions are stable.
+
+Retained inputs and results are in
+[`aztec/data/glauber_square_grid_kasteleyn_20260822/`](../aztec/data/glauber_square_grid_kasteleyn_20260822/)
+and
+[`aztec/results/glauber_square_grid_kasteleyn_20260822/`](../aztec/results/glauber_square_grid_kasteleyn_20260822/).
+
+**Conclusion:** the direct square-grid central-height experiment is a
+mixing-independent finite-size null over `L=2--20`. It is not evidence for
+asymptotic ordinary-log behaviour, and it is not directly comparable to the
+spatial-increment observable that produced the Aztec signal.
+
+## 12. What is established vs not established
 
 ### Numerically well supported
 - ordinary-log behaviour for the investigated LERW winding observables;
@@ -401,18 +452,18 @@ ordinary-log behaviour.
 - positive finite-size quadratic-log contribution in Aztec disorder covariance for at least the original Gamma and stronger-disorder settings;
 - no comparable robust signal in the current structured square-grid Temperley implementation.
 - no robust positive quadratic-log coefficient in the direct square-grid
-  weighted-dimer campaign over `L=2--20`, subject to the recorded frontier
-  mixing caveat.
+  weighted-dimer central height over `L=2--20`, confirmed by a finite-volume
+  determinantal calculation without an MCMC mixing assumption.
 
 ### Not established
 - an asymptotic proof of \((\log L)^2\);
 - universality over disorder laws;
 - that the current square-grid Temperley disorder exactly represents the desired random-bond dimer model;
-- production-scale equilibration of the proposed square-grid Glauber
-  alternative beyond the calibrated `L<=6` pilot;
+- whether the direct square-grid spatial-increment disorder covariance behaves
+  differently from its central-height variance;
 - the asymptotic sign/magnitude of \(c\) beyond current finite sizes.
 
-## 12. Verification checklist before any formal use
+## 13. Verification checklist before any formal use
 
 Recompute from raw outputs:
 - sample counts by \(L\) and disorder law;

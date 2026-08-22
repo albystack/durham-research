@@ -1,0 +1,6 @@
+environments=960
+maximum_relative_solve_residual=7.381202289213249e-12
+maximum_probability_imaginary_residual=0.0
+maximum_covariance_imaginary_residual=0.0
+high_precision_fallback_environments=1
+maximum_elapsed_seconds=5.908337416

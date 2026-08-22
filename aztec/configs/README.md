@@ -79,3 +79,14 @@ timing and memory measurements only; do not merge them into production data.
 Direct Glauber configs specify one environment per restart-safe task. Every
 environment retains two independent extremal-start chains and their full
 diagnostic records.
+
+## Direct Kasteleyn schedules
+
+- `glauber_square_grid_kasteleyn_pilot.csv`: 32 environments in 18 short
+  tasks spanning `L=2--20`; use it to validate a new machine or Julia version.
+- `glauber_square_grid_kasteleyn_replay.csv`: all 960 Gamma environments from
+  the retained direct Glauber campaign in 100 restart-safe tasks.
+
+These schedules use the same environment identifiers as the direct Glauber
+configs. With base seed `2026082201`, Gamma shape `0.5`, and the same size,
+they reconstruct exactly the frozen production environments.

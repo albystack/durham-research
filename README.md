@@ -17,10 +17,11 @@ workflows. The active Julia package has no third-party runtime dependencies.
   original and stronger Gamma laws.
 - **Structured square-grid disorder:** spanning-tree/Temperley experiments up
   to \(L=6144\) do not show a stable positive quadratic-log contribution.
-- **Direct weighted-dimer dynamics:** a 1,312-environment square-grid Glauber
-  campaign separates conditional, disorder, and total central-height
-  variance. The fitted quadratic coefficient is compatible with zero, with a
-  documented mixing caveat at \(L=16,20\).
+- **Direct weighted dimers:** a 1,312-environment square-grid Glauber campaign
+  separates conditional, disorder, and total central-height variance. An
+  exact finite-volume Kasteleyn replay of all 960 Gamma environments confirms
+  that no component has a robust positive quadratic-log coefficient over
+  \(L=2,\ldots,20\), without relying on MCMC mixing.
 - **Negative controls:** uniform or all-one environments do not create a
   spurious disorder component.
 
@@ -103,6 +104,7 @@ Start with the [documentation index](docs/README.md), then use the
 - atomic, restart-safe output batches;
 - explicit campaign metadata and execution provenance;
 - exact enumeration and detailed-balance checks at small sizes;
+- exact finite-volume dimer moments from selected inverse Kasteleyn entries;
 - reference-vs-optimized observable tests;
 - uncertainty and model comparisons repeated across fit windows;
 - controls analyzed with the same pipeline as disordered models.

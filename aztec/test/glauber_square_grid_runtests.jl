@@ -2,6 +2,8 @@ const GSG = AztecDiamond.GlauberSquareGrid
 
 include(joinpath(@__DIR__, "..", "scripts", "analyze_glauber_square_grid_scaling.jl"))
 const GPSA = GlauberProductionScaling
+include(joinpath(@__DIR__, "..", "scripts", "analyze_glauber_kasteleyn_campaign.jl"))
+const GKA = GlauberKasteleynAnalysis
 
 @testset "Glauber production environment-blocked scaling" begin
     rows = [
@@ -36,6 +38,41 @@ const GPSA = GlauberProductionScaling
     @test all(draws.total .== draws.conditional .+ draws.disorder)
 end
 
+@testset "Kasteleyn/MCMC comparison joins exact environment identities" begin
+    exact = [
+        (L=4, environment_id=1, environment_seed=UInt64(11),
+         conditional_mean=1.0, conditional_variance=2.0),
+        (L=4, environment_id=2, environment_seed=UInt64(12),
+         conditional_mean=2.0, conditional_variance=3.0),
+    ]
+    mcmc = [
+        (L=4, environment_id=1, environment_seed=UInt64(11),
+         replica_1_mean=0.8, replica_2_mean=1.0,
+         replica_1_variance=2.0, replica_2_variance=2.0,
+         replica_1_ess=100.0, replica_2_ess=100.0,
+         conditional_variance=2.2, start_gap=-0.2,
+         standardized_start_gap=1.0, minimum_pair_swap_acceptance=0.2,
+         target_exchange_acceptance=0.8),
+        (L=4, environment_id=2, environment_seed=UInt64(12),
+         replica_1_mean=2.0, replica_2_mean=2.0,
+         replica_1_variance=0.0, replica_2_variance=0.0,
+         replica_1_ess=100.0, replica_2_ess=100.0,
+         conditional_variance=2.8, start_gap=0.0,
+         standardized_start_gap=0.0, minimum_pair_swap_acceptance=0.3,
+         target_exchange_acceptance=0.9),
+    ]
+    comparison = GKA.comparison_rows(exact, mcmc)
+    @test length(comparison) == 2
+    @test isapprox(comparison[1].mcmc_minus_exact_mean, -0.1; atol=1e-12)
+    @test comparison[1].estimated_mcmc_mean_standard_error > 0
+    @test !comparison[1].zero_standard_error_inconsistent
+    @test comparison[2].standardized_mean_error == 0
+    @test !comparison[2].zero_standard_error_inconsistent
+    summary = only(GKA.comparison_summary(comparison))
+    @test summary.L == 4
+    @test summary.environments == 2
+end
+
 @testset "square-grid Glauber height reference" begin
     @testset "extremal height boundaries encode valid dimer matchings" begin
         for L in 1:4
@@ -57,6 +94,59 @@ end
     @testset "tiny state spaces match domino-tiling counts" begin
         @test length(GSG.enumerate_height_configurations(1)) == 2
         @test length(GSG.enumerate_height_configurations(2)) == 36
+    end
+
+    @testset "Kasteleyn moments match exhaustive weighted enumeration" begin
+        for L in 1:2, seed in 100_020:100_023
+            weights = GSG.random_edge_weights(
+                Xoshiro(seed + L), L; distribution=:gamma, parameter=0.7)
+            states = GSG.enumerate_height_configurations(L)
+            partition = sum(GSG.matching_weight(state, weights) for state in states)
+            exact = GSG.exact_center_distribution(L, weights)
+            determinantal = GSG.center_height_moments_kasteleyn(weights)
+
+            @test isapprox(exp(determinantal.log_partition), partition;
+                           rtol=2e-12, atol=1e-14)
+            @test isapprox(determinantal.mean, exact.mean; rtol=2e-12, atol=2e-12)
+            @test isapprox(determinantal.variance, exact.variance;
+                           rtol=2e-12, atol=2e-12)
+            @test determinantal.crossed_edges == L
+            @test determinantal.matrix_order == 2L^2
+            @test all(probability -> 0 <= probability <= 1,
+                      determinantal.edge_probabilities)
+            @test determinantal.relative_solve_residual < 1e-12
+            @test determinantal.maximum_probability_imaginary_residual < 1e-12
+            @test determinantal.maximum_covariance_imaginary_residual < 1e-12
+
+            reverse_path = reverse(determinantal.path)
+            reverse_difference = GSG.height_difference_moments_kasteleyn(
+                weights, reverse_path)
+            forward_mean = determinantal.mean - determinantal.boundary_height
+            @test isapprox(reverse_difference.mean, -forward_mean; atol=2e-12)
+            @test isapprox(reverse_difference.variance, determinantal.variance;
+                           atol=2e-12)
+        end
+
+        uniform = GSG.center_height_moments_kasteleyn(GSG.constant_edge_weights(2))
+        @test isapprox(exp(uniform.log_partition), 36.0; atol=1e-11)
+        high_precision = setprecision(128) do
+            GSG.center_height_moments_kasteleyn(
+                GSG.constant_edge_weights(2); number_type=BigFloat)
+        end
+        @test isapprox(high_precision.mean, 0; atol=big"1e-35")
+        @test isapprox(high_precision.variance, big(8) / 9; atol=big"1e-35")
+        @test high_precision.relative_solve_residual < big"1e-35"
+        @test_throws ArgumentError GSG.height_difference_moments_kasteleyn(
+            GSG.constant_edge_weights(2), [(1, 2), (2, 3)])
+        @test_throws ArgumentError GSG.height_difference_moments_kasteleyn(
+            GSG.constant_edge_weights(2), [(1, 1), (2, 1)])
+
+        moderate = GSG.center_height_moments_kasteleyn(
+            GSG.random_edge_weights(Xoshiro(100_024), 6;
+                                    distribution=:gamma, parameter=0.5))
+        @test isfinite(moderate.mean)
+        @test moderate.variance >= 0
+        @test moderate.relative_solve_residual < 1e-11
     end
 
     @testset "local heat bath has the specified ac versus bd probability" begin
