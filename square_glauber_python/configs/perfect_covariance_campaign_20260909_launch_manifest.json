@@ -1,0 +1,16 @@
+{
+  "backend": "numba",
+  "all_cftp_seeds_unique": true,
+  "all_environment_seeds_unique": true,
+  "campaign_id": "square-glauber-perfect-covariance-20260909",
+  "created_utc": "2026-09-09T20:56:06.151014+00:00",
+  "environment_count": 23800,
+  "manifest": "configs/perfect_covariance_campaign_20260909_launch_manifest.csv",
+  "manifest_sha256": "2b0da28ac20a9c2155073961c5ee44b81a70a3d7545a611dfe386a0fd64bffed",
+  "master_seed": 2026090901,
+  "perfect_sample_count": 47600,
+  "schedule": "configs/perfect_covariance_campaign_20260909.csv",
+  "schedule_sha256": "147373346a8446357041450e12377cbb32d2dc36f3de41bb7bc01b6254a078fa",
+  "statistical_unit": "one frozen environment with two independent certified CFTP samples",
+  "task_count": 934
+}

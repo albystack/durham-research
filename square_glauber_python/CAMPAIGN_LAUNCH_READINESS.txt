@@ -1,0 +1,103 @@
+SQUARE-GLAUBER PAIRED PERFECT-SAMPLING CAMPAIGN
+Launch-readiness record
+Prepared: 2026-09-10 (Europe/Rome)
+
+SCIENTIFIC TARGET
+Two conditionally independent, CFTP-certified dimer configurations are sampled
+in each frozen edge environment. The primary estimand is the across-environment
+covariance of the paired centre heights and spatial height increments. Gamma
+(shape=1, scale=1) is the disorder model; all-one weights are the negative
+control. The later analysis compares ordinary-log and log-squared descriptions
+without constraining the quadratic coefficient to be positive.
+
+FROZEN DESIGN
+Campaign ID: square-glauber-perfect-covariance-20260909
+Master seed: 2026090901
+Sizes: L = 8, 12, 16, 20, 24, 28, 32
+Gamma environments: 4000, 4000, 3000, 2500, 2000, 1500, 1200
+Uniform paired control blocks: 800 at every size
+Total environment blocks: 23,800
+Perfect samples per block: 2
+Total certified samples required: 47,600
+Slurm array tasks: 934
+Default task concurrency: 32
+
+AUTHORITATIVE INPUTS
+Schedule:
+  configs/perfect_covariance_campaign_20260909.csv
+  SHA-256 147373346a8446357041450e12377cbb32d2dc36f3de41bb7bc01b6254a078fa
+Launch manifest:
+  configs/perfect_covariance_campaign_20260909_launch_manifest.csv
+  SHA-256 2b0da28ac20a9c2155073961c5ee44b81a70a3d7545a611dfe386a0fd64bffed
+
+SEED AND CENSORING CONTRACT
+All 23,800 environment seeds are unique. All 47,600 CFTP seeds are unique and
+the two sample seeds within every environment differ. Environments are written
+before sampling and checked against deterministic regeneration and SHA-256.
+A pair.json scientific row is written only after both streams certify. A capped
+stream is retained as censored and must be replayed with its identical weights,
+seed, and random-map history; no environment may be discarded or replaced.
+
+PRODUCTION-PATH DRESS REHEARSAL
+The first real manifest task (200 L=8 Gamma environments, 400 CFTP streams) was
+run locally with Numba. At the preliminary 1,048,576-sweep cap, 198/200 pairs
+certified and two retained environments were censored. Replaying only those
+same streams certified them at horizons 2,097,152 and 4,194,304 sweeps. Final:
+200/200 pairs certified, median horizon 2,048 sweeps, maximum 4,194,304 sweeps,
+and 42.77 seconds summed CFTP runtime. This tail observation motivated the
+67,108,864-sweep production censoring cap for Gamma cases. The cap is not a
+burn-in and has no effect on samples that certify earlier.
+
+LOCAL VALIDATION
+Numba-enabled suite: 79 passed (4.04 s pytest, 4.32 s wall clock).
+Reference-only suite: 60 passed, 19 skipped (4.54 s pytest, 4.96 s wall clock).
+Shell syntax and Python byte compilation passed. The Hamilton-path smoke
+rehearsal produced 2/2 complete environment pairs and exact validation again
+returned counts 2, 5, 36 with stochasticity, stationarity and detailed balance.
+Hamilton Python 3.12.6 with Numba 0.67.0 also passed all 79 tests (12.68 s).
+
+HAMILTON WRAPPERS
+  hpc/setup_hamilton_python.sh
+  hpc/perfect_campaign_smoke.slurm
+  hpc/perfect_campaign_task.slurm
+  hpc/perfect_campaign_aggregate.slurm
+  hpc/launch_perfect_covariance_campaign.sh
+
+The launch is smoke-gated. The terminal audit runs after the array even if a
+task fails and writes campaign_status.csv plus a compressed Slurm retry spec.
+Scientific analysis refuses an incomplete perfect-sampling campaign.
+
+CURRENT SUBMISSION STATUS
+SUBMITTED on Hamilton on 2026-09-10.
+Remote output root:
+  /nobackup/fvkl37/square_glauber_perfect_covariance_20260910
+Smoke job: 18716249 -- COMPLETED in 9 seconds, exit 0:0, empty stderr,
+  2/2 environments and 4/4 perfect samples certified.
+Production array: 18716250 -- 934 tasks. Submitted with maximum concurrency
+32; live throttle raised to 128 and then 256 on 2026-09-10 after confirming
+that the initial pending reason was solely JobArrayTaskLimit.
+Completion audit: 18716251 -- runs after the production array.
+
+LIVE THROUGHPUT OPTIMISATION (2026-09-10 13:23 Europe/Rome)
+Hamilton reported 4,840 idle CPUs in the shared partition. The initial array
+was limited by its own 32-task throttle. Raising the live limit ultimately
+increased active workers from 32 to the full new limit of 256. During ramp-up
+the scheduler briefly reported Resources; once capacity became available it
+filled all 256 slots. Running workers used approximately 125--300 MiB RSS,
+compared with the submitted 4 GiB reservation. Pending elements were therefore
+changed to a conservative 1 GiB reservation; already-running and completed
+elements were not altered. No task was cancelled or restarted, and no code,
+seed, frozen environment, random stream, CFTP rule, or observable was changed.
+
+At that snapshot, 315 task reports covered 14,398 certified pairs, all 256
+permitted array elements were running, and no production stderr file was
+nonempty. Two retained
+Gamma L=16 environments (gamma-L16-env000861 and gamma-L16-env001908) had
+reached the 67,108,864-sweep CFTP cap without certification. They remain part
+of the design and must be replayed later with identical weights, seeds, and
+nested random-map history at a larger horizon; they must not be discarded or
+replaced. The terminal audit job remains responsible for producing the full
+retry list after all 934 primary tasks finish.
+
+The campaign is still running. No paired scaling result exists yet, and no
+log-squared claim has been made.

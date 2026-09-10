@@ -1,0 +1,13 @@
+.venv/
+.venv-numba/
+.hamilton_python/
+outputs/*
+!outputs/.gitkeep
+figures/*
+!figures/.gitkeep
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+build/
+dist/
