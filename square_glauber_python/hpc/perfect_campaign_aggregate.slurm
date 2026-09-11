@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=sq-perfect-audit
-#SBATCH --partition=test
-#SBATCH --time=00:30:00
+#SBATCH --partition=shared
+#SBATCH --time=04:00:00
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=4G
 #SBATCH --output=logs/%x-%j.out

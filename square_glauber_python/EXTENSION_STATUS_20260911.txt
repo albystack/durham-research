@@ -1,0 +1,27 @@
+Hamilton extension submitted 2026-09-11
+
+Campaign: square_glauber_perfect_covariance_20260910
+Original array: 18716250 (934 completed tasks)
+Original audit: 18716251 (timed out after 15 minutes)
+Verified original task reports: 23,774 complete pairs, 26 incomplete pairs.
+Affected task IDs:
+77,98,149,203,221,238,244,300,302,321,466,516,575,670,682,736,744,757,783,810,820,831,855,876,889
+
+Extension array: 18723062
+25 concurrent one-core tasks; 12-hour wall-time limit; 1 GiB per task.
+Maximum CFTP horizon doubled from 67,108,864 to 134,217,728 sweeps.
+Original task reports copied intact to campaign subdirectory:
+extension_134217728_20260911/original_tasks
+Saved certified samples are reused; missing samples replay identical seeds.
+Existing environment arrays are checked against deterministic regeneration.
+
+Strict audit and analysis job: 18723088
+Dependency: afterany:18723062
+Shared partition; 24-hour wall-time limit; 8 GiB; one core.
+Strict aggregation must succeed before analysis starts. If any pair is still
+censored or missing, status/retry tables are produced and analysis is skipped.
+Analysis directory: analysis_frozen_20260911 within the campaign root.
+Bootstrap: 10,000 whole-environment replicates; seed 2026090902.
+
+Verified after submission: all 25 extension tasks RUNNING; finish job waiting
+on Dependency. These are submission records, not a completion certificate.
