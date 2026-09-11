@@ -182,7 +182,7 @@ computed directly from each environment's exact conditional mean and variance.
 
 ## Documentation map
 
-- [`README.md`](README.md): documentation index.
+- [`INDEX.md`](INDEX.md): documentation index.
 - [`RESULTS.md`](RESULTS.md): numerical record and caveats.
 - [`ROADMAP.md`](ROADMAP.md): current ordered work plan and decision gates.
 - [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md): seeds, data layers, and

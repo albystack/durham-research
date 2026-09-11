@@ -6,7 +6,9 @@ cd "$repository_root"
 
 : "${OUTPUT_DIR:?Set a new production OUTPUT_DIR under /nobackup}"
 MANIFEST="${MANIFEST:-configs/perfect_covariance_campaign_20260909_launch_manifest.csv}"
-CONCURRENCY="${CONCURRENCY:-32}"
+# This remains user-configurable. Hamilton sustained 256 workers in the
+# September 2026 campaign; 128 is a conservative shared-partition default.
+CONCURRENCY="${CONCURRENCY:-128}"
 
 [[ "$OUTPUT_DIR" == /nobackup/* ]] || {
   echo "OUTPUT_DIR must be under /nobackup on Hamilton" >&2

@@ -1,0 +1,12 @@
+# Private correspondence and local copies are opt-in, never published by accident.
+emails/*
+!emails/.gitkeep
+supervisor_notes/*
+!supervisor_notes/.gitkeep
+papers/*
+!papers/.gitkeep
+
+# Bibliographic text may be tracked; local document copies may not.
+bibliography/*.pdf
+bibliography/*.docx
+bibliography/*.pages

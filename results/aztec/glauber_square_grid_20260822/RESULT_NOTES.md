@@ -41,4 +41,4 @@ observable and preserves the null conclusion; see
 - `ANALYSIS_METHOD.txt`: estimator and resampling declaration.
 
 The retained environment blocks and exact reproduction command are in
-[`../../data/glauber_square_grid_20260822/`](../../data/glauber_square_grid_20260822/).
+[`../../../aztec/data/glauber_square_grid_20260822/`](../../../aztec/data/glauber_square_grid_20260822/).

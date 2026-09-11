@@ -59,7 +59,7 @@ the reported exponent with a theoretical squared-log prediction.
 
 The most informative next computation is additional precision at the existing
 large orders rather than a new, still larger order. The schedule
-[`../configs/double_dimer_large_continuation.csv`](../configs/double_dimer_large_continuation.csv)
+[`../../aztec/configs/double_dimer_large_continuation.csv`](../../aztec/configs/double_dimer_large_continuation.csv)
 adds 256 independent pairs at each order from 512 through 1,300 without
 reusing sample IDs.
 

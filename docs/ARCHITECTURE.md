@@ -1,10 +1,19 @@
 # Architecture
 
-The repository uses one dependency-light Julia package and thin command-line
-drivers. Scientific kernels are kept separate from campaign orchestration and
-from statistical analysis.
+The repository has one active Python perfect-sampling package and one
+established dependency-light Julia package. Scientific kernels are kept
+separate from campaign orchestration and statistical analysis.
 
-## Package modules
+## Active Python package
+
+[`square_glauber_python/`](../square_glauber_python/PROJECT_GUIDE.md) contains
+the authoritative random-scan heat-bath reference backend, an exactly
+equivalent optional Numba backend, dimer heights, exact enumeration, monotone
+CFTP, frozen-environment campaign tooling, and environment-blocked analysis.
+The perfect sampler publishes a state only after the true minimum and maximum
+height tilings coalesce under the same replayable random maps.
+
+## Julia package modules
 
 ### `AztecDiamond`
 
@@ -57,8 +66,10 @@ conditional means, so no synthetic replica samples are introduced.
 ## Output layers
 
 - `aztec/data/` contains compact retained observations suitable for Git.
-- `aztec/results/` contains reviewed derived tables, reports, and figures.
+- `results/aztec/` contains reviewed derived tables, reports, and figures.
 - `aztec/output/` is ignored and holds local batches or scratch analyses.
+- `square_glauber_python/outputs/` is ignored and holds local validation and
+  diagnostic artifacts.
 - large HPC traces live outside Git and are represented by configs, metadata,
   manifests, checksums, and compact derived tables.
 

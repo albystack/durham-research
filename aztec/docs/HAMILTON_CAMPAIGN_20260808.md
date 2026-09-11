@@ -49,7 +49,7 @@ one compact comparison report after the nine new-law analyses finish.
 The Aztec parameter branch completed end to end on 9 August.  Production jobs
 `18243432`--`18243434`, analysis jobs `18243441`--`18243449`, and consolidated
 summary job `18243729` all finished with exit code zero.  The consolidated
-outputs are preserved locally in `aztec/results/hamilton_20260809/`.
+outputs are preserved locally in `results/aztec/hamilton_20260809/`.
 
 The unfinished high-order square-grid tasks were moved to resumable packed
 allocations after real-data smoke jobs `18249791` and `18249792` passed.  The
@@ -84,10 +84,10 @@ the standard robustness tree contains 3,596 of each, and neither tree contains
 a residual `.tmp` file.
 
 The complete 180-file analysis tree and recovery manifests are preserved
-locally under `aztec/results/hamilton_square_grid_20260811/`.  Its consolidated
+locally under `results/aztec/hamilton_square_grid_20260811/`. Its consolidated
 covariance-aware comparison finds no robust positive log-squared disorder
 coefficient across the five structured square-grid laws and three fit cutoffs.
-See the package `README.md` and the retained summary tables for the checked
+See [`../PROJECT_GUIDE.md`](../PROJECT_GUIDE.md) and the retained summary tables for the checked
 scientific interpretation.
 
 ## Status commands

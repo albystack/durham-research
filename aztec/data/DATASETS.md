@@ -51,7 +51,8 @@ The metadata file records the exact schedule and checksum.
 This directory retains 960 Gamma and 352 all-one frozen-environment blocks
 from the direct weighted-dimer production campaign. It is the compact input
 needed to reproduce the environment-blocked scaling analysis without storing
-the full MCMC traces in Git. See its [`README.md`](glauber_square_grid_20260822/README.md)
+the full MCMC traces in Git. See its
+[`DATASET.md`](glauber_square_grid_20260822/DATASET.md)
 for schemas, seeds, checksums, and the exact command.
 
 ## `glauber_square_grid_kasteleyn_20260822/`
@@ -59,5 +60,5 @@ for schemas, seeds, checksums, and the exact command.
 This directory contains exact finite-volume central-height moments for the
 same 960 Gamma environments as the direct Glauber campaign. It is the retained
 input for the mixing-independent component and scaling analysis. See its
-[`README.md`](glauber_square_grid_kasteleyn_20260822/README.md) for the schema,
+[`DATASET.md`](glauber_square_grid_kasteleyn_20260822/DATASET.md) for the schema,
 precision diagnostics, and replay command.

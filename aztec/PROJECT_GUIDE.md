@@ -223,16 +223,17 @@ aztec/
 ├── scripts/                   campaign, merge, analysis, and plot CLIs
 ├── configs/                   documented sample schedules
 ├── data/                      retained observations and checksums
-├── results/                   final tables, figures, and analysis reports
+├── ../results/aztec/          final tables, figures, and analysis reports
 ├── reference/                 historical prototype code, not production
 ├── output/                    ignored resumable/scratch output
 └── mathematica/               optional legacy matrix renderer
 ```
 
-See [`src/README.md`](src/README.md), [`scripts/README.md`](scripts/README.md),
-[`configs/README.md`](configs/README.md), [`data/README.md`](data/README.md),
-[`results/README.md`](results/README.md), and [`test/README.md`](test/README.md)
-for artifact-level documentation.
+See [`src/MODULES.md`](src/MODULES.md), [`scripts/COMMANDS.md`](scripts/COMMANDS.md),
+[`configs/CONFIGURATION.md`](configs/CONFIGURATION.md),
+[`data/DATASETS.md`](data/DATASETS.md),
+[`../results/aztec/INDEX.md`](../results/aztec/INDEX.md), and
+[`test/TESTING.md`](test/TESTING.md) for artifact-level documentation.
 
 ## Square-grid paired Temperley experiment
 
@@ -270,7 +271,8 @@ batch schema is compatible with `analyze_spatial_campaign.jl`; analyse the
 five-size pilot with the Hamilton wrapper `hpc/analyze_square_grid.slurm` after
 both baseline and directed arrays finish.
 
-Hamilton Slurm wrappers and transfer instructions are in `hpc/README.md`.
+Hamilton Slurm wrappers and transfer instructions are in
+[`../hpc/HAMILTON.md`](../hpc/HAMILTON.md).
 
 ## Direct square-grid weighted-dimer dynamics
 

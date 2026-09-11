@@ -3,7 +3,7 @@
 #SBATCH --partition=shared
 #SBATCH --time=12:00:00
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=4G
+#SBATCH --mem=1G
 #SBATCH --output=logs/%x-%A_%a.out
 #SBATCH --error=logs/%x-%A_%a.err
 #SBATCH --mail-type=FAIL

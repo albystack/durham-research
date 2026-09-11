@@ -1,17 +1,20 @@
 # Reproducibility
 
-## Environment
+## Environments
 
-The active package supports Julia 1.10 or newer and uses only Julia standard
-libraries. A clean checkout can run the full suite with:
+The active square-grid package supports Python 3.11+, with Python 3.12 or 3.13
+recommended for Numba acceleration. The established Aztec package supports
+Julia 1.10+ and uses only Julia standard libraries. A clean checkout can use:
 
 ```bash
+make setup-python PYTHON=python3.13
+make test-python
+make validate-python
 julia --project=aztec -e 'using Pkg; Pkg.test()'
-sh aztec/test/smoke_workflows.sh
 ```
 
-The CI workflow runs the package tests on Julia 1.10 and the latest stable
-Julia release.
+The CI workflow runs the Python mathematical/workflow suite and the Julia
+package tests.
 
 ## Randomness and pairing
 
@@ -42,7 +45,8 @@ residual `.tmp` files and no non-empty error logs.
 ## Retained analyses
 
 Single-height and paired Aztec analyses can be regenerated with the commands
-in [`aztec/README.md`](../aztec/README.md). The direct Glauber pipeline uses:
+in [`aztec/PROJECT_GUIDE.md`](../aztec/PROJECT_GUIDE.md). The earlier direct
+Julia Glauber pipeline uses:
 
 ```bash
 julia --project=aztec aztec/scripts/analyze_glauber_square_grid_production.jl \
@@ -80,6 +84,13 @@ julia --project=aztec aztec/scripts/analyze_glauber_kasteleyn_campaign.jl \
 The Kasteleyn runner records solve and real-projection residuals for every
 environment and automatically retries at 256-bit precision when the Float64
 solve residual exceeds its acceptance threshold.
+
+The current Python CFTP campaign has no burn-in parameter. Each environment
+and each of its two independent perfect-sampling streams has an explicit seed;
+the edge arrays are stored and hashed before sampling. A capped stream returns
+no sample and is replayed later with the identical environment, seed, and
+nested random-map history. See
+[`PERFECT_SAMPLING.md`](../square_glauber_python/PERFECT_SAMPLING.md).
 
 ## Reproduction checklist
 

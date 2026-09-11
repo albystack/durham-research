@@ -1,135 +1,123 @@
-# Random-environment dimers and spanning trees
+# Random-environment dimer height fluctuations
 
-Reproducible Julia experiments for height fluctuations in random tilings,
-spanning trees, and loop-erased random walks. The project tests whether
-variance grows like \(\log L\) or develops a super-rough \((\log L)^2\)
-component, with particular attention to separating conditional sampling noise
-from fluctuations induced by a shared random environment.
+This repository studies height fluctuations in random tilings, dimers,
+spanning trees, and loop-erased random walks. The central numerical question is
+whether the disorder-induced component of the height covariance contains a
+positive \((\log L)^2\) term.
 
-The repository combines exact small-system checks, deterministic Monte Carlo
-campaigns, environment-blocked bootstrap inference, and restart-safe Slurm
-workflows. The active Julia package has no third-party runtime dependencies.
+The project is designed to test that possibility, not to force it. Negative
+controls, exact small-volume checks, frozen analysis plans, and whole-environment
+resampling are retained so that an ordinary-log or null result remains a valid
+scientific outcome.
 
-## Research highlights
+## Current focus
 
-- **Aztec diamonds:** paired spatial-height increments show positive
-  finite-size quadratic-log curvature in the disorder covariance for the
-  original and stronger Gamma laws.
-- **Structured square-grid disorder:** spanning-tree/Temperley experiments up
-  to \(L=6144\) do not show a stable positive quadratic-log contribution.
-- **Direct weighted dimers:** a 1,312-environment square-grid Glauber campaign
-  separates conditional, disorder, and total central-height variance. An
-  exact finite-volume Kasteleyn replay of all 960 Gamma environments confirms
-  that no component has a robust positive quadratic-log coefficient over
-  \(L=2,\ldots,20\), without relying on MCMC mixing.
-- **Negative controls:** uniform or all-one environments do not create a
-  spurious disorder component.
+The active experiment is the direct square-grid random-bond dimer model in
+[`square_glauber_python/`](square_glauber_python/PROJECT_GUIDE.md):
 
-These are finite-size numerical findings, not asymptotic proofs. Exact
-estimates, uncertainty intervals, diagnostics, and limitations are recorded in
-the [results ledger](docs/RESULTS.md).
+- every undirected grid edge receives one fixed positive weight;
+- single-face random-scan heat-bath updates preserve the weighted Gibbs law;
+- the exterior-referenced dimer height uses the documented \(\pm1/\pm3\)
+  convention;
+- monotone coupling from the past (CFTP) returns certified perfect samples;
+- two independent perfect samples share each frozen environment;
+- disorder covariance is measured from paired centre heights and spatial
+  height increments.
+
+The frozen Hamilton campaign covers \(L=8,12,16,20,24,28,32\), with 18,200
+Gamma(shape=1) environments and 5,600 all-one controls. Its pre-specified
+analysis is in
+[`PAIRED_COVARIANCE_ANALYSIS_PLAN.md`](square_glauber_python/PAIRED_COVARIANCE_ANALYSIS_PLAN.md).
+No scaling conclusion is recorded until every retained environment is either
+certified or explicitly reported as censored and extended with the identical
+random-map history.
 
 ## Quick start
 
-Requirements: Julia 1.10 or newer.
+Recommended local versions are Python 3.12 or 3.13 and Julia 1.10 or newer.
 
 ```bash
-cd research
+# Create the Python environment with tests and optional Numba acceleration.
+make setup-python PYTHON=python3.13
 
-# Run mathematical-reference and workflow tests.
-julia --project=aztec -e 'using Pkg; Pkg.test()'
-sh aztec/test/smoke_workflows.sh
+# Run the Python mathematical and workflow tests.
+make test-python
+
+# Run exact tiny-grid validation.
+make validate-python
+
+# Run the established Julia/Aztec tests.
+make test-julia
 ```
 
-Run a small deterministic Aztec-height campaign:
+Equivalent commands without `make` are documented in the two project guides:
 
-```bash
-JULIA_NUM_THREADS=4 julia --project=aztec \
-  aztec/scripts/run_height_campaign.jl \
-  --config aztec/configs/gamma_height_smoke.csv \
-  --output-dir aztec/output/height_smoke
-```
+- [square-grid Python/CFTP guide](square_glauber_python/PROJECT_GUIDE.md)
+- [Aztec/Julia guide](aztec/PROJECT_GUIDE.md)
 
-Generated batches and scratch analyses belong under the ignored
-`aztec/output/` directory. Retained observations and reviewed results live in
-`aztec/data/` and `aztec/results/`.
-
-## Core estimators
+## Statistical observable
 
 For two conditionally independent replicas \(H_1,H_2\) in the same frozen
 environment \(\omega\),
 
 \[
 \frac12\operatorname{Var}(H_1-H_2)
-=\mathbb E_\omega[\operatorname{Var}(H\mid\omega)],
+=\mathbb E_\omega[\operatorname{Var}(H\mid\omega)]
 \]
 
-and
+is the connected or conditional component, while
 
 \[
 \operatorname{Cov}(H_1,H_2)
-=\operatorname{Var}_\omega(\mathbb E[H\mid\omega]).
+=\operatorname{Var}_\omega(\mathbb E[H\mid\omega])
 \]
 
-Every bootstrap therefore resamples whole environments. Paired replicas and
-all observables from one environment remain in the same resampling block.
+is the disorder-induced component in which super-rough \((\log L)^2\) growth
+is being tested. The independent statistical unit is the environment; both
+replicas and every observable from it remain together during bootstrap
+resampling.
 
 ## Repository map
 
 ```text
 .
-├── aztec/                 active Julia package, data, results, and CLIs
-│   ├── src/               samplers, graph constructions, and observables
-│   ├── scripts/           campaign, merge, analysis, and plotting commands
-│   ├── configs/           deterministic smoke, pilot, and production schedules
-│   ├── test/              exact, statistical, and end-to-end checks
-│   ├── data/              compact retained input datasets
-│   ├── results/           reviewed tables, reports, and vector figures
-│   └── reference/         historical prototype retained for provenance
-├── docs/                  research overview, results, roadmap, reproducibility
-├── hpc/                   Slurm wrappers and cluster workflow documentation
-├── archive/               self-contained earlier LERW experiments
-├── .github/workflows/     continuous integration
-└── CONTRIBUTING.md        scientific and engineering contribution rules
+├── README.md                  this entry point and the only maintained README
+├── Makefile                   short setup, test, and validation commands
+├── square_glauber_python/     active Python heat-bath and perfect sampler
+├── aztec/                     established Julia tiling/tree implementations
+├── results/                   reviewed, compact scientific results
+│   └── aztec/                 retained Aztec and prior square-grid analyses
+├── docs/                      overview, ledger, roadmap, and reproducibility
+├── research_materials/        local correspondence, notes, papers, bibliography
+├── hpc/                       earlier Julia Hamilton wrappers
+└── archive/                   superseded experiments kept for provenance
 ```
 
-Start with the [documentation index](docs/README.md), then use the
-[package guide](aztec/README.md) for model-specific commands.
+Generated output remains outside Git:
 
-## Reproducibility guarantees
+- `aztec/output/` contains local Julia batches and scratch analysis;
+- `square_glauber_python/outputs/` contains local Python diagnostics;
+- large Hamilton campaign data live under the recorded `/nobackup` campaign
+  root and are distilled into compact reviewed results only after audit.
 
-- deterministic seed derivation from campaign identifiers;
-- independent random streams where required by the estimand;
-- environment-level pairing preserved end to end;
-- atomic, restart-safe output batches;
-- explicit campaign metadata and execution provenance;
-- exact enumeration and detailed-balance checks at small sizes;
-- exact finite-volume dimer moments from selected inverse Kasteleyn entries;
-- reference-vs-optimized observable tests;
-- uncertainty and model comparisons repeated across fit windows;
-- controls analyzed with the same pipeline as disordered models.
+## Documentation and results
 
-See [Reproducibility](docs/REPRODUCIBILITY.md) for data flow, validation levels,
-and the commands used to regenerate retained analyses.
+- [documentation index](docs/INDEX.md)
+- [research overview](docs/RESEARCH_OVERVIEW.md)
+- [results ledger](docs/RESULTS.md)
+- [current roadmap](docs/ROADMAP.md)
+- [reproducibility contract](docs/REPRODUCIBILITY.md)
+- [reviewed results index](results/INDEX.md)
+- [Hamilton workflow](hpc/HAMILTON.md)
+- [research-materials policy](research_materials/INDEX.md)
 
-## Documentation
+## Publication notes
 
-- [Research overview](docs/RESEARCH_OVERVIEW.md) — models, observables, and
-  statistical definitions.
-- [Results ledger](docs/RESULTS.md) — chronological numerical evidence and
-  caveats.
-- [Roadmap](docs/ROADMAP.md) — current validation work and decision gates.
-- [Implementation guide](aztec/docs/IMPLEMENTATION.md) — sampler and data-flow
-  details.
-- [Square-grid model contract](aztec/docs/SQUARE_GRID_MODEL.md) — graph,
-  matching, height, and environment conventions.
-- [HPC workflow](hpc/README.md) — generic Hamilton/Slurm setup and submission.
+Raw supervisor emails and third-party papers are private/local by default and
+are ignored under `research_materials/`. Before making the repository public,
+review names, email addresses, machine paths, licenses, and every newly staged
+file. Add a software license and final citation metadata only after choosing
+the intended terms.
 
-## Scope
-
-The repository supports numerical research and reproducible analysis. Large
-raw HPC traces are intentionally kept outside Git; compact retained datasets,
-derived tables, figures, checksums, and exact campaign configurations are kept
-here when practical.
-
-Citation metadata for the software is available in [`CITATION.cff`](CITATION.cff).
+All reported conclusions are finite-size numerical findings unless a cited
+mathematical result states otherwise.

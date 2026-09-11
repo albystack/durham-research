@@ -14,15 +14,18 @@ active code.
 3. [Roadmap](ROADMAP.md) — current validation priorities and decision gates.
 4. [Reproducibility](REPRODUCIBILITY.md) — seeds, environments, output layers,
    tests, and analysis commands.
-5. [Architecture](ARCHITECTURE.md) — how the Julia modules and command-line
-   workflows fit together.
+5. [Architecture](ARCHITECTURE.md) — how the Python and Julia modules and
+   command-line workflows fit together.
 
 ## Model-specific documentation
 
 - [Aztec implementation](../aztec/docs/IMPLEMENTATION.md)
 - [Square-grid model contract](../aztec/docs/SQUARE_GRID_MODEL.md)
+- [Certified square-grid perfect sampling](../square_glauber_python/PERFECT_SAMPLING.md)
+- [Pre-specified paired analysis](../square_glauber_python/PAIRED_COVARIANCE_ANALYSIS_PLAN.md)
 - [Hamilton campaign record](../aztec/docs/HAMILTON_CAMPAIGN_20260808.md)
-- [HPC workflow](../hpc/README.md)
+- [HPC workflow](../hpc/HAMILTON.md)
+- [Reviewed results](../results/INDEX.md)
 
 ## Documentation policy
 
@@ -32,5 +35,5 @@ active code.
 - Results are labelled as finite-size evidence unless a theorem is cited.
 - Failed pilots and mixing limitations remain documented when they affect the
   interpretation of later runs.
-- Personal correspondence, credentials, and machine-specific private paths do
-  not belong in the repository.
+- Raw personal correspondence and local paper copies belong only in the
+  ignored areas under [`research_materials/`](../research_materials/INDEX.md).

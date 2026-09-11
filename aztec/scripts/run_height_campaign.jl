@@ -213,7 +213,7 @@ function write_campaign_metadata(path, parsed, config_rows)
             )
             println(
                 io,
-                "height_convention=staggered face table documented in aztec/README.md",
+                "height_convention=staggered face table documented in aztec/PROJECT_GUIDE.md",
             )
             println(io, "center_index=(L+1, floor(L/2)+1)")
             println(io, "alpha=$(parsed.alpha)")

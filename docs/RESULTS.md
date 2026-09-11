@@ -370,7 +370,7 @@ The retained environment blocks, full cutoff/weighting table, diagnostics, and
 checksums are in
 [`aztec/data/glauber_square_grid_20260822/`](../aztec/data/glauber_square_grid_20260822/)
 and
-[`aztec/results/glauber_square_grid_20260822/`](../aztec/results/glauber_square_grid_20260822/).
+[`results/aztec/glauber_square_grid_20260822/`](../results/aztec/glauber_square_grid_20260822/).
 
 Positive delta BIC favors the quadratic extension.  Here every point-estimate
 BIC difference favors ordinary log, and ordinary log also predicts held-out
@@ -437,14 +437,43 @@ values, but the aggregate component and scaling conclusions are stable.
 Retained inputs and results are in
 [`aztec/data/glauber_square_grid_kasteleyn_20260822/`](../aztec/data/glauber_square_grid_kasteleyn_20260822/)
 and
-[`aztec/results/glauber_square_grid_kasteleyn_20260822/`](../aztec/results/glauber_square_grid_kasteleyn_20260822/).
+[`results/aztec/glauber_square_grid_kasteleyn_20260822/`](../results/aztec/glauber_square_grid_kasteleyn_20260822/).
 
 **Conclusion:** the direct square-grid central-height experiment is a
 mixing-independent finite-size null over `L=2--20`. It is not evidence for
 asymptotic ordinary-log behaviour, and it is not directly comparable to the
 spatial-increment observable that produced the Aztec signal.
 
-## 12. What is established vs not established
+## 12. Certified square-grid perfect-sampling campaign — September 2026
+
+A separate Python reference implementation now samples the supervisor-specified
+direct square-grid random-bond dimer model. Exact enumeration verifies the
+weighted heat-bath kernel, Gibbs stationarity, detailed balance, and the full
+height convention on tiny grids. A supplied-randomness Numba backend agrees
+exactly with the authoritative pure-Python trajectory.
+
+The legal normalized height functions form the order used by monotone coupling
+from the past. The convenient all-horizontal and all-vertical tilings are not
+the true global bounds; the sampler constructs the actual minimum and maximum
+height tilings. A domain-independent local truth table verifies that one
+common face/uniform heat-bath map preserves the height order. A state is
+published only when those true bounds coalesce at time zero.
+
+The frozen shared-environment campaign contains 18,200 Gamma(shape=1)
+environments and 5,600 all-one controls at `L=8,12,16,20,24,28,32`, with two
+independent perfect samples per environment. It was still running when this
+repository reorganization was prepared. Consequently, no new covariance,
+quadratic-log coefficient, or scientific conclusion is recorded here yet.
+Capped environments are retained for exact-history extension and are never
+replaced.
+
+Authoritative inputs and methods:
+
+- [`square_glauber_python/PERFECT_SAMPLING.md`](../square_glauber_python/PERFECT_SAMPLING.md)
+- [`square_glauber_python/PAIRED_COVARIANCE_ANALYSIS_PLAN.md`](../square_glauber_python/PAIRED_COVARIANCE_ANALYSIS_PLAN.md)
+- [`square_glauber_python/CAMPAIGN_LAUNCH_READINESS.txt`](../square_glauber_python/CAMPAIGN_LAUNCH_READINESS.txt)
+
+## 13. What is established vs not established
 
 ### Numerically well supported
 - ordinary-log behaviour for the investigated LERW winding observables;
@@ -463,7 +492,7 @@ spatial-increment observable that produced the Aztec signal.
   differently from its central-height variance;
 - the asymptotic sign/magnitude of \(c\) beyond current finite sizes.
 
-## 13. Verification checklist before any formal use
+## 14. Verification checklist before any formal use
 
 Recompute from raw outputs:
 - sample counts by \(L\) and disorder law;

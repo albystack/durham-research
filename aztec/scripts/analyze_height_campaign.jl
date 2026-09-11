@@ -12,7 +12,7 @@ using Statistics
 # curve.  The affine BIC comparison is an unweighted least-squares diagnostic
 # on these noisy variance estimates; it is useful for comparing two curves
 # with the same number of parameters, but is not a formal likelihood for the
-# underlying height samples.  The README states this limitation explicitly.
+# underlying height samples. The project guide states this limitation explicitly.
 
 function print_help()
     println("""

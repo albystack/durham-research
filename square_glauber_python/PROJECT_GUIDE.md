@@ -1,10 +1,12 @@
-# Square-grid random-weight dimers: local Python pilot
+# Square-grid random-weight dimers
 
-This isolated Python 3.11+ package samples perfect matchings of an even
-`L x L` square grid in one frozen undirected edge environment. It is a local
-proof-of-correctness and mixing/pilot implementation. It contains no Slurm,
-Hamilton, active-face jump-chain, checkerboard-parallel, or production-campaign
-code.
+This Python 3.11+ package samples perfect matchings of an even `L x L` square
+grid in one frozen undirected edge environment. It contains the authoritative
+pure-Python heat-bath reference, an exactly equivalent optional Numba backend,
+exact small-grid validation, mixing diagnostics, monotone CFTP perfect
+sampling, and the current smoke-gated Hamilton campaign workflow. It does not
+use active-face sampling, checkerboard-parallel updates, or a modified Markov
+kernel.
 
 ## Mathematical contract
 
@@ -39,8 +41,8 @@ exactly `(L-1)^2` attempted updates.
 
 ```bash
 cd square_glauber_python
-python3 -m venv .venv
-.venv/bin/python -m pip install '.[test]'
+python3.13 -m venv .venv
+.venv/bin/python -m pip install '.[test,accel]'
 .venv/bin/python -m pytest
 ```
 
@@ -301,9 +303,14 @@ bash hpc/setup_hamilton_python.sh
 Then launch the smoke-gated production array into a new `/nobackup` root:
 
 ```bash
-OUTPUT_DIR=/nobackup/$USER/square_glauber_perfect_covariance_20260909 \
-  CONCURRENCY=32 bash hpc/launch_perfect_covariance_campaign.sh
+OUTPUT_DIR=/nobackup/$USER/square_glauber_perfect_covariance_YYYYMMDD \
+  CONCURRENCY=128 bash hpc/launch_perfect_covariance_campaign.sh
 ```
+
+`CONCURRENCY` is an explicit scheduler throttle, not a scientific parameter.
+The September 2026 campaign sustained 256 one-core workers. Measured worker
+RSS was below 300 MiB, so the task wrapper requests a conservative 1 GiB.
+Choose a lower throttle when Hamilton is busy; Slurm controls actual placement.
 
 The final audit job writes `campaign_status.csv` even if jobs timed out or a
 CFTP stream was censored. Resubmit only the affected manifest task IDs against

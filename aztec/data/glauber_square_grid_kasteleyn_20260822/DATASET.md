@@ -37,4 +37,4 @@ julia --project=aztec aztec/scripts/analyze_glauber_kasteleyn_campaign.jl \
 ```
 
 The retained analysis is in
-[`../../results/glauber_square_grid_kasteleyn_20260822/`](../../results/glauber_square_grid_kasteleyn_20260822/).
+[`../../../results/aztec/glauber_square_grid_kasteleyn_20260822/`](../../../results/aztec/glauber_square_grid_kasteleyn_20260822/).

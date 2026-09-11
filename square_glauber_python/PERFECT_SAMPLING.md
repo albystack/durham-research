@@ -141,4 +141,5 @@ The subsequent paired production implementation lives in
 `perfect_campaign.py`. It stores the frozen environment before sampling,
 persists each certified state separately, and publishes a paired scientific
 row only after two distinct CFTP streams certify. See the Hamilton campaign
-section of `README.md` for the frozen manifest and launch procedure.
+section of [`PROJECT_GUIDE.md`](PROJECT_GUIDE.md) for the frozen manifest and
+launch procedure.

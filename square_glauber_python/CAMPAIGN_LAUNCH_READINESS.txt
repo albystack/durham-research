@@ -99,5 +99,14 @@ nested random-map history at a larger horizon; they must not be discarded or
 replaced. The terminal audit job remains responsible for producing the full
 retry list after all 934 primary tasks finish.
 
+LATER PROGRESS SNAPSHOT (2026-09-10 14:16 Europe/Rome)
+All 934 array elements had started. There were 167 workers still running, no
+pending elements, 767 completed task reports, and 22,956 of 23,800 expected
+pair.json certificates already written (96.5 percent). No production stderr
+file was nonempty. Two additional retained Gamma L=20 environments
+(gamma-L20-env000727 and gamma-L20-env002085) had reached the current cap, for
+four censored environments in total at that time. The dependent audit job
+18716251 was still waiting for the array.
+
 The campaign is still running. No paired scaling result exists yet, and no
 log-squared claim has been made.

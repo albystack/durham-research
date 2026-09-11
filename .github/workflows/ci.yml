@@ -13,6 +13,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  square-glauber:
+    name: Square-grid Python tests (Python 3.12)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: square_glauber_python/pyproject.toml
+      - name: Install package, tests, and acceleration backend
+        run: python -m pip install -e './square_glauber_python[test,accel]'
+      - name: Mathematical and workflow tests
+        run: python -m pytest square_glauber_python/tests
+      - name: Exact tiny-grid validation
+        run: python -m square_glauber.cli validate-exact
+
   aztec:
     name: Aztec-diamond tests (Julia ${{ matrix.julia-version }})
     runs-on: ubuntu-latest

@@ -1,7 +1,7 @@
 model=biased Gamma-disordered Aztec diamond
 observable=center face height
 one_sample=fresh random environment plus one conditional dimer cover
-height_convention=staggered face table documented in aztec/README.md
+height_convention=staggered face table documented in aztec/PROJECT_GUIDE.md
 center_index=(L+1, floor(L/2)+1)
 alpha=0.2
 beta=0.25

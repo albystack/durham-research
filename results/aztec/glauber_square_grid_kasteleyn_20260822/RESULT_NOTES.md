@@ -56,4 +56,4 @@ asymptotic ordinary-log behaviour.
 - `CHECKSUMS.sha256`: SHA-256 hashes for the retained analysis artifacts.
 
 The environment-level deterministic moments are retained in
-[`../../data/glauber_square_grid_kasteleyn_20260822/`](../../data/glauber_square_grid_kasteleyn_20260822/).
+[`../../../aztec/data/glauber_square_grid_kasteleyn_20260822/`](../../../aztec/data/glauber_square_grid_kasteleyn_20260822/).

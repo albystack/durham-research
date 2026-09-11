@@ -35,7 +35,7 @@ julia --project=aztec aztec/scripts/analyze_glauber_square_grid_scaling.jl \
   --diagnostic-threshold 4
 ```
 
-See [`../../results/glauber_square_grid_20260822/`](../../results/glauber_square_grid_20260822/)
+See [`../../../results/aztec/glauber_square_grid_20260822/`](../../../results/aztec/glauber_square_grid_20260822/)
 for the retained MCMC output and interpretation. Determinantal moments for the
 same 960 Gamma environments are in
 [`../glauber_square_grid_kasteleyn_20260822/`](../glauber_square_grid_kasteleyn_20260822/).
