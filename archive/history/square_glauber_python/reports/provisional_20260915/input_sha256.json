@@ -1,0 +1,9 @@
+{
+  "campaign_summary.json": "b09506f0e62432e3e9c8ae21d6d6305d8aacdacddd945b709fa725211930f913",
+  "campaign_status.csv": "c4d0ed6635cb03ed2c4552df37ae0bcb8d24de04f8c1c6aec8de5072c46c435c",
+  "center_measurements.csv": "b85fca736dfa74b43b867469f045257187a57c5ce63449ab2a9063754ce6a97e",
+  "spatial_measurements.csv": "aa5b7d528f235a08ccd3de4e5543ca251ff62bca61aa0121b3825c27298c7f53",
+  "chain_diagnostics.csv": "c3af1526a3c8effed12bf16c8baf10b950ee0629d29eb09cbe3e9cee3df64f9c",
+  "campaign_manifest.csv": "2b0da28ac20a9c2155073961c5ee44b81a70a3d7545a611dfe386a0fd64bffed",
+  "censored_environment_ids.txt": "a7043aee8dfeac57ea5c7c4c0d4d1f695ed7a9d95c7b1703034a0aa178d7dbc2"
+}

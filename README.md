@@ -1,123 +1,102 @@
-# Random-environment dimer height fluctuations
+# Random tilings & Glauber dynamics
 
-This repository studies height fluctuations in random tilings, dimers,
-spanning trees, and loop-erased random walks. The central numerical question is
-whether the disorder-induced component of the height covariance contains a
-positive \((\log L)^2\) term.
+Research code for **Aztec-diamond tilings** and **square-grid dimer dynamics**.
+We study how random edge weights affect the fluctuations of a tiling's height.
 
-The project is designed to test that possibility, not to force it. Negative
-controls, exact small-volume checks, frozen analysis plans, and whole-environment
-resampling are retained so that an ordinary-log or null result remains a valid
-scientific outcome.
+![A sampled Aztec diamond and a square-grid configuration evolved by Glauber dynamics.](docs/figures/samples.svg)
 
-## Current focus
+## Two active projects
 
-The active experiment is the direct square-grid random-bond dimer model in
-[`square_glauber_python/`](square_glauber_python/PROJECT_GUIDE.md):
+| Project | What it does | Language |
+| :--- | :--- | :--- |
+| [Aztec](aztec/) | Samples weighted domino tilings by shuffling; measures central heights and spatial increments. | Julia |
+| [Glauber dynamics](square_glauber_python/) | Evolves square-grid dimers by local heat-bath updates; also provides exact small-grid checks and coupling-from-the-past sampling. | Python |
 
-- every undirected grid edge receives one fixed positive weight;
-- single-face random-scan heat-bath updates preserve the weighted Gibbs law;
-- the exterior-referenced dimer height uses the documented \(\pm1/\pm3\)
-  convention;
-- monotone coupling from the past (CFTP) returns certified perfect samples;
-- two independent perfect samples share each frozen environment;
-- disorder covariance is measured from paired centre heights and spatial
-  height increments.
+The Julia package also keeps a tested Glauber implementation and Kasteleyn
+calculations for reference. Older spanning-tree, Temperley, and random-walk
+experiments live in [archive/](archive/INDEX.md).
 
-The frozen Hamilton campaign covers \(L=8,12,16,20,24,28,32\), with 18,200
-Gamma(shape=1) environments and 5,600 all-one controls. Its pre-specified
-analysis is in
-[`PAIRED_COVARIANCE_ANALYSIS_PLAN.md`](square_glauber_python/PAIRED_COVARIANCE_ANALYSIS_PLAN.md).
-No scaling conclusion is recorded until every retained environment is either
-certified or explicitly reported as censored and extended with the identical
-random-map history.
+## Start here
 
-## Quick start
+Run these commands from the repository root. Use **Julia 1.10+** for Aztec
+and **Python 3.12 or 3.13** for the Python setup below. Each project can be
+used independently.
 
-Recommended local versions are Python 3.12 or 3.13 and Julia 1.10 or newer.
+**Aztec — generate one small tiling**
 
 ```bash
-# Create the Python environment with tests and optional Numba acceleration.
-make setup-python PYTHON=python3.13
-
-# Run the Python mathematical and workflow tests.
-make test-python
-
-# Run exact tiny-grid validation.
-make validate-python
-
-# Run the established Julia/Aztec tests.
-make test-julia
+make setup-julia
+make demo-aztec
 ```
 
-Equivalent commands without `make` are documented in the two project guides:
+Open `aztec/output/demo/tiling_mathematica_style.svg` to see the result.
+The folder also contains the sampled weights, tiling matrix, and run metadata.
 
-- [square-grid Python/CFTP guide](square_glauber_python/PROJECT_GUIDE.md)
-- [Aztec/Julia guide](aztec/PROJECT_GUIDE.md)
+**Glauber — run a small dynamics example**
 
-## Statistical observable
+```bash
+make setup-python PYTHON=python3.13
+make demo-glauber
+```
 
-For two conditionally independent replicas \(H_1,H_2\) in the same frozen
-environment \(\omega\),
+The example compares two starting states on an 8 × 8 grid. Traces, diagnostic
+figures, and summaries are written to `square_glauber_python/outputs/demo/`.
+This short run demonstrates the workflow; it does not establish mixing.
 
-\[
-\frac12\operatorname{Var}(H_1-H_2)
-=\mathbb E_\omega[\operatorname{Var}(H\mid\omega)]
-\]
+```bash
+make test-julia       # Julia unit tests and small end-to-end workflows
+make test-python      # Python mathematical and workflow tests
+make validate-python # Exact tiny-grid checks
+```
 
-is the connected or conditional component, while
+Use `make help` for all shortcuts. Both demos use fixed seeds.
 
-\[
-\operatorname{Cov}(H_1,H_2)
-=\operatorname{Var}_\omega(\mathbb E[H\mid\omega])
-\]
+## How it works
 
-is the disorder-induced component in which super-rough \((\log L)^2\) growth
-is being tested. The independent statistical unit is the environment; both
-replicas and every observable from it remain together during bootstrap
-resampling.
+A **dimer** pairs two neighbouring grid vertices; it can be drawn as a domino.
+Glauber dynamics chooses a square face and, when possible, redraws its two
+dimers. Edge weights set the probabilities. An unchanged draw still counts
+as an update.
 
-## Repository map
+![A local heat-bath move between two horizontal and two vertical dominoes.](docs/figures/local-flip.svg)
+
+To separate sampling fluctuations from disorder, draw two independent samples
+in the **same fixed environment**, then repeat across environments:
+
+```mermaid
+flowchart LR
+    W[Draw edge weights] --> A[Sample 1]
+    W --> B[Sample 2]
+    A --> H[Measure heights]
+    B --> H
+    H --> C[Compare across environments]
+```
+
+The research question is whether the disorder contribution grows like
+`log(L)` or includes a `log(L)²` term. The code tests this question; the
+illustrations above are examples, not evidence for a scaling law.
+
+## Where things live
 
 ```text
-.
-├── README.md                  this entry point and the only maintained README
-├── Makefile                   short setup, test, and validation commands
-├── square_glauber_python/     active Python heat-bath and perfect sampler
-├── aztec/                     established Julia tiling/tree implementations
-├── results/                   reviewed, compact scientific results
-│   └── aztec/                 retained Aztec and prior square-grid analyses
-├── docs/                      overview, ledger, roadmap, and reproducibility
-├── research_materials/        local correspondence, notes, papers, bibliography
-├── hpc/                       earlier Julia Hamilton wrappers
-└── archive/                   superseded experiments kept for provenance
+research/
+├── README.md                start here
+├── Makefile                 setup, examples, and tests
+├── aztec/                   Julia source, tests, configs, data, and HPC scripts
+├── square_glauber_python/   Python source, tests, configs, and HPC scripts
+├── docs/                    methods and reproducible README figures
+└── archive/                 earlier experiments, reports, notes, and local runs
 ```
 
-Generated output remains outside Git:
+New outputs stay in `aztec/output/` or `square_glauber_python/outputs/` and are
+ignored by Git. Existing datasets used by the Julia analysis remain in
+`aztec/data/`. Past results and the provisional September report are indexed
+in the archive; their original qualifications still apply.
 
-- `aztec/output/` contains local Julia batches and scratch analysis;
-- `square_glauber_python/outputs/` contains local Python diagnostics;
-- large Hamilton campaign data live under the recorded `/nobackup` campaign
-  root and are distilled into compact reviewed results only after audit.
+For more detail: [methods and conventions](docs/METHODS.md) ·
+[Python command reference](square_glauber_python/PROJECT_GUIDE.md) ·
+[Julia workflows](aztec/scripts/COMMANDS.md) ·
+[archive index](archive/INDEX.md).
 
-## Documentation and results
-
-- [documentation index](docs/INDEX.md)
-- [research overview](docs/RESEARCH_OVERVIEW.md)
-- [results ledger](docs/RESULTS.md)
-- [current roadmap](docs/ROADMAP.md)
-- [reproducibility contract](docs/REPRODUCIBILITY.md)
-- [reviewed results index](results/INDEX.md)
-- [Hamilton workflow](hpc/HAMILTON.md)
-- [research-materials policy](research_materials/INDEX.md)
-
-## Publication notes
-
-Raw supervisor emails and third-party papers are private/local by default and
-are ignored under `research_materials/`. Before making the repository public,
-review names, email addresses, machine paths, licenses, and every newly staged
-file. Add a software license and final citation metadata only after choosing
-the intended terms.
-
-All reported conclusions are finite-size numerical findings unless a cited
-mathematical result states otherwise.
+The figures are generated from the code with `make figures`; their
+[source and seeds](docs/scripts/render_figures.py) are included.

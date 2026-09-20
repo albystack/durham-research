@@ -449,14 +449,16 @@ def analyze_pilot(
     *,
     bootstrap_replicates: int = 500,
     bootstrap_seed: int = 20260908,
+    allow_incomplete: bool = False,
 ) -> dict[str, object]:
     """Analyze a pilot while treating ``environment_id`` as the sampling unit."""
     input_directory = Path(input_path)
     output_directory = Path(output_path)
     campaign_summary_path = input_directory / "campaign_summary.json"
+    campaign_summary = None
     if campaign_summary_path.exists():
         campaign_summary = json.loads(campaign_summary_path.read_text())
-        if not campaign_summary.get("all_pairs_cftp_certified", False):
+        if not campaign_summary.get("all_pairs_cftp_certified", False) and not allow_incomplete:
             raise ValueError(
                 "refusing scientific analysis of an incomplete perfect-sampling "
                 "campaign; extend every missing/censored environment first"
@@ -528,5 +530,14 @@ def analyze_pilot(
         "center_environment_rows": len(center_environment),
         "spatial_environment_rows": len(spatial_environment),
     }
+    if campaign_summary is not None:
+        report["source_campaign_summary"] = campaign_summary
+        report["incomplete_campaign_analysis"] = not campaign_summary.get("all_pairs_cftp_certified", False)
+        if report["incomplete_campaign_analysis"]:
+            report["warning"] = (
+                "Provisional analysis of certified pairs only: unresolved environments are omitted. "
+                "Coalescence-dependent omission may bias estimates; bootstrap intervals do not "
+                "account for this selection. This is not a complete-campaign result."
+            )
     (output_directory / "analysis_metadata.json").write_text(json.dumps(report, indent=2) + "\n")
     return report

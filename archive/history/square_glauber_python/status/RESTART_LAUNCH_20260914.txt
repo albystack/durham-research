@@ -1,0 +1,37 @@
+FIVE-STREAM FROZEN CHECKPOINT EXTENSION — 14 SEPTEMBER 2026
+
+Started approximately 10:28 Rome / 09:28 BST.
+Worker array: 18743472, indices 0-4, all initially RUNNING on cn033.
+Dependent consolidation / strict aggregation / analysis: 18743473 (afterany).
+Each worker: shared, 1 CPU, 1 GiB, 36 hours.
+Coordinator: shared, 1 CPU, 8 GiB, 24 hours.
+
+23,796/23,800 pairs certified before launch. Five unfinished streams:
+gamma-L28-env001250 sample2
+gamma-L28-env001314 sample1
+gamma-L32-env000812 sample2
+gamma-L32-env001015 sample1 and sample2
+
+Frozen NPZ weights, array hashes and original seeds verified. Checksummed native
+checkpoints validated through failed horizon 536,870,912 without running updates.
+Each checkpoint copied to the new stage before submission. Existing certified
+samples, censor records and earlier stages preserved. No kernel or sampler edits.
+New cap: 1,073,741,824 sweeps. Completed failed horizons are skipped; the entire
+new horizon is replayed from true extrema with the original assigned randomness.
+Chunk size remains 4,000,000. Separate workers for independent sample streams.
+No mid-horizon checkpoint recovery and no guarantee of coalescence at this cap.
+
+Tests: 10 targeted restart/worker tests passed locally in 8.50 seconds.
+Deployed restart modules retain the previously validated SHA256 hashes.
+New dated wrappers passed bash syntax checks; old wrappers unchanged.
+
+Campaign: /nobackup/fvkl37/square_glauber_perfect_covariance_20260910
+New archive/plan/jobs: restart_streams_1073741824_20260914/
+New analysis target: analysis_frozen_restart_20260914/
+Existing strict aggregator must certify every pair before 10,000-bootstrap
+analysis, seed 2026090902. No automatic further extension if still censored.
+
+Estimate: slowest workers about 14-18 hours after start (~00:30-04:30 Rome on
+15 September). Based on twice the previous ~6h44m L32 horizon cost, allowing
+node variation. Analysis runtime additional. Hard worker limit is approximately
+22:28 Rome on 15 September. Neither is a complete-campaign guarantee.

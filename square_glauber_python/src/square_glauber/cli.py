@@ -370,6 +370,7 @@ def command_perfect_campaign_task(args: argparse.Namespace) -> int:
         args.task_id,
         args.output,
         max_horizon_override=args.max_horizon_sweeps,
+        chunk_attempts=args.chunk_attempts,
     )
     print(json.dumps(report, indent=2))
     return 0
@@ -707,6 +708,10 @@ def build_parser() -> argparse.ArgumentParser:
     perfect_task.add_argument("--manifest", required=True)
     perfect_task.add_argument("--task-id", type=int, required=True)
     perfect_task.add_argument("--max-horizon-sweeps", type=int)
+    perfect_task.add_argument(
+        "--chunk-attempts", type=int, default=1_000_000,
+        help="execution batch size; preserves RNG trajectory; order checked after each chunk",
+    )
     perfect_task.add_argument("--output", required=True)
     perfect_task.set_defaults(function=command_perfect_campaign_task)
 

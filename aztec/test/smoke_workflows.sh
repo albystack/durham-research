@@ -160,54 +160,6 @@ do
 done
 
 
-square_baseline="$smoke_root/square_baseline"
-square_directed="$smoke_root/square_directed"
-square_baseline_csv="$smoke_root/square_baseline.csv"
-square_directed_csv="$smoke_root/square_directed.csv"
-
-julia --project=aztec --startup-file=no aztec/scripts/run_square_grid_campaign.jl \
-  --environment-model baseline \
-  --config aztec/configs/square_grid_smoke.csv \
-  --output-dir "$square_baseline" \
-  --base-seed 110
-
-julia --project=aztec --startup-file=no aztec/scripts/run_square_grid_campaign.jl \
-  --environment-model directed_site_iid \
-  --distribution gamma \
-  --parameter 0.5 \
-  --config aztec/configs/square_grid_smoke.csv \
-  --output-dir "$square_directed" \
-  --base-seed 111
-
-if julia --project=aztec --startup-file=no \
-  aztec/scripts/run_square_grid_campaign.jl \
-  --environment-model directed_site_iid \
-  --parameter 0.5 \
-  --config aztec/configs/square_grid_smoke.csv \
-  --output-dir "$square_directed" \
-  --base-seed 999 >/dev/null 2>&1
-then
-  echo "square-grid runner accepted batches generated with a different seed" >&2
-  exit 1
-fi
-
-julia --project=aztec --startup-file=no aztec/scripts/merge_square_grid_batches.jl \
-  --inputs "$square_baseline" \
-  --output "$square_baseline_csv"
-
-julia --project=aztec --startup-file=no aztec/scripts/merge_square_grid_batches.jl \
-  --inputs "$square_directed" \
-  --output "$square_directed_csv"
-
-test -s "$square_baseline_csv"
-test -s "$square_directed_csv"
-test -s "$square_baseline/campaign_metadata.txt"
-test -s "$square_directed/campaign_metadata.txt"
-test -s "$square_baseline/campaign_manifest.toml"
-test -s "$square_directed/campaign_manifest.toml"
-test -s "$square_baseline/L_0016/execution_0001.txt"
-test -s "$square_directed/L_0016/execution_0001.txt"
-
 kasteleyn_root="$smoke_root/kasteleyn"
 julia --project=aztec --startup-file=no \
   aztec/scripts/run_glauber_kasteleyn_campaign.jl \
@@ -232,4 +184,4 @@ test -s "$kasteleyn_root/campaign_metadata.txt"
 test -s "$kasteleyn_root/L_0002/batch_0001.csv"
 test -s "$kasteleyn_root/L_0002/execution_0001.txt"
 
-echo "All Aztec and square-grid command-line smoke workflows passed."
+echo "All Aztec and direct Glauber command-line smoke workflows passed."

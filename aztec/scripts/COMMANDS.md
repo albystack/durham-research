@@ -15,7 +15,6 @@ Scripts are grouped by pipeline stage through their filename prefixes:
 | Aztec central height | `run_height_campaign.jl` | `analyze_height_campaign.jl` |
 | Aztec paired central height | `run_double_dimer_campaign.jl` | `analyze_double_dimer_campaign.jl` |
 | Aztec paired spatial increments | `run_spatial_campaign.jl` | `analyze_spatial_campaign.jl` |
-| Temperley square grid | `run_square_grid_campaign.jl` | `analyze_spatial_campaign.jl` |
 | Direct square-grid Glauber | `run_glauber_square_grid_campaign.jl` | `analyze_glauber_square_grid_production.jl`, then `analyze_glauber_square_grid_scaling.jl` |
 | Direct square-grid Kasteleyn | `run_glauber_kasteleyn_campaign.jl` | `analyze_glauber_kasteleyn_campaign.jl` |
 

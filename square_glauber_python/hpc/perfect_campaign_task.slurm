@@ -45,5 +45,8 @@ arguments=(
 if [[ -n "${MAX_HORIZON_SWEEPS:-}" ]]; then
   arguments+=(--max-horizon-sweeps "$MAX_HORIZON_SWEEPS")
 fi
+if [[ -n "${CHUNK_ATTEMPTS:-}" ]]; then
+  arguments+=(--chunk-attempts "$CHUNK_ATTEMPTS")
+fi
 
 srun --cpu-bind=cores .hamilton_python/bin/python "${arguments[@]}"

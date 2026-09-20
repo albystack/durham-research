@@ -1,0 +1,38 @@
+FROZEN-STREAM RESTART EXTENSION — 13 SEPTEMBER 2026
+
+Submitted at approximately 14:06:49 Rome / 13:06:49 BST.
+Worker array: 18728407, indices 0-10, concurrency 11.
+Dependent consolidation / strict aggregation / analysis: 18728408 (afterany).
+Each worker: shared partition, 1 CPU, 1 GiB, 36-hour limit.
+Coordinator: shared, 1 CPU, 8 GiB, 24-hour limit.
+
+At submission: 23,791/23,800 certified pairs; 9 censored environments;
+11 remaining original sample streams. No legacy jobs were queued or running.
+Frozen weights and deterministic seeds verified for all 11 streams. Stored
+failed canonical histories through 268,435,456 sweeps validated before launch.
+The new cap is 536,870,912 sweeps. No failed environment is replaced/discarded.
+
+Reference kernel, height convention and original sampler untouched.
+New optional restart.py / restart_campaign.py deployed with exact local hashes.
+10 targeted tests passed locally (8.16 s) and on Hamilton (3.23 s).
+New random replay chunks: 4,000,000 attempts, using separate persistent face
+and uniform streams. Completed failed horizon checks are skipped; every new
+longer horizon replays all its assigned random blocks from true extrema.
+No mid-horizon recovery: an interruption must replay that horizon.
+Legacy missing counters are explicitly labeled, not invented.
+
+Per-sample writers have separate locks. The dependent coordinator alone builds
+new pair.json records after both samples validate. It then runs the existing
+strict aggregation and 10,000-bootstrap analysis (seed 2026090902), but only
+if all 23,800 pairs certify. No automatic subsequent extension on censoring.
+
+Campaign root: /nobackup/fvkl37/square_glauber_perfect_covariance_20260910
+Stage: restart_streams_536870912_20260913/
+Contains immutable launch plan, job IDs, and copies of the previous aggregate
+tables/status. Previous sample, censor, task and research outputs preserved.
+New final analysis target: analysis_frozen_restart_20260913/
+Old per-task reports remain historical; campaign_summary is rebuilt from cases.
+
+Timing estimate: about 8-12 hours for the slowest streams after actual start,
+using prior L32 single-stream timing and ~1.25x measured chunk speedup.
+Not a promise of coalescence or of complete-campaign completion.

@@ -13,7 +13,7 @@ sh aztec/test/smoke_workflows.sh
 ```
 
 The suite covers exact tiny tiling counts, weighted recurrence reference
-values, detailed balance, height invariants, tree/dual-tree/matching structure,
+values, detailed balance, height invariants, perfect-matching structure,
 seed reproducibility, paired-environment identities, optimized-vs-reference
 agreement, replica-exchange scheduling, environment-blocked estimators, and
 end-to-end CSV/SVG workflows.

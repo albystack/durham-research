@@ -1,0 +1,71 @@
+RESTART PREPARATION, CONTROL AUDIT AND LIVE CAMPAIGN STATUS
+12 September 2026, Hamilton checked 22:25 Rome / 21:25 BST
+
+STATUS
+23,791 / 23,800 pair.json certificates present (99.9622% by pair count).
+This filesystem count is not a replacement for the strict artifact audit.
+9 unresolved environments; 12 unresolved sample streams at this snapshot.
+12/15 extension tasks finished; 3 still running after 13h03m41s:
+18724996_831, _855, _889 (L32 environments 669, 812, 1015).
+Other unresolved environments: L16/1908, L20/727, L28/484,1250,1314,
+L32/99. They reached the current cap; task COMPLETED is not certification.
+Current L32 single-stream tasks took 9h22m54s--9h33m33s.
+At roughly twice this for two sequential streams, the remaining three tasks
+could take about 6 additional hours; allow 6--9 hours rather than a deadline.
+Their hard scheduler limit is Sunday 13 September 21:21:57 Rome.
+At least six environments need another extension even if all active ones finish.
+Thus there is NO defensible whole-campaign completion ETA from pair percentage.
+Job 18724997 is dependency-pending and must refuse final analysis if censored.
+
+PREPARED LOCALLY, NOT DEPLOYED TO RUNNING JOBS
+src/square_glauber/restart.py: canonical doubling-horizon restart. It skips
+previously completed failed horizon evaluations, but replays every longer
+horizon from the true extrema with the original random blocks. It never
+composes saved endpoint states through an earlier past.
+Checkpoints are checksum-protected, environment/seed-bound and atomic.
+Granularity is COMPLETED FAILED HORIZON, NOT mid-horizon: interrupted work in
+the current horizon is replayed. This is a deliberate remaining limitation.
+Imported trusted local legacy censor records lack counters: metadata explicitly
+marks counters/rates since import, and the omitted logical attempts. No missing
+flippable/change counts are invented.
+src/square_glauber/restart_campaign.py: independent sample workers, frozen NPZ
+and seed/hash verification, per-sample locks, single-writer pair consolidation.
+Never start alongside legacy writers: old workers do not honor these locks.
+No remote deployment/submission, kernel change, commit or push in this step.
+
+COMMAND INTERFACE (use actual unchanged manifest/case paths)
+python -m square_glauber.restart_campaign sample --manifest MANIFEST.csv \
+  --output CAMPAIGN_ROOT --task-id TASK --environment-index INDEX \
+  --sample-index 1 --max-horizon-sweeps 536870912 \
+  --chunk-attempts 4000000 --legacy-censor-path VERIFIED_CENSOR.json
+Run sample 2 separately only if still uncertified, with its own original seed.
+python -m square_glauber.restart_campaign consolidate --manifest MANIFEST.csv \
+  --output CAMPAIGN_ROOT --task-id TASK --environment-index INDEX
+After all writers finish, run existing strict aggregation before frozen analysis.
+
+TESTS
+Numba environment: 92 passed in 12.01 seconds.
+Reference-only: 70 passed, 22 skipped in 11.49 seconds.
+Tests cover exact original-vs-restart endpoints, blocks, iterations and native
+counters with different chunk sizes, uniform/Gamma, reference/Numba, legacy
+import, invalid identity/checksum/cap, worker locks and frozen input preservation.
+
+CONTROL AUDIT
+outputs/control_audit_20260912/{audit.py,audit.json,RESULTS_SUMMARY.txt}
+5600 complete uniform pairs. 20,000 whole-replica-vector within-size permutations.
+Full-range spatial c=0.099354, permutation p=0.675116.
+Restricted L>=20 spatial c=6.106141, raw p=0.004450;
+maxT adjustment across six specified tests p=0.026849.
+The adjustment does not cover all historical exploratory choices.
+Centered/rescaled fits agree; not explained by floating-point roundoff.
+Do not dismiss the restricted anomaly or declare a sampler bug.
+Next: audit replica seed/pairing independence before interpreting scaling.
+Uniform has no disorder covariance; this cannot be physical disorder evidence.
+
+NEXT SEQUENCE
+1. Let existing jobs finish unchanged and inspect strict audit outputs.
+2. Deploy/test optional workers on Hamilton only after legacy writers exit;
+   extend only remaining original streams, preserving every hard environment.
+3. Investigate control seed/pairing provenance; preserve original analysis plan.
+4. Once all 23,800 pairs pass strict audit, run the complete-data frozen analysis.
+No final fit on a convenience-selected completed Gamma subset.

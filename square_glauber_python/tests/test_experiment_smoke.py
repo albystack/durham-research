@@ -1,6 +1,7 @@
 import json
 
 import pandas as pd
+import pytest
 
 from square_glauber.analysis import analyze_pilot
 from square_glauber.experiment import run_pilot
@@ -62,3 +63,18 @@ def test_uniform_and_gamma_pilot_and_analysis_smoke(tmp_path) -> None:
     assert row.disorder_covariance == expected_covariance
     assert (analysis / "center_covariance_fits.png").exists()
     assert json.loads((analysis / "analysis_metadata.json").read_text())["exploratory"]
+
+    incomplete = {"all_pairs_cftp_certified": False, "censored_environments": 1}
+    source_summary = pilot / "campaign_summary.json"
+    source_summary.write_text(json.dumps(incomplete))
+    with pytest.raises(ValueError, match="incomplete perfect-sampling"):
+        analyze_pilot(pilot, pilot / "blocked")
+    provisional = analyze_pilot(
+        pilot, pilot / "provisional", bootstrap_replicates=2,
+        allow_incomplete=True,
+    )
+    assert provisional["incomplete_campaign_analysis"] is True
+    assert provisional["source_campaign_summary"] == incomplete
+    assert "selection" in provisional["warning"]
+    assert json.loads(source_summary.read_text()) == incomplete
+    assert provisional["center_environment_rows"] == report["center_environment_rows"]

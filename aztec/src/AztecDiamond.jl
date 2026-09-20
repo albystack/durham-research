@@ -1177,10 +1177,6 @@ function write_svg(
     return path
 end
 
-# Square-grid spanning-tree / Temperley-dimer extension.
-include("SquareGrid.jl")
-export SquareGrid
-
 # Direct square-grid weighted-dimer Glauber reference implementation.
 include("GlauberSquareGrid.jl")
 export GlauberSquareGrid

@@ -435,8 +435,11 @@ def run_campaign_task(
     output: str | Path,
     *,
     max_horizon_override: int | None = None,
+    chunk_attempts: int = 1_000_000,
 ) -> dict[str, object]:
     """Run or resume one manifest task without ever redrawing a saved case."""
+    if chunk_attempts <= 0:
+        raise ValueError("chunk_attempts must be positive")
     manifest_path = Path(manifest)
     frame = pd.read_csv(manifest_path)
     selected = frame.loc[frame["task_id"] == int(task_id)]
@@ -477,7 +480,9 @@ def run_campaign_task(
             seeds=seeds,
             campaign_id=str(row["campaign_id"]),
         )
-        sampler = MonotoneCFTPSampler(environment, backend=backend)  # type: ignore[arg-type]
+        sampler = MonotoneCFTPSampler(
+            environment, backend=backend, chunk_attempts=chunk_attempts
+        )  # type: ignore[arg-type]
         first_state, first = _obtain_sample(
             sampler,
             case,
@@ -535,6 +540,7 @@ def run_campaign_task(
         "max_horizon_sweeps": maximum,
         "backend": backend,
         "environment_count": len(cases),
+        "chunk_attempts": chunk_attempts,
         "complete_pair_count": sum(bool(item["complete"]) for item in cases),
         "incomplete_pair_count": sum(not bool(item["complete"]) for item in cases),
         "elapsed_seconds": perf_counter() - started,
