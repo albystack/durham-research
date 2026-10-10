@@ -1,0 +1,319 @@
+{
+  "date": "2026-10-04",
+  "namespace": "matched-shuffle-20261004",
+  "master_seed": 2026100407,
+  "validation_seed": 2026100408,
+  "validation_pairs": 4,
+  "purpose": "Fresh independent matched-law Aztec/square comparison; no predetermined sign or absence claim",
+  "weights": {
+    "a": "independent Gamma(shape=0.2,scale=1), north from black",
+    "b": "independent Gamma(shape=0.25,scale=1), east from black",
+    "remaining": 1,
+    "normalization": "none"
+  },
+  "sizes": [
+    8,
+    16,
+    24,
+    32,
+    48,
+    64
+  ],
+  "probes": [
+    0.125,
+    0.25
+  ],
+  "height_scale": 1,
+  "models": {
+    "aztec_gamma": 2048,
+    "aztec_mean": 256,
+    "uniform": 256
+  },
+  "analysis": {
+    "primary": "c_aztec - c_square for disorder covariance, window 8..64",
+    "windows": [
+      [
+        8,
+        64
+      ],
+      [
+        16,
+        64
+      ],
+      [
+        24,
+        64
+      ]
+    ],
+    "design": "probe-specific intercept and log(distance) slope; shared coefficient of log(distance)^2 within domain",
+    "bootstrap": 10000,
+    "bootstrap_seed": 2026100409,
+    "resampling": "whole environments, both replicas and both probes together; independent groups across sizes/models/domains",
+    "controls": "true disorder covariance zero; descriptive intervals and joint replica permutation audit",
+    "interpretation": "Finite-window curvature only. An interval containing zero is not proof of no squared-log term. No optional stopping or outcome-dependent window selection."
+  },
+  "scheduler": {
+    "cpus_per_task": 1,
+    "memory_GiB": 4,
+    "wall_minutes": 120,
+    "concurrency": 2,
+    "array_tasks": 36,
+    "maximum_allocated_cpu_hours": 72
+  },
+  "completion": "All declared environments and probes required; missing or failed inputs block fits; no replacement of difficult environments",
+  "numerical_gate": "Exact small-square distribution tests; 80/160-digit reduction audit through 64; full test suite and all 36 four-pair smoke cells on Hamilton before production",
+  "cells": [
+    {
+      "index": 0,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "size": 8,
+      "pairs": 2048
+    },
+    {
+      "index": 1,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "size": 16,
+      "pairs": 2048
+    },
+    {
+      "index": 2,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "size": 24,
+      "pairs": 2048
+    },
+    {
+      "index": 3,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "size": 32,
+      "pairs": 2048
+    },
+    {
+      "index": 4,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "size": 48,
+      "pairs": 2048
+    },
+    {
+      "index": 5,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "size": 64,
+      "pairs": 2048
+    },
+    {
+      "index": 6,
+      "domain": "square",
+      "model": "aztec_mean",
+      "size": 8,
+      "pairs": 256
+    },
+    {
+      "index": 7,
+      "domain": "square",
+      "model": "aztec_mean",
+      "size": 16,
+      "pairs": 256
+    },
+    {
+      "index": 8,
+      "domain": "square",
+      "model": "aztec_mean",
+      "size": 24,
+      "pairs": 256
+    },
+    {
+      "index": 9,
+      "domain": "square",
+      "model": "aztec_mean",
+      "size": 32,
+      "pairs": 256
+    },
+    {
+      "index": 10,
+      "domain": "square",
+      "model": "aztec_mean",
+      "size": 48,
+      "pairs": 256
+    },
+    {
+      "index": 11,
+      "domain": "square",
+      "model": "aztec_mean",
+      "size": 64,
+      "pairs": 256
+    },
+    {
+      "index": 12,
+      "domain": "square",
+      "model": "uniform",
+      "size": 8,
+      "pairs": 256
+    },
+    {
+      "index": 13,
+      "domain": "square",
+      "model": "uniform",
+      "size": 16,
+      "pairs": 256
+    },
+    {
+      "index": 14,
+      "domain": "square",
+      "model": "uniform",
+      "size": 24,
+      "pairs": 256
+    },
+    {
+      "index": 15,
+      "domain": "square",
+      "model": "uniform",
+      "size": 32,
+      "pairs": 256
+    },
+    {
+      "index": 16,
+      "domain": "square",
+      "model": "uniform",
+      "size": 48,
+      "pairs": 256
+    },
+    {
+      "index": 17,
+      "domain": "square",
+      "model": "uniform",
+      "size": 64,
+      "pairs": 256
+    },
+    {
+      "index": 18,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "size": 8,
+      "pairs": 2048
+    },
+    {
+      "index": 19,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "size": 16,
+      "pairs": 2048
+    },
+    {
+      "index": 20,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "size": 24,
+      "pairs": 2048
+    },
+    {
+      "index": 21,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "size": 32,
+      "pairs": 2048
+    },
+    {
+      "index": 22,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "size": 48,
+      "pairs": 2048
+    },
+    {
+      "index": 23,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "size": 64,
+      "pairs": 2048
+    },
+    {
+      "index": 24,
+      "domain": "aztec",
+      "model": "aztec_mean",
+      "size": 8,
+      "pairs": 256
+    },
+    {
+      "index": 25,
+      "domain": "aztec",
+      "model": "aztec_mean",
+      "size": 16,
+      "pairs": 256
+    },
+    {
+      "index": 26,
+      "domain": "aztec",
+      "model": "aztec_mean",
+      "size": 24,
+      "pairs": 256
+    },
+    {
+      "index": 27,
+      "domain": "aztec",
+      "model": "aztec_mean",
+      "size": 32,
+      "pairs": 256
+    },
+    {
+      "index": 28,
+      "domain": "aztec",
+      "model": "aztec_mean",
+      "size": 48,
+      "pairs": 256
+    },
+    {
+      "index": 29,
+      "domain": "aztec",
+      "model": "aztec_mean",
+      "size": 64,
+      "pairs": 256
+    },
+    {
+      "index": 30,
+      "domain": "aztec",
+      "model": "uniform",
+      "size": 8,
+      "pairs": 256
+    },
+    {
+      "index": 31,
+      "domain": "aztec",
+      "model": "uniform",
+      "size": 16,
+      "pairs": 256
+    },
+    {
+      "index": 32,
+      "domain": "aztec",
+      "model": "uniform",
+      "size": 24,
+      "pairs": 256
+    },
+    {
+      "index": 33,
+      "domain": "aztec",
+      "model": "uniform",
+      "size": 32,
+      "pairs": 256
+    },
+    {
+      "index": 34,
+      "domain": "aztec",
+      "model": "uniform",
+      "size": 48,
+      "pairs": 256
+    },
+    {
+      "index": 35,
+      "domain": "aztec",
+      "model": "uniform",
+      "size": 64,
+      "pairs": 256
+    }
+  ]
+}

@@ -4,6 +4,13 @@ This document is a code-oriented companion to the comments in
 `src/AztecDiamond.jl`. It explains what each stage stores, which randomness it
 uses, and which checks protect the retained data.
 
+**29 September 2026 qualification:** the historical Gamma path described below
+reproduces the old datasets, but its array orientation fails a new exact weighted
+Gibbs-distribution check. The corrected adapter is in
+`../scripts/comparison_geometry.jl`; see
+[the matched-comparison audit](../../docs/history/MATCHED_COMPARISON.md). Recurrence
+agreement and valid tilings alone did not catch this distributional mismatch.
+
 ## 1. Matrix encoding
 
 An order-`L` tiling is stored as a `2L x 2L` Boolean matrix. A `true` entry is

@@ -336,3 +336,44 @@ This analysis compares ordinary-log and log-squared descriptions and
 bootstraps whole environments jointly. The campaign is designed to test the
 super-roughness prediction; neither the sampler nor the fitting code assumes
 that the quadratic coefficient is positive.
+
+## Matched Aztec comparison (29 September 2026)
+
+The new two-family law, symmetric physical probes, capped feasibility runner,
+joint control audit and direct curvature contrast are separate from the frozen
+September campaign. Read [the comparison guide](../docs/history/MATCHED_COMPARISON.md)
+before running them. It also documents the newly discovered orientation issue
+in the historical Aztec path, the corrected adapter and the Hamilton handoff.
+No large campaign is launched by these local validation commands.
+
+
+## Bounded wider-square frontier experiment
+
+Read [the 4 October feasibility guide](../docs/SQUARE_FEASIBILITY_20261004.md)
+for the fixed cohort, exact vertex-wise rescaling argument and hard scheduler
+budgets. `budgeted_frontier.py` is a separate version, restricted to L<=18;
+the reference sampler and CFTP checkpoints remain unchanged. Use
+`summarize_frontier_scaling.py` to verify all outcomes, including capped or
+missing cases. These 18 cases do not support a curvature fit.
+
+## Scalable square shuffling and the six-size matched campaign
+
+Read [the 4–5 October design](../docs/MATCHED_SHUFFLE_20261004.md). The square
+retains its ordinary induced boundary and original two-family Gamma law;
+embedding in a diamond is solely a sampling construction. Rational small-grid
+checks and Float64 high-precision audits have different exactness claims.
+
+- `embedded_shuffle.py`: documented geometry, forbidden crossing edges,
+  exterior matching witness, reduction and creation steps.
+- `scripts/run_matched_shuffle.py`: one fixed domain/model/size cell; fresh
+  outputs, saved weights and replicas, deterministic recorded seed namespace.
+- `scripts/verify_matched_shuffle_raw.py`: checksum checks, matching validity
+  and recomputation of every saved probe from both raw replicas.
+- `scripts/analyse_matched_shuffle.py`: refuses incomplete cohorts; runs the
+  fixed bootstrap, direct domain-curvature contrast and joint control audit.
+- `hpc/matched_shuffle_validation.slurm` and `hpc/matched_shuffle.slurm`:
+  compute-node validation followed by bounded production, respectively.
+
+The frozen plan contains 36 cells and 30,720 pairs. Four-pair validation cells
+use separate seeds and must never be pooled with production. Interrupted
+output is retained; rerunning into an existing cell directory is rejected.

@@ -44,3 +44,22 @@ output/
 
 # Hamilton-local Julia environment
 .hamilton_env/
+
+# Isolated local validation runtimes
+.runtime/
+
+# Historical work stays on disk and in earlier Git revisions.
+/archive/
+/aztec/data/
+
+# Local downloads, exploratory validation work and private correspondence.
+/docs/validation/
+/docs/correspondence/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+/docs/figures/local-flip.*
+/docs/figures/samples.*
+/docs/figures/matched_shuffle_20261005.png
+/docs/figures/refinement_20261003.png
+/docs/scripts/render_figures.py

@@ -219,6 +219,11 @@ end
 """
     gamma_disordered_probabilities(a, b)
 
+Historical orientation: retained to reproduce existing datasets. For new
+matched experiments use `comparison_gamma_probabilities` in
+`scripts/comparison_geometry.jl`; see docs/history/MATCHED_COMPARISON.md at repo root.
+The legacy path fails the new nonuniform tiny-diamond Gibbs-distribution audit.
+
 Compute the creation probabilities for the biased Gamma-disordered model
 using equations (1.22)–(1.23) of Duits and Van Peski. In this code's matrix
 encoding, the returned probability is for the green/yellow pair and is

@@ -1,0 +1,12 @@
+{
+  "purpose": "Local feasibility only; not production or scaling evidence",
+  "master_seed": 2026092901,
+  "sizes": [4, 8, 12],
+  "environments_per_size": 4,
+  "max_horizon_sweeps": 4096,
+  "models": [
+    {"name": "aztec_gamma", "alpha": 0.2, "beta": 0.25, "scale": 1.0},
+    {"name": "aztec_mean", "alpha": 0.2, "beta": 0.25, "scale": 1.0},
+    {"name": "uniform", "alpha": 0.2, "beta": 0.25, "scale": 1.0}
+  ]
+}

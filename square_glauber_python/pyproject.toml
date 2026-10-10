@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "square-glauber"
 version = "0.1.0"
-description = "Auditable local pilot for random-bond square-grid dimers"
+description = "Weighted square-grid dimers and reproducible paired-height analysis"
 readme = "PROJECT_GUIDE.md"
 requires-python = ">=3.11"
 dependencies = [

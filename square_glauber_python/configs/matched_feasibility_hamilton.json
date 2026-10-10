@@ -1,0 +1,12 @@
+{
+  "purpose": "Feasibility design only; run after user Hamilton login, not a production design",
+  "master_seed": 2026092902,
+  "sizes": [8, 12, 16, 24, 32],
+  "environments_per_size": 16,
+  "max_horizon_sweeps": 65536,
+  "models": [
+    {"name": "aztec_gamma", "alpha": 0.2, "beta": 0.25, "scale": 1.0},
+    {"name": "aztec_mean", "alpha": 0.2, "beta": 0.25, "scale": 1.0},
+    {"name": "uniform", "alpha": 0.2, "beta": 0.25, "scale": 1.0}
+  ]
+}

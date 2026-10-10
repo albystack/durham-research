@@ -1,102 +1,85 @@
-# Random tilings & Glauber dynamics
+# Random-weight dimers: Aztec diamonds and square grids
 
-Research code for **Aztec-diamond tilings** and **square-grid dimer dynamics**.
-We study how random edge weights affect the fluctuations of a tiling's height.
+We study whether random edge weights produce a **squared-log contribution to
+spatial height fluctuations** in the Aztec diamond and on an ordinary square grid.
 
-![A sampled Aztec diamond and a square-grid configuration evolved by Glauber dynamics.](docs/figures/samples.svg)
+The completed experiment uses the same Gamma weight law in both geometries:
+independent families with shapes **0.2 and 0.25**, scale one, and the other
+families fixed at one. Two independent tilings share each fixed environment.
+Their height-increment covariance measures the disorder contribution.
 
-## Two active projects
+## What we found
 
-| Project | What it does | Language |
-| :--- | :--- | :--- |
-| [Aztec](aztec/) | Samples weighted domino tilings by shuffling; measures central heights and spatial increments. | Julia |
-| [Glauber dynamics](square_glauber_python/) | Evolves square-grid dimers by local heat-bath updates; also provides exact small-grid checks and coupling-from-the-past sampling. | Python |
+Across sizes **16–128**, both geometries show a positive fitted squared-log term:
 
-The Julia package also keeps a tested Glauber implementation and Kasteleyn
-calculations for reference. Older spanning-tree, Temperley, and random-walk
-experiments live in [archive/](archive/INDEX.md).
+| Geometry | Coefficient of `(log r)²` | 95% bootstrap interval |
+|---|---:|---:|
+| **Aztec diamond** | **0.17994** | **[0.07819, 0.27740]** |
+| **Ordinary square grid** | **0.15882** | **[0.06446, 0.25529]** |
 
-## Start here
+The campaign contains **258,048 paired environments**, including controls.
+All 504 sampling batches passed raw-data verification. Uncertainty uses 10,000
+bootstrap resamples of whole environments, keeping both replicas and probes together.
 
-Run these commands from the repository root. Use **Julia 1.10+** for Aztec
-and **Python 3.12 or 3.13** for the Python setup below. Each project can be
-used independently.
+![Spatial disorder covariance and fitted squared-log curves in both geometries.](docs/figures/gamma_covariance.png)
 
-**Aztec — generate one small tiling**
+These are **positive finite-range numerical signals**. Fits restricted to
+32–128 or 48–128 have intervals including zero, so the experiment does not
+establish an asymptotic law or prove the physics conjecture. The joint control
+test gives `p=0.2039`; one individual control interval narrowly excludes zero
+and is retained in [the full results](docs/RESULTS.md).
 
-```bash
-make setup-julia
-make demo-aztec
-```
+## Reproduce the analysis
 
-Open `aztec/output/demo/tiling_mathematica_style.svg` to see the result.
-The folder also contains the sampled weights, tiling matrix, and run metadata.
-
-**Glauber — run a small dynamics example**
-
-```bash
-make setup-python PYTHON=python3.13
-make demo-glauber
-```
-
-The example compares two starting states on an 8 × 8 grid. Traces, diagnostic
-figures, and summaries are written to `square_glauber_python/outputs/demo/`.
-This short run demonstrates the workflow; it does not establish mixing.
+Python **3.11+** is sufficient to analyse the included data; Julia is needed
+only for simulation and its tests.
 
 ```bash
-make test-julia       # Julia unit tests and small end-to-end workflows
-make test-python      # Python mathematical and workflow tests
-make validate-python # Exact tiny-grid checks
+make setup-python
+make analysis
 ```
 
-Use `make help` for all shortcuts. Both demos use fixed seeds.
+This verifies the published data checksums, recomputes the moments and all
+18 fitted coefficients, and writes tables and a figure to `output/analysis/`.
+The quick command uses the recorded bootstrap intervals. To independently
+rerun the fixed 10,000 resamples and 9,999 control permutations:
 
-## How it works
-
-A **dimer** pairs two neighbouring grid vertices; it can be drawn as a domino.
-Glauber dynamics chooses a square face and, when possible, redraws its two
-dimers. Edge weights set the probabilities. An unchanged draw still counts
-as an update.
-
-![A local heat-bath move between two horizontal and two vertical dominoes.](docs/figures/local-flip.svg)
-
-To separate sampling fluctuations from disorder, draw two independent samples
-in the **same fixed environment**, then repeat across environments:
-
-```mermaid
-flowchart LR
-    W[Draw edge weights] --> A[Sample 1]
-    W --> B[Sample 2]
-    A --> H[Measure heights]
-    B --> H
-    H --> C[Compare across environments]
+```bash
+make bootstrap
 ```
 
-The research question is whether the disorder contribution grows like
-`log(L)` or includes a `log(L)²` term. The code tests this question; the
-illustrations above are examples, not evidence for a scaling law.
+See [the short analysis guide](analysis/README.md) for the equations, code flow
+and output files. All **516,096 measurement rows** are included in
+[data/](data/README.md), alongside the plan, seeds, verification provenance,
+recorded results and the exact Hamilton source snapshot.
 
-## Where things live
+## Code and documentation
 
-```text
-research/
-├── README.md                start here
-├── Makefile                 setup, examples, and tests
-├── aztec/                   Julia source, tests, configs, data, and HPC scripts
-├── square_glauber_python/   Python source, tests, configs, and HPC scripts
-├── docs/                    methods and reproducible README figures
-└── archive/                 earlier experiments, reports, notes, and local runs
+| Path | Purpose |
+|---|---|
+| [analysis/](analysis/) | One readable analysis entry point and data export |
+| [data/](data/README.md) | Completed paired measurements and reproducibility records |
+| [aztec/](aztec/) | Julia shuffling sampler, geometry, numerical audits and tests |
+| [square_glauber_python/](square_glauber_python/) | Python square sampler, Glauber/CFTP implementations and tests |
+| [docs/METHODS.md](docs/METHODS.md) | Model, coordinates, sampling and statistical conventions |
+| [docs/RESULTS.md](docs/RESULTS.md) | All fixed windows, controls and limitations |
+| [docs/research/handbook.typ](docs/research/handbook.typ) | Definitions and the complete research history; `make handbook` builds its PDF |
+| [docs/AI_CONTRIBUTIONS.md](docs/AI_CONTRIBUTIONS.md) | Recorded AI assistance and outstanding human review |
+
+The completed campaign used **corrected shuffling**, including a square region
+embedded in an Aztec host. The historical Gamma sampler had an orientation
+mismatch; the corrected path passes small exact-distribution tests. Float64
+reduction arithmetic has documented numerical qualifications. Read
+[the methods](docs/METHODS.md) before making exactness claims.
+
+```bash
+make test-python       # Python mathematical and workflow tests
+make setup-julia       # Julia 1.10+
+make test-julia        # Julia tests and command-line workflows
 ```
 
-New outputs stay in `aztec/output/` or `square_glauber_python/outputs/` and are
-ignored by Git. Existing datasets used by the Julia analysis remain in
-`aztec/data/`. Past results and the provisional September report are indexed
-in the archive; their original qualifications still apply.
-
-For more detail: [methods and conventions](docs/METHODS.md) ·
-[Python command reference](square_glauber_python/PROJECT_GUIDE.md) ·
-[Julia workflows](aztec/scripts/COMMANDS.md) ·
-[archive index](archive/INDEX.md).
-
-The figures are generated from the code with `make figures`; their
-[source and seeds](docs/scripts/render_figures.py) are included.
+Historical reports are in [docs/history/](docs/history/). Earlier large archives,
+local runs and downloads are excluded from the current Git checkout and remain
+available locally and in earlier Git revisions. Full tiling arrays remain on
+Hamilton; the included measurements are sufficient to reproduce every reported
+analysis. Generated outputs and local environments are ignored by Git.

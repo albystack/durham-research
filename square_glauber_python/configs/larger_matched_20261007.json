@@ -1,0 +1,4106 @@
+{
+  "date": "2026-10-07",
+  "version": "larger-batches-v1",
+  "purpose": "Fresh independent larger matched-law comparison; no predetermined outcome",
+  "validation_only": false,
+  "sizes": [
+    16,
+    24,
+    32,
+    48,
+    64,
+    96,
+    128
+  ],
+  "models": {
+    "aztec_gamma": 16384,
+    "aztec_mean": 1024,
+    "uniform": 1024
+  },
+  "probes": [
+    0.125,
+    0.25
+  ],
+  "height_scale": 1,
+  "weights": {
+    "a": "Gamma(shape=0.2,scale=1), north from black",
+    "b": "Gamma(shape=0.25,scale=1), east from black",
+    "remaining": 1,
+    "normalization": "none"
+  },
+  "analysis": {
+    "primary": "Gamma c_Aztec-c_square, fixed window 16..128",
+    "primary_window": [
+      16,
+      128
+    ],
+    "windows": [
+      [
+        16,
+        128
+      ],
+      [
+        32,
+        128
+      ],
+      [
+        48,
+        128
+      ]
+    ],
+    "bootstrap": 10000,
+    "bootstrap_seed": 2026100713,
+    "permutations": 9999,
+    "control_seed": 2026100715,
+    "resampling": "Whole environment vectors; pool batches within size/model/domain; independent groups",
+    "control_test": "Predeclared maximum absolute standardized curvature contrast over both deterministic models and all three windows",
+    "interpretation": "Finite-window contrast only; no absence/equivalence claim from non-rejection; control test is a diagnostic and never an exclusion rule"
+  },
+  "completion": "All batches and pairs required; preserve interrupted attempts; exact seed replay only; no replacement or sign-based extension; earlier cohorts and pilots excluded",
+  "scheduler": {
+    "concurrency_total": 2,
+    "cpu_per_task": 1,
+    "memory_GiB": 4,
+    "small_batch_minutes": 30,
+    "large_batch_minutes": 240,
+    "small_tasks": 360,
+    "large_tasks": 144,
+    "maximum_sampling_cpu_hours": 756,
+    "analysis_hours": 8,
+    "analysis_memory_GiB": 8
+  },
+  "batches": [
+    {
+      "index": 0,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000000
+    },
+    {
+      "index": 1,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000001
+    },
+    {
+      "index": 2,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000002
+    },
+    {
+      "index": 3,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000003
+    },
+    {
+      "index": 4,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000004
+    },
+    {
+      "index": 5,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000005
+    },
+    {
+      "index": 6,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000006
+    },
+    {
+      "index": 7,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000007
+    },
+    {
+      "index": 8,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000008
+    },
+    {
+      "index": 9,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000009
+    },
+    {
+      "index": 10,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000010
+    },
+    {
+      "index": 11,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000011
+    },
+    {
+      "index": 12,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000012
+    },
+    {
+      "index": 13,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000013
+    },
+    {
+      "index": 14,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000014
+    },
+    {
+      "index": 15,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000015
+    },
+    {
+      "index": 16,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000016
+    },
+    {
+      "index": 17,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000017
+    },
+    {
+      "index": 18,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000018
+    },
+    {
+      "index": 19,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000019
+    },
+    {
+      "index": 20,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000020
+    },
+    {
+      "index": 21,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000021
+    },
+    {
+      "index": 22,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000022
+    },
+    {
+      "index": 23,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000023
+    },
+    {
+      "index": 24,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000024
+    },
+    {
+      "index": 25,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000025
+    },
+    {
+      "index": 26,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000026
+    },
+    {
+      "index": 27,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000027
+    },
+    {
+      "index": 28,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000028
+    },
+    {
+      "index": 29,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000029
+    },
+    {
+      "index": 30,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000030
+    },
+    {
+      "index": 31,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000031
+    },
+    {
+      "index": 32,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000032
+    },
+    {
+      "index": 33,
+      "size": 16,
+      "domain": "square",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000033
+    },
+    {
+      "index": 34,
+      "size": 16,
+      "domain": "square",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000034
+    },
+    {
+      "index": 35,
+      "size": 16,
+      "domain": "square",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000035
+    },
+    {
+      "index": 36,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000036
+    },
+    {
+      "index": 37,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000037
+    },
+    {
+      "index": 38,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000038
+    },
+    {
+      "index": 39,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000039
+    },
+    {
+      "index": 40,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000040
+    },
+    {
+      "index": 41,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000041
+    },
+    {
+      "index": 42,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000042
+    },
+    {
+      "index": 43,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000043
+    },
+    {
+      "index": 44,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000044
+    },
+    {
+      "index": 45,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000045
+    },
+    {
+      "index": 46,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000046
+    },
+    {
+      "index": 47,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000047
+    },
+    {
+      "index": 48,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000048
+    },
+    {
+      "index": 49,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000049
+    },
+    {
+      "index": 50,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000050
+    },
+    {
+      "index": 51,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000051
+    },
+    {
+      "index": 52,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000052
+    },
+    {
+      "index": 53,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000053
+    },
+    {
+      "index": 54,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000054
+    },
+    {
+      "index": 55,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000055
+    },
+    {
+      "index": 56,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000056
+    },
+    {
+      "index": 57,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000057
+    },
+    {
+      "index": 58,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000058
+    },
+    {
+      "index": 59,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000059
+    },
+    {
+      "index": 60,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000060
+    },
+    {
+      "index": 61,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000061
+    },
+    {
+      "index": 62,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000062
+    },
+    {
+      "index": 63,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000063
+    },
+    {
+      "index": 64,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000064
+    },
+    {
+      "index": 65,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000065
+    },
+    {
+      "index": 66,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000066
+    },
+    {
+      "index": 67,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000067
+    },
+    {
+      "index": 68,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000068
+    },
+    {
+      "index": 69,
+      "size": 16,
+      "domain": "aztec",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000069
+    },
+    {
+      "index": 70,
+      "size": 16,
+      "domain": "aztec",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000070
+    },
+    {
+      "index": 71,
+      "size": 16,
+      "domain": "aztec",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000071
+    },
+    {
+      "index": 72,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000072
+    },
+    {
+      "index": 73,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000073
+    },
+    {
+      "index": 74,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000074
+    },
+    {
+      "index": 75,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000075
+    },
+    {
+      "index": 76,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000076
+    },
+    {
+      "index": 77,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000077
+    },
+    {
+      "index": 78,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000078
+    },
+    {
+      "index": 79,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000079
+    },
+    {
+      "index": 80,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000080
+    },
+    {
+      "index": 81,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000081
+    },
+    {
+      "index": 82,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000082
+    },
+    {
+      "index": 83,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000083
+    },
+    {
+      "index": 84,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000084
+    },
+    {
+      "index": 85,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000085
+    },
+    {
+      "index": 86,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000086
+    },
+    {
+      "index": 87,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000087
+    },
+    {
+      "index": 88,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000088
+    },
+    {
+      "index": 89,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000089
+    },
+    {
+      "index": 90,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000090
+    },
+    {
+      "index": 91,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000091
+    },
+    {
+      "index": 92,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000092
+    },
+    {
+      "index": 93,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000093
+    },
+    {
+      "index": 94,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000094
+    },
+    {
+      "index": 95,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000095
+    },
+    {
+      "index": 96,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000096
+    },
+    {
+      "index": 97,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000097
+    },
+    {
+      "index": 98,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000098
+    },
+    {
+      "index": 99,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000099
+    },
+    {
+      "index": 100,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000100
+    },
+    {
+      "index": 101,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000101
+    },
+    {
+      "index": 102,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000102
+    },
+    {
+      "index": 103,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000103
+    },
+    {
+      "index": 104,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000104
+    },
+    {
+      "index": 105,
+      "size": 24,
+      "domain": "square",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000105
+    },
+    {
+      "index": 106,
+      "size": 24,
+      "domain": "square",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000106
+    },
+    {
+      "index": 107,
+      "size": 24,
+      "domain": "square",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000107
+    },
+    {
+      "index": 108,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000108
+    },
+    {
+      "index": 109,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000109
+    },
+    {
+      "index": 110,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000110
+    },
+    {
+      "index": 111,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000111
+    },
+    {
+      "index": 112,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000112
+    },
+    {
+      "index": 113,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000113
+    },
+    {
+      "index": 114,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000114
+    },
+    {
+      "index": 115,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000115
+    },
+    {
+      "index": 116,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000116
+    },
+    {
+      "index": 117,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000117
+    },
+    {
+      "index": 118,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000118
+    },
+    {
+      "index": 119,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000119
+    },
+    {
+      "index": 120,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000120
+    },
+    {
+      "index": 121,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000121
+    },
+    {
+      "index": 122,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000122
+    },
+    {
+      "index": 123,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000123
+    },
+    {
+      "index": 124,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000124
+    },
+    {
+      "index": 125,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000125
+    },
+    {
+      "index": 126,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000126
+    },
+    {
+      "index": 127,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000127
+    },
+    {
+      "index": 128,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000128
+    },
+    {
+      "index": 129,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000129
+    },
+    {
+      "index": 130,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000130
+    },
+    {
+      "index": 131,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000131
+    },
+    {
+      "index": 132,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000132
+    },
+    {
+      "index": 133,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000133
+    },
+    {
+      "index": 134,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000134
+    },
+    {
+      "index": 135,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000135
+    },
+    {
+      "index": 136,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000136
+    },
+    {
+      "index": 137,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000137
+    },
+    {
+      "index": 138,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000138
+    },
+    {
+      "index": 139,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000139
+    },
+    {
+      "index": 140,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000140
+    },
+    {
+      "index": 141,
+      "size": 24,
+      "domain": "aztec",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000141
+    },
+    {
+      "index": 142,
+      "size": 24,
+      "domain": "aztec",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000142
+    },
+    {
+      "index": 143,
+      "size": 24,
+      "domain": "aztec",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000143
+    },
+    {
+      "index": 144,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000144
+    },
+    {
+      "index": 145,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000145
+    },
+    {
+      "index": 146,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000146
+    },
+    {
+      "index": 147,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000147
+    },
+    {
+      "index": 148,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000148
+    },
+    {
+      "index": 149,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000149
+    },
+    {
+      "index": 150,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000150
+    },
+    {
+      "index": 151,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000151
+    },
+    {
+      "index": 152,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000152
+    },
+    {
+      "index": 153,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000153
+    },
+    {
+      "index": 154,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000154
+    },
+    {
+      "index": 155,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000155
+    },
+    {
+      "index": 156,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000156
+    },
+    {
+      "index": 157,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000157
+    },
+    {
+      "index": 158,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000158
+    },
+    {
+      "index": 159,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000159
+    },
+    {
+      "index": 160,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000160
+    },
+    {
+      "index": 161,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000161
+    },
+    {
+      "index": 162,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000162
+    },
+    {
+      "index": 163,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000163
+    },
+    {
+      "index": 164,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000164
+    },
+    {
+      "index": 165,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000165
+    },
+    {
+      "index": 166,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000166
+    },
+    {
+      "index": 167,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000167
+    },
+    {
+      "index": 168,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000168
+    },
+    {
+      "index": 169,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000169
+    },
+    {
+      "index": 170,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000170
+    },
+    {
+      "index": 171,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000171
+    },
+    {
+      "index": 172,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000172
+    },
+    {
+      "index": 173,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000173
+    },
+    {
+      "index": 174,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000174
+    },
+    {
+      "index": 175,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000175
+    },
+    {
+      "index": 176,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000176
+    },
+    {
+      "index": 177,
+      "size": 32,
+      "domain": "square",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000177
+    },
+    {
+      "index": 178,
+      "size": 32,
+      "domain": "square",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000178
+    },
+    {
+      "index": 179,
+      "size": 32,
+      "domain": "square",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000179
+    },
+    {
+      "index": 180,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000180
+    },
+    {
+      "index": 181,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000181
+    },
+    {
+      "index": 182,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000182
+    },
+    {
+      "index": 183,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000183
+    },
+    {
+      "index": 184,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000184
+    },
+    {
+      "index": 185,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000185
+    },
+    {
+      "index": 186,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000186
+    },
+    {
+      "index": 187,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000187
+    },
+    {
+      "index": 188,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000188
+    },
+    {
+      "index": 189,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000189
+    },
+    {
+      "index": 190,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000190
+    },
+    {
+      "index": 191,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000191
+    },
+    {
+      "index": 192,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000192
+    },
+    {
+      "index": 193,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000193
+    },
+    {
+      "index": 194,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000194
+    },
+    {
+      "index": 195,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000195
+    },
+    {
+      "index": 196,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000196
+    },
+    {
+      "index": 197,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000197
+    },
+    {
+      "index": 198,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000198
+    },
+    {
+      "index": 199,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000199
+    },
+    {
+      "index": 200,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000200
+    },
+    {
+      "index": 201,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000201
+    },
+    {
+      "index": 202,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000202
+    },
+    {
+      "index": 203,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000203
+    },
+    {
+      "index": 204,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000204
+    },
+    {
+      "index": 205,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000205
+    },
+    {
+      "index": 206,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000206
+    },
+    {
+      "index": 207,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000207
+    },
+    {
+      "index": 208,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000208
+    },
+    {
+      "index": 209,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000209
+    },
+    {
+      "index": 210,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000210
+    },
+    {
+      "index": 211,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000211
+    },
+    {
+      "index": 212,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000212
+    },
+    {
+      "index": 213,
+      "size": 32,
+      "domain": "aztec",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000213
+    },
+    {
+      "index": 214,
+      "size": 32,
+      "domain": "aztec",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000214
+    },
+    {
+      "index": 215,
+      "size": 32,
+      "domain": "aztec",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000215
+    },
+    {
+      "index": 216,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000216
+    },
+    {
+      "index": 217,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000217
+    },
+    {
+      "index": 218,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000218
+    },
+    {
+      "index": 219,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000219
+    },
+    {
+      "index": 220,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000220
+    },
+    {
+      "index": 221,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000221
+    },
+    {
+      "index": 222,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000222
+    },
+    {
+      "index": 223,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000223
+    },
+    {
+      "index": 224,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000224
+    },
+    {
+      "index": 225,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000225
+    },
+    {
+      "index": 226,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000226
+    },
+    {
+      "index": 227,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000227
+    },
+    {
+      "index": 228,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000228
+    },
+    {
+      "index": 229,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000229
+    },
+    {
+      "index": 230,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000230
+    },
+    {
+      "index": 231,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000231
+    },
+    {
+      "index": 232,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000232
+    },
+    {
+      "index": 233,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000233
+    },
+    {
+      "index": 234,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000234
+    },
+    {
+      "index": 235,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000235
+    },
+    {
+      "index": 236,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000236
+    },
+    {
+      "index": 237,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000237
+    },
+    {
+      "index": 238,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000238
+    },
+    {
+      "index": 239,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000239
+    },
+    {
+      "index": 240,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000240
+    },
+    {
+      "index": 241,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000241
+    },
+    {
+      "index": 242,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000242
+    },
+    {
+      "index": 243,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000243
+    },
+    {
+      "index": 244,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000244
+    },
+    {
+      "index": 245,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000245
+    },
+    {
+      "index": 246,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000246
+    },
+    {
+      "index": 247,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000247
+    },
+    {
+      "index": 248,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000248
+    },
+    {
+      "index": 249,
+      "size": 48,
+      "domain": "square",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000249
+    },
+    {
+      "index": 250,
+      "size": 48,
+      "domain": "square",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000250
+    },
+    {
+      "index": 251,
+      "size": 48,
+      "domain": "square",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000251
+    },
+    {
+      "index": 252,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000252
+    },
+    {
+      "index": 253,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000253
+    },
+    {
+      "index": 254,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000254
+    },
+    {
+      "index": 255,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000255
+    },
+    {
+      "index": 256,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000256
+    },
+    {
+      "index": 257,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000257
+    },
+    {
+      "index": 258,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000258
+    },
+    {
+      "index": 259,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000259
+    },
+    {
+      "index": 260,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000260
+    },
+    {
+      "index": 261,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000261
+    },
+    {
+      "index": 262,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000262
+    },
+    {
+      "index": 263,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000263
+    },
+    {
+      "index": 264,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000264
+    },
+    {
+      "index": 265,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000265
+    },
+    {
+      "index": 266,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000266
+    },
+    {
+      "index": 267,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000267
+    },
+    {
+      "index": 268,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000268
+    },
+    {
+      "index": 269,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000269
+    },
+    {
+      "index": 270,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000270
+    },
+    {
+      "index": 271,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000271
+    },
+    {
+      "index": 272,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000272
+    },
+    {
+      "index": 273,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000273
+    },
+    {
+      "index": 274,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000274
+    },
+    {
+      "index": 275,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000275
+    },
+    {
+      "index": 276,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000276
+    },
+    {
+      "index": 277,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000277
+    },
+    {
+      "index": 278,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000278
+    },
+    {
+      "index": 279,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000279
+    },
+    {
+      "index": 280,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000280
+    },
+    {
+      "index": 281,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000281
+    },
+    {
+      "index": 282,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000282
+    },
+    {
+      "index": 283,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000283
+    },
+    {
+      "index": 284,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000284
+    },
+    {
+      "index": 285,
+      "size": 48,
+      "domain": "aztec",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000285
+    },
+    {
+      "index": 286,
+      "size": 48,
+      "domain": "aztec",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000286
+    },
+    {
+      "index": 287,
+      "size": 48,
+      "domain": "aztec",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000287
+    },
+    {
+      "index": 288,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000288
+    },
+    {
+      "index": 289,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000289
+    },
+    {
+      "index": 290,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000290
+    },
+    {
+      "index": 291,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000291
+    },
+    {
+      "index": 292,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000292
+    },
+    {
+      "index": 293,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000293
+    },
+    {
+      "index": 294,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000294
+    },
+    {
+      "index": 295,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000295
+    },
+    {
+      "index": 296,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000296
+    },
+    {
+      "index": 297,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000297
+    },
+    {
+      "index": 298,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000298
+    },
+    {
+      "index": 299,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000299
+    },
+    {
+      "index": 300,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000300
+    },
+    {
+      "index": 301,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000301
+    },
+    {
+      "index": 302,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000302
+    },
+    {
+      "index": 303,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000303
+    },
+    {
+      "index": 304,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000304
+    },
+    {
+      "index": 305,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000305
+    },
+    {
+      "index": 306,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000306
+    },
+    {
+      "index": 307,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000307
+    },
+    {
+      "index": 308,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000308
+    },
+    {
+      "index": 309,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000309
+    },
+    {
+      "index": 310,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000310
+    },
+    {
+      "index": 311,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000311
+    },
+    {
+      "index": 312,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000312
+    },
+    {
+      "index": 313,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000313
+    },
+    {
+      "index": 314,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000314
+    },
+    {
+      "index": 315,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000315
+    },
+    {
+      "index": 316,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000316
+    },
+    {
+      "index": 317,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000317
+    },
+    {
+      "index": 318,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000318
+    },
+    {
+      "index": 319,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000319
+    },
+    {
+      "index": 320,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000320
+    },
+    {
+      "index": 321,
+      "size": 64,
+      "domain": "square",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000321
+    },
+    {
+      "index": 322,
+      "size": 64,
+      "domain": "square",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000322
+    },
+    {
+      "index": 323,
+      "size": 64,
+      "domain": "square",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000323
+    },
+    {
+      "index": 324,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000324
+    },
+    {
+      "index": 325,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000325
+    },
+    {
+      "index": 326,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000326
+    },
+    {
+      "index": 327,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000327
+    },
+    {
+      "index": 328,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000328
+    },
+    {
+      "index": 329,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000329
+    },
+    {
+      "index": 330,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000330
+    },
+    {
+      "index": 331,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000331
+    },
+    {
+      "index": 332,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000332
+    },
+    {
+      "index": 333,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000333
+    },
+    {
+      "index": 334,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000334
+    },
+    {
+      "index": 335,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000335
+    },
+    {
+      "index": 336,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000336
+    },
+    {
+      "index": 337,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000337
+    },
+    {
+      "index": 338,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000338
+    },
+    {
+      "index": 339,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000339
+    },
+    {
+      "index": 340,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000340
+    },
+    {
+      "index": 341,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000341
+    },
+    {
+      "index": 342,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000342
+    },
+    {
+      "index": 343,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000343
+    },
+    {
+      "index": 344,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000344
+    },
+    {
+      "index": 345,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000345
+    },
+    {
+      "index": 346,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000346
+    },
+    {
+      "index": 347,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000347
+    },
+    {
+      "index": 348,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000348
+    },
+    {
+      "index": 349,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000349
+    },
+    {
+      "index": 350,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000350
+    },
+    {
+      "index": 351,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000351
+    },
+    {
+      "index": 352,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000352
+    },
+    {
+      "index": 353,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000353
+    },
+    {
+      "index": 354,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000354
+    },
+    {
+      "index": 355,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000355
+    },
+    {
+      "index": 356,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000356
+    },
+    {
+      "index": 357,
+      "size": 64,
+      "domain": "aztec",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000357
+    },
+    {
+      "index": 358,
+      "size": 64,
+      "domain": "aztec",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000358
+    },
+    {
+      "index": 359,
+      "size": 64,
+      "domain": "aztec",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000359
+    },
+    {
+      "index": 360,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000360
+    },
+    {
+      "index": 361,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000361
+    },
+    {
+      "index": 362,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000362
+    },
+    {
+      "index": 363,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000363
+    },
+    {
+      "index": 364,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000364
+    },
+    {
+      "index": 365,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000365
+    },
+    {
+      "index": 366,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000366
+    },
+    {
+      "index": 367,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000367
+    },
+    {
+      "index": 368,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000368
+    },
+    {
+      "index": 369,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000369
+    },
+    {
+      "index": 370,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000370
+    },
+    {
+      "index": 371,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000371
+    },
+    {
+      "index": 372,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000372
+    },
+    {
+      "index": 373,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000373
+    },
+    {
+      "index": 374,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000374
+    },
+    {
+      "index": 375,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000375
+    },
+    {
+      "index": 376,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000376
+    },
+    {
+      "index": 377,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000377
+    },
+    {
+      "index": 378,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000378
+    },
+    {
+      "index": 379,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000379
+    },
+    {
+      "index": 380,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000380
+    },
+    {
+      "index": 381,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000381
+    },
+    {
+      "index": 382,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000382
+    },
+    {
+      "index": 383,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000383
+    },
+    {
+      "index": 384,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000384
+    },
+    {
+      "index": 385,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000385
+    },
+    {
+      "index": 386,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000386
+    },
+    {
+      "index": 387,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000387
+    },
+    {
+      "index": 388,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000388
+    },
+    {
+      "index": 389,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000389
+    },
+    {
+      "index": 390,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000390
+    },
+    {
+      "index": 391,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000391
+    },
+    {
+      "index": 392,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000392
+    },
+    {
+      "index": 393,
+      "size": 96,
+      "domain": "square",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000393
+    },
+    {
+      "index": 394,
+      "size": 96,
+      "domain": "square",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000394
+    },
+    {
+      "index": 395,
+      "size": 96,
+      "domain": "square",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000395
+    },
+    {
+      "index": 396,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000396
+    },
+    {
+      "index": 397,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000397
+    },
+    {
+      "index": 398,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000398
+    },
+    {
+      "index": 399,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000399
+    },
+    {
+      "index": 400,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000400
+    },
+    {
+      "index": 401,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000401
+    },
+    {
+      "index": 402,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000402
+    },
+    {
+      "index": 403,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000403
+    },
+    {
+      "index": 404,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000404
+    },
+    {
+      "index": 405,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000405
+    },
+    {
+      "index": 406,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000406
+    },
+    {
+      "index": 407,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000407
+    },
+    {
+      "index": 408,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000408
+    },
+    {
+      "index": 409,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000409
+    },
+    {
+      "index": 410,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000410
+    },
+    {
+      "index": 411,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000411
+    },
+    {
+      "index": 412,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000412
+    },
+    {
+      "index": 413,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000413
+    },
+    {
+      "index": 414,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000414
+    },
+    {
+      "index": 415,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000415
+    },
+    {
+      "index": 416,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000416
+    },
+    {
+      "index": 417,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000417
+    },
+    {
+      "index": 418,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000418
+    },
+    {
+      "index": 419,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000419
+    },
+    {
+      "index": 420,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000420
+    },
+    {
+      "index": 421,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000421
+    },
+    {
+      "index": 422,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000422
+    },
+    {
+      "index": 423,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000423
+    },
+    {
+      "index": 424,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000424
+    },
+    {
+      "index": 425,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000425
+    },
+    {
+      "index": 426,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000426
+    },
+    {
+      "index": 427,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000427
+    },
+    {
+      "index": 428,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000428
+    },
+    {
+      "index": 429,
+      "size": 96,
+      "domain": "aztec",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000429
+    },
+    {
+      "index": 430,
+      "size": 96,
+      "domain": "aztec",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000430
+    },
+    {
+      "index": 431,
+      "size": 96,
+      "domain": "aztec",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000431
+    },
+    {
+      "index": 432,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000432
+    },
+    {
+      "index": 433,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000433
+    },
+    {
+      "index": 434,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000434
+    },
+    {
+      "index": 435,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000435
+    },
+    {
+      "index": 436,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000436
+    },
+    {
+      "index": 437,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000437
+    },
+    {
+      "index": 438,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000438
+    },
+    {
+      "index": 439,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000439
+    },
+    {
+      "index": 440,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000440
+    },
+    {
+      "index": 441,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000441
+    },
+    {
+      "index": 442,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000442
+    },
+    {
+      "index": 443,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000443
+    },
+    {
+      "index": 444,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000444
+    },
+    {
+      "index": 445,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000445
+    },
+    {
+      "index": 446,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000446
+    },
+    {
+      "index": 447,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000447
+    },
+    {
+      "index": 448,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000448
+    },
+    {
+      "index": 449,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000449
+    },
+    {
+      "index": 450,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000450
+    },
+    {
+      "index": 451,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000451
+    },
+    {
+      "index": 452,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000452
+    },
+    {
+      "index": 453,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000453
+    },
+    {
+      "index": 454,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000454
+    },
+    {
+      "index": 455,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000455
+    },
+    {
+      "index": 456,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000456
+    },
+    {
+      "index": 457,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000457
+    },
+    {
+      "index": 458,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000458
+    },
+    {
+      "index": 459,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000459
+    },
+    {
+      "index": 460,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000460
+    },
+    {
+      "index": 461,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000461
+    },
+    {
+      "index": 462,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000462
+    },
+    {
+      "index": 463,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000463
+    },
+    {
+      "index": 464,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000464
+    },
+    {
+      "index": 465,
+      "size": 128,
+      "domain": "square",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000465
+    },
+    {
+      "index": 466,
+      "size": 128,
+      "domain": "square",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000466
+    },
+    {
+      "index": 467,
+      "size": 128,
+      "domain": "square",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000467
+    },
+    {
+      "index": 468,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000468
+    },
+    {
+      "index": 469,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000469
+    },
+    {
+      "index": 470,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000470
+    },
+    {
+      "index": 471,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000471
+    },
+    {
+      "index": 472,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000472
+    },
+    {
+      "index": 473,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000473
+    },
+    {
+      "index": 474,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000474
+    },
+    {
+      "index": 475,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000475
+    },
+    {
+      "index": 476,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000476
+    },
+    {
+      "index": 477,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000477
+    },
+    {
+      "index": 478,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000478
+    },
+    {
+      "index": 479,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000479
+    },
+    {
+      "index": 480,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000480
+    },
+    {
+      "index": 481,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000481
+    },
+    {
+      "index": 482,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000482
+    },
+    {
+      "index": 483,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000483
+    },
+    {
+      "index": 484,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000484
+    },
+    {
+      "index": 485,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000485
+    },
+    {
+      "index": 486,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000486
+    },
+    {
+      "index": 487,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000487
+    },
+    {
+      "index": 488,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000488
+    },
+    {
+      "index": 489,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000489
+    },
+    {
+      "index": 490,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000490
+    },
+    {
+      "index": 491,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000491
+    },
+    {
+      "index": 492,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000492
+    },
+    {
+      "index": 493,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000493
+    },
+    {
+      "index": 494,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000494
+    },
+    {
+      "index": 495,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000495
+    },
+    {
+      "index": 496,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000496
+    },
+    {
+      "index": 497,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000497
+    },
+    {
+      "index": 498,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000498
+    },
+    {
+      "index": 499,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_gamma",
+      "pairs": 512,
+      "master_seed": 20261007000499
+    },
+    {
+      "index": 500,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000500
+    },
+    {
+      "index": 501,
+      "size": 128,
+      "domain": "aztec",
+      "model": "aztec_mean",
+      "pairs": 512,
+      "master_seed": 20261007000501
+    },
+    {
+      "index": 502,
+      "size": 128,
+      "domain": "aztec",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000502
+    },
+    {
+      "index": 503,
+      "size": 128,
+      "domain": "aztec",
+      "model": "uniform",
+      "pairs": 512,
+      "master_seed": 20261007000503
+    }
+  ]
+}

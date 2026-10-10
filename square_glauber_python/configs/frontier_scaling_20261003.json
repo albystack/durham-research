@@ -1,0 +1,250 @@
+{
+  "date": "2026-10-03",
+  "purpose": "Fixed wider-square feasibility only; no scaling fit or replacement of failures",
+  "sampler_version": "integer-frontier-budgeted-v1",
+  "new_environment_master_seed": 2026100301,
+  "retained_environment_master_seed": 2026092902,
+  "budgets": {
+    "max_states": 3000000,
+    "max_seconds": 120,
+    "max_rss_bytes": 6442450944
+  },
+  "scheduler": {
+    "tasks": 18,
+    "concurrency": 2,
+    "cpus_per_task": 1,
+    "memory_GiB": 8,
+    "wall_minutes_per_task": 4,
+    "max_allocated_cpu_minutes": 72
+  },
+  "cases": [
+    {
+      "case_index": 0,
+      "L": 14,
+      "model": "aztec_gamma",
+      "environment_index": 0,
+      "environment_seed": "7465589940279255072",
+      "replica_seeds": [
+        "215340535259983836078594010501513811607",
+        "66944948511340393913910648298679781395"
+      ],
+      "input_source": "generated_saved"
+    },
+    {
+      "case_index": 1,
+      "L": 14,
+      "model": "aztec_gamma",
+      "environment_index": 1,
+      "environment_seed": "12003466550976788394",
+      "replica_seeds": [
+        "127867201441606448458096345668413458951",
+        "160138636070444256188343735876725927395"
+      ],
+      "input_source": "generated_saved"
+    },
+    {
+      "case_index": 2,
+      "L": 14,
+      "model": "aztec_gamma",
+      "environment_index": 2,
+      "environment_seed": "12674130408882944803",
+      "replica_seeds": [
+        "270337891499290728996061206361932172046",
+        "7244838243280295471614561719095779058"
+      ],
+      "input_source": "generated_saved"
+    },
+    {
+      "case_index": 3,
+      "L": 14,
+      "model": "aztec_gamma",
+      "environment_index": 3,
+      "environment_seed": "8858085796041695800",
+      "replica_seeds": [
+        "76733718241444105100973324774387031641",
+        "231794006226727569748211367193210862381"
+      ],
+      "input_source": "generated_saved"
+    },
+    {
+      "case_index": 4,
+      "L": 14,
+      "model": "aztec_mean",
+      "environment_index": 0,
+      "environment_seed": "7375533589655346944",
+      "replica_seeds": [
+        "204777015366439542961706786690370429024",
+        "322853560653297785249843868260812301263"
+      ],
+      "input_source": "generated_saved"
+    },
+    {
+      "case_index": 5,
+      "L": 14,
+      "model": "uniform",
+      "environment_index": 0,
+      "environment_seed": "14691302788920460309",
+      "replica_seeds": [
+        "126530499844381686088798904158637145788",
+        "121930546568164893318468103852473337961"
+      ],
+      "input_source": "generated_saved"
+    },
+    {
+      "case_index": 6,
+      "L": 16,
+      "model": "aztec_gamma",
+      "environment_index": 0,
+      "environment_seed": "6472224077354531340",
+      "replica_seeds": [
+        "213441908844500156467885689884082784401",
+        "88191258776176533359024255801622564115"
+      ],
+      "input_source": "original_archive",
+      "original_relative_path": "model0-L16-env000000/weights.npz",
+      "original_sha256": "d39554da1c8b663b969cb05be8d3a5178ffdac293112448790b79c7d0aed55af"
+    },
+    {
+      "case_index": 7,
+      "L": 16,
+      "model": "aztec_gamma",
+      "environment_index": 1,
+      "environment_seed": "474271427180356787",
+      "replica_seeds": [
+        "242357501680405063283700584079648244900",
+        "214913932535128829177188582511454150338"
+      ],
+      "input_source": "original_archive",
+      "original_relative_path": "model0-L16-env000001/weights.npz",
+      "original_sha256": "f58abf3e6e4f783fa0f0b9bcf04d2a020c6dfb77281d344832df317aefb67c75"
+    },
+    {
+      "case_index": 8,
+      "L": 16,
+      "model": "aztec_gamma",
+      "environment_index": 2,
+      "environment_seed": "2214920721354915879",
+      "replica_seeds": [
+        "105821843351068582493469453159203509652",
+        "314485369853444646654027686415436079524"
+      ],
+      "input_source": "original_archive",
+      "original_relative_path": "model0-L16-env000002/weights.npz",
+      "original_sha256": "64dd9324965f36a530d81398f46b11c77c9d902916b56d86af43bbac8e8371d1"
+    },
+    {
+      "case_index": 9,
+      "L": 16,
+      "model": "aztec_gamma",
+      "environment_index": 3,
+      "environment_seed": "13827994674335507428",
+      "replica_seeds": [
+        "247728216133148916308832097219358485102",
+        "95334241130717786866849779909850688966"
+      ],
+      "input_source": "original_archive",
+      "original_relative_path": "model0-L16-env000003/weights.npz",
+      "original_sha256": "647aa71c338d692c2a61367596f0ada787f17238831299b62c893d6b67309e45"
+    },
+    {
+      "case_index": 10,
+      "L": 16,
+      "model": "aztec_mean",
+      "environment_index": 0,
+      "environment_seed": "4803273927235347896",
+      "replica_seeds": [
+        "126964537924584751059674499568382761020",
+        "185311531721311584697159936428343605688"
+      ],
+      "input_source": "original_archive",
+      "original_relative_path": "model1-L16-env000000/weights.npz",
+      "original_sha256": "7376397e92abe4a5e4a1b4b80eeba3e28f619778ab873ad427aa199f0cf4a791"
+    },
+    {
+      "case_index": 11,
+      "L": 16,
+      "model": "uniform",
+      "environment_index": 0,
+      "environment_seed": "502716200949544589",
+      "replica_seeds": [
+        "18493901533096730831336708495923169589",
+        "69204834417240197143949702343961016261"
+      ],
+      "input_source": "original_archive",
+      "original_relative_path": "model2-L16-env000000/weights.npz",
+      "original_sha256": "973e5eb1b11d37aabcb307b6caee3adbcdc1f9e85cdde361c89cab938eb94ce1"
+    },
+    {
+      "case_index": 12,
+      "L": 18,
+      "model": "aztec_gamma",
+      "environment_index": 0,
+      "environment_seed": "9818271833100224603",
+      "replica_seeds": [
+        "119873043741061856515179849643692937844",
+        "116021115092777467645651963377997213038"
+      ],
+      "input_source": "generated_saved"
+    },
+    {
+      "case_index": 13,
+      "L": 18,
+      "model": "aztec_gamma",
+      "environment_index": 1,
+      "environment_seed": "1365417556637840565",
+      "replica_seeds": [
+        "247464672726568382731750049533584241043",
+        "129661433898606031839854792285105009634"
+      ],
+      "input_source": "generated_saved"
+    },
+    {
+      "case_index": 14,
+      "L": 18,
+      "model": "aztec_gamma",
+      "environment_index": 2,
+      "environment_seed": "2435404932010368551",
+      "replica_seeds": [
+        "235882202495225232679758133825800605943",
+        "235911558051530871666130605231735032426"
+      ],
+      "input_source": "generated_saved"
+    },
+    {
+      "case_index": 15,
+      "L": 18,
+      "model": "aztec_gamma",
+      "environment_index": 3,
+      "environment_seed": "15060741164915028624",
+      "replica_seeds": [
+        "140970830072793003958407059091720963013",
+        "338873751282137787309824012460934791575"
+      ],
+      "input_source": "generated_saved"
+    },
+    {
+      "case_index": 16,
+      "L": 18,
+      "model": "aztec_mean",
+      "environment_index": 0,
+      "environment_seed": "17501839691475524655",
+      "replica_seeds": [
+        "39126271706076772223935708145233513272",
+        "307797410174792188938663470371250747834"
+      ],
+      "input_source": "generated_saved"
+    },
+    {
+      "case_index": 17,
+      "L": 18,
+      "model": "uniform",
+      "environment_index": 0,
+      "environment_seed": "10629574336164064068",
+      "replica_seeds": [
+        "176856550102052180464168168024048547259",
+        "9144276863130033810536286180571413681"
+      ],
+      "input_source": "generated_saved"
+    }
+  ]
+}

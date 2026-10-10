@@ -1,0 +1,17 @@
+{
+  "campaign": "larger-matched-20261007",
+  "completed": "2026-10-10",
+  "pairs": 258048,
+  "rows": 516096,
+  "gamma_pairs": 229376,
+  "control_pairs": 28672,
+  "sha256": {
+    "analysis.json": "90e4412576e3ead59f48ec6a870e0ce56b1fc36f90504e295e0a60beb13e1d9f",
+    "intervals.csv": "fb782089685d5003d0bfe7b90c56027e1947907de8371898b13e9a839f70a86f",
+    "measurements.csv.gz": "be54440f5956a3753821b83b4b2fc4ca8516c9090c53e0f25709c3763ad7d382",
+    "plan.json": "cf831391da6b9b02d19c893f2973cb44063b463ff64eafca2a85ae1cf2fa81cc",
+    "provenance.json.gz": "f73bbed1389798fe76189f9906e8637a47fb2e05203920465e52aae20cfcf340",
+    "source-snapshot.tar.gz": "4c533d765419550fe3fcee005ee8ff58ed670f3ac3d08f7c2a387412a6fad475",
+    "verification.json": "e38e5e272cc742460902d1ea48b1423916190b3a9f06db4c76003b28ec750ade"
+  }
+}

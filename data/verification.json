@@ -1,0 +1,23 @@
+{
+  "state": "COMPACT_RESULTS_VERIFIED",
+  "pairs": 258048,
+  "batches": 504,
+  "moment_estimates": 252,
+  "fits": 18,
+  "contrasts": 9,
+  "max_moment_error": 1.7763568394002505e-15,
+  "max_coefficient_error": 2.4369395390522186e-14,
+  "bootstrap_intervals": "Original Hamilton output; not independently rerun",
+  "permutation_test": "Original Hamilton output; not independently rerun",
+  "raw_tilings": "Verified on Hamilton; not downloaded here",
+  "public_data_reproduction": {
+    "pairs": 258048,
+    "bootstrap_repetitions": 10000,
+    "permutations": 9999,
+    "fits_checked": 18,
+    "contrasts_checked": 9,
+    "joint_p": 0.2039,
+    "max_coefficient_or_interval_difference": 3.824718319833664e-14,
+    "max_moment_or_interval_difference": 0.0
+  }
+}

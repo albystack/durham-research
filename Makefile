@@ -1,53 +1,47 @@
-PYTHON ?= python3.13
-PY_ENV ?= square_glauber_python/.venv
+PYTHON ?= python3
+PY_ENV ?= .venv
 PYTHON_BIN := $(PY_ENV)/bin/python
 JULIA ?= julia
 
-.PHONY: help setup-python setup-julia demo-aztec demo-glauber figures test-python validate-python test-julia test
+.PHONY: help setup-python setup-julia analysis bootstrap test test-python test-julia validate-python handbook
 
 help:
-	@echo "make setup-julia                     Instantiate the Julia project"
-	@echo "make setup-python PYTHON=python3.13  Create the Python environment"
-	@echo "make demo-aztec                      Generate a small Aztec tiling"
-	@echo "make demo-glauber                    Run a small Glauber diagnostic"
-	@echo "make figures                         Rebuild README illustrations"
-	@echo "make test-python                     Run square-grid Python tests"
-	@echo "make validate-python                 Run exact tiny-grid validation"
-	@echo "make test-julia                      Run the Julia/Aztec test suite"
-	@echo "make test                            Run both project test suites"
+	@echo "make setup-python  Install Python dependencies and tests"
+	@echo "make analysis      Verify public data; reproduce coefficients and figure"
+	@echo "make bootstrap     Independently rerun the fixed resampling"
+	@echo "make test-python   Run the Python tests"
+	@echo "make test-julia    Run Julia tests and small command-line workflows"
+	@echo "make test          Run both language test suites"
+	@echo "make handbook      Build the Typst research handbook"
 
 setup-python:
-	$(PYTHON) -m venv $(PY_ENV)
-	$(PYTHON_BIN) -m pip install --upgrade pip
-	$(PYTHON_BIN) -m pip install -e './square_glauber_python[test,accel]'
+	"$(PYTHON)" -m venv "$(PY_ENV)"
+	"$(PYTHON_BIN)" -m pip install --upgrade pip
+	"$(PYTHON_BIN)" -m pip install -e './square_glauber_python[test,accel]'
 
+# Julia dependencies are standard libraries; this checks the package loads.
 setup-julia:
-	$(JULIA) --project=aztec -e 'using Pkg; Pkg.instantiate()'
+	"$(JULIA)" --startup-file=no --project=aztec -e 'using AztecDiamond; println("AztecDiamond ready")'
 
-demo-aztec:
-	$(JULIA) --project=aztec aztec/scripts/run_gamma_disordered.jl \
-		--order 24 --seed 20260920 --output-dir aztec/output/demo
+analysis:
+	OPENBLAS_NUM_THREADS=1 MPLCONFIGDIR=tmp/matplotlib "$(PYTHON_BIN)" analysis/run.py
 
-demo-glauber:
-	MPLCONFIGDIR=$(PY_ENV)/matplotlib-cache XDG_CACHE_HOME=$(PY_ENV)/cache \
-		PYTHONPATH=square_glauber_python/src $(PYTHON_BIN) -m square_glauber.cli mixing \
-		--L 8 --model uniform --sweeps 500 --record-every 5 --seed 20260920 \
-		--output square_glauber_python/outputs/demo
-
-figures:
-	MPLCONFIGDIR=$(PY_ENV)/matplotlib-cache XDG_CACHE_HOME=$(PY_ENV)/cache \
-		PYTHONPATH=square_glauber_python/src $(PYTHON_BIN) docs/scripts/render_figures.py
+bootstrap:
+	OPENBLAS_NUM_THREADS=1 MPLCONFIGDIR=tmp/matplotlib "$(PYTHON_BIN)" analysis/run.py --bootstrap 10000 --output output/recomputed
 
 test-python:
-	MPLCONFIGDIR=$(PY_ENV)/matplotlib-cache XDG_CACHE_HOME=$(PY_ENV)/cache \
-		PYTHONPATH=square_glauber_python/src $(PYTHON_BIN) -m pytest square_glauber_python/tests
+	OPENBLAS_NUM_THREADS=1 MPLCONFIGDIR=tmp/matplotlib PYTHONPATH=square_glauber_python/src \
+		"$(PYTHON_BIN)" -m pytest square_glauber_python/tests
 
 validate-python:
-	MPLCONFIGDIR=$(PY_ENV)/matplotlib-cache XDG_CACHE_HOME=$(PY_ENV)/cache \
-		PYTHONPATH=square_glauber_python/src $(PYTHON_BIN) -m square_glauber.cli validate-exact
+	MPLCONFIGDIR=tmp/matplotlib PYTHONPATH=square_glauber_python/src "$(PYTHON_BIN)" -m square_glauber.cli validate-exact
 
 test-julia:
-	$(JULIA) --project=aztec -e 'using Pkg; Pkg.test()'
-	sh aztec/test/smoke_workflows.sh
+	"$(JULIA)" --startup-file=no --project=aztec aztec/test/runtests.jl
+	PATH="$(dir $(JULIA)):$$PATH" sh aztec/test/smoke_workflows.sh
 
 test: test-python test-julia
+
+handbook:
+	mkdir -p output/pdf
+	typst compile --root . docs/research/handbook.typ output/pdf/research-handbook.pdf
