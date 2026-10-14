@@ -1,17 +1,15 @@
 #!/usr/bin/env julia
-# Weighted domino tilings of an Aztec diamond of order L.
+# Weighted domino tilings of an Aztec diamond of order L
 # Each environment has a ~ Gamma(0.2, 1), b ~ Gamma(0.25, 1), and unit weights
-# on the other two edge families. For each fixed environment, draw two tilings
-# independently. Measure height differences at offsets L/8 and L/4 along each
-# coordinate of the diagonal; the physical distances are sqrt(2) times these.
+# on the other two edge families. for each fixed environment, draw two tilings
+# independently.  measure height differences at offsets L/8 and L/4 along each
+# coordinate of the diagonal; the physical distances are sqrt(2) times these
 #
 # Run: julia aztec.jl --size 8 --environments 2 --output aztec-example
-# Requires Julia 1.10+; no extra packages. The output folder must be new.
+# requires Julia 1.10+ and no extra packages. The output folder must be new too
 # Defaults run two small pairs. The figures use the completed campaign data.
 #
-# Reading order: weights -> reduction -> shuffling -> heights -> batch runner.
-# Source: albystack/durham-research, 27b4bff. Sampling steps and seeds are unchanged.
-# OpenAI Codex assisted with implementation, testing, analysis and editing.
+# Reading order: weights -> reduction -> shuffling -> heights -> batch runner
 
 module AztecDiamond
 
@@ -26,7 +24,7 @@ export gamma_disordered_weights, sample_tiling_from_choices,
 
 """Draw one Gamma variable using rejection sampling."""
 function rand_gamma(rng::AbstractRNG, shape::Float64, scale::Float64)
-    # For shape < 1, use Gamma(shape + 1) * U^(1/shape).
+    # For shape < 1, use Gamma(shape + 1) * U^(1/shape)
     if shape < 1
         uniform_draw = rand(rng)
         while uniform_draw == 0
@@ -50,7 +48,7 @@ function rand_gamma(rng::AbstractRNG, shape::Float64, scale::Float64)
     end
 end
 
-"""Draw an array of independent Gamma weights; mean = shape * scale."""
+"""Draw an array of independent Gamma weights; mean = shape * scale"""
 function random_gamma_weights(
     rng::AbstractRNG,
     rows::Integer,
@@ -70,7 +68,7 @@ function random_gamma_weights(
     return result
 end
 
-"""Draw the two independent edge-weight families of one environment."""
+"""Draw the two independent edge-weight families of one environment"""
 function gamma_disordered_weights(
     rng::AbstractRNG,
     order::Integer;
@@ -83,7 +81,7 @@ function gamma_disordered_weights(
     return (a=a, b=b)
 end
 
-"""Require two square arrays of positive, finite weights."""
+"""Require two square arrays of positive, finite weights"""
 function check_gamma_weights(
     a::AbstractMatrix{<:Real},
     b::AbstractMatrix{<:Real},
@@ -156,8 +154,8 @@ end
 
 # 3. Delete, slide, and create dominoes
 
-# The 2L-by-2L array records domino centres, not board squares. Row and column
-# parity encode orientation; covered_cells converts these entries to board cells.
+# The 2L-by-2L array records domino centre positions; Row and column
+# parity encode orientation; covered_cells converts these entries to board cells
 
 """Enlarge the diamond, remove colliding pairs, and slide the survivors."""
 function delete_and_slide(tiling::AbstractMatrix{Bool})
@@ -199,7 +197,7 @@ function delete_and_slide(tiling::AbstractMatrix{Bool})
     return enlarged
 end
 
-"""Fill each empty cell using its already-drawn coin."""
+"""Fill each empty cell using its already-drawn coin"""
 function create_dominoes_from_choices!(
     tiling::AbstractMatrix{Bool},
     choices::AbstractMatrix{Bool},
@@ -495,7 +493,7 @@ function robust_gamma_choice_pair(rng, a, b)
 end
 
 # Coins are exact for the stored weights. The preceding Float64 reductions
-# still have rounding error; small-grid checks do not prove universal exactness.
+# still have rounding error; small-grid checks do not prove universal exactness
 
 
 # 6. Reproducible batches and saved results

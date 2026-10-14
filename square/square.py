@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Weighted domino tilings of an even L-by-L square of vertices.
+"""Weighted domino tilings of an even L-by-L square of vertices
 
 For each fixed random environment, sample two tilings independently. Measure
 height differences at offsets L/8 and L/4 along each diagonal coordinate;
@@ -7,11 +7,8 @@ physical distances are sqrt(2) times these offsets. The random edge families
 have Gamma shapes 0.2 and 0.25, scale 1; other weights are one.
 
 Run: python square.py --size 8 --environments 2 --output square-example
-Requires Python 3.11+ and NumPy. The output folder must be new. Default runs
-are small examples; the figures use the completed campaign data.
+Requires Python 3.11+ and NumPy. The output folder must be NEW
 
-Source: albystack/durham-research, 27b4bff. Sampling steps and seeds are unchanged.
-OpenAI Codex assisted with implementation, testing, analysis and editing.
 """
 
 from __future__ import annotations
