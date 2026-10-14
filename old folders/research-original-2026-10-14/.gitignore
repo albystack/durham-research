@@ -1,0 +1,65 @@
+# Legacy Python cache and local runtime artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+
+# Julia local runtime artifacts
+.julia/
+# This is a reusable Julia library supporting multiple Julia minor versions;
+# resolve standard-library versions locally rather than pinning one developer's.
+/aztec/Manifest.toml
+
+# macOS metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor/temporary files
+*.swp
+*.swo
+*~
+tmp/
+.vscode/
+.idea/
+
+# LaTeX build artifacts
+build/
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+# Generated project outputs
+results_hpc*/
+results_julia*/
+results_strict_annealed/
+logs/
+analysis_*/
+figures_*/
+output/
+
+# Hamilton-local Julia environment
+.hamilton_env/
+
+# Isolated local validation runtimes
+.runtime/
+
+# Historical work stays on disk and in earlier Git revisions.
+/archive/
+/aztec/data/
+
+# Local downloads, exploratory validation work and private correspondence.
+/docs/validation/
+/docs/correspondence/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+/docs/figures/local-flip.*
+/docs/figures/samples.*
+/docs/figures/matched_shuffle_20261005.png
+/docs/figures/refinement_20261003.png
+/docs/scripts/render_figures.py
